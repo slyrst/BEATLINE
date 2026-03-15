@@ -324,6 +324,13 @@ canvas#cv{display:block;width:440px;height:620px;}
           <button class="xbtn cy" onclick="doRegister()" style="width:100%;text-align:center;">[ CREATE ACCOUNT ]</button>
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:4px;">
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        <div style="font-size:9px;color:#333;letter-spacing:3px;">OR</div>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+      </div>
+      <button class="xbtn gn" onclick="doGuest()" style="width:100%;text-align:center;">[ PLAY AS GUEST ]</button>
+      <div style="font-size:9px;color:#2a2a44;letter-spacing:2px;text-align:center;margin-top:-6px;">scores won't be saved</div>
     </div>
   </div>
 </div>
@@ -335,6 +342,11 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="menu-sub">RHYTHM GAME</div>
     <div class="menu-user">PLAYING AS <span id="menu-username">—</span>
       <span id="admin-badge-menu" class="admin-badge" style="display:none;">ADMIN</span>
+      <span id="guest-badge-menu" style="display:none;font-size:9px;background:#00ff8822;border:1px solid #00ff8844;color:var(--green);padding:2px 8px;letter-spacing:2px;">GUEST</span>
+    </div>
+    <div id="guest-login-notice" style="display:none;font-size:10px;color:#2a2a44;letter-spacing:2px;margin-bottom:20px;text-align:center;line-height:1.8;">
+      <span style="color:#333;">scores won't be saved as guest</span><br>
+      <button class="xbtn cy sm" onclick="showPage('auth-page')" style="margin-top:8px;">[ LOGIN / REGISTER ]</button>
     </div>
     <div class="menu-btns">
       <button class="xbtn cy lg" onclick="showPage('songs-page')">[ PLAY ]</button>
@@ -495,10 +507,22 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="ov"></div>
     </div>
     <div id="kh">
-      <div class="khi k0" data-lane="0" id="khb-0">D</div>
-      <div class="khi k1" data-lane="1" id="khb-1">F</div>
-      <div class="khi k2" data-lane="2" id="khb-2">J</div>
-      <div class="khi k3" data-lane="3" id="khb-3">K</div>
+      <div class="khi k0" id="khb-0"
+        onmousedown="event.preventDefault();_laneDown(0)" onmouseup="_laneUp(0)" onmouseleave="_laneUp(0)"
+        ontouchstart="event.preventDefault();_laneDown(0)" ontouchend="event.preventDefault();_laneUp(0)" ontouchcancel="_laneUp(0)"
+      >D</div>
+      <div class="khi k1" id="khb-1"
+        onmousedown="event.preventDefault();_laneDown(1)" onmouseup="_laneUp(1)" onmouseleave="_laneUp(1)"
+        ontouchstart="event.preventDefault();_laneDown(1)" ontouchend="event.preventDefault();_laneUp(1)" ontouchcancel="_laneUp(1)"
+      >F</div>
+      <div class="khi k2" id="khb-2"
+        onmousedown="event.preventDefault();_laneDown(2)" onmouseup="_laneUp(2)" onmouseleave="_laneUp(2)"
+        ontouchstart="event.preventDefault();_laneDown(2)" ontouchend="event.preventDefault();_laneUp(2)" ontouchcancel="_laneUp(2)"
+      >J</div>
+      <div class="khi k3" id="khb-3"
+        onmousedown="event.preventDefault();_laneDown(3)" onmouseup="_laneUp(3)" onmouseleave="_laneUp(3)"
+        ontouchstart="event.preventDefault();_laneDown(3)" ontouchend="event.preventDefault();_laneUp(3)" ontouchcancel="_laneUp(3)"
+      >K</div>
     </div>
   </div>
 </div>
@@ -528,12 +552,32 @@ function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').repl
 function resAudio(fn){if(!fn)return'';fn=fn.trim();if(/^https?:\/\//i.test(fn))return fn;return'./'+fn.replace(/^\.\/+/,'').replace(/^\/+/,'');}
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
+// ── GUEST MODE ────────────────────────────────────────────────────────────────
+let isGuest=false;
+
+function doGuest(){
+  isGuest=true;CU=null;CUD=null;ADM=false;
+  document.getElementById('menu-username').textContent='GUEST';
+  document.getElementById('admin-badge-menu').style.display='none';
+  document.getElementById('guest-badge-menu').style.display='inline';
+  document.getElementById('guest-login-notice').style.display='block';
+  hideLoad();showPage('menu-page');
+}
+
 auth.onAuthStateChanged(async user=>{
-  if(user){CU=user;try{const s=await dGet(dDoc('users',user.uid));if(s.exists){CUD=s.data();ADM=CUD.isAdmin||false;}}catch(e){}
+  if(user){
+    isGuest=false;CU=user;
+    try{const s=await dGet(dDoc('users',user.uid));if(s.exists){CUD=s.data();ADM=CUD.isAdmin||false;}}catch(e){}
     document.getElementById('menu-username').textContent=CUD?.username||user.displayName||'PLAYER';
     document.getElementById('admin-badge-menu').style.display=ADM?'inline':'none';
+    document.getElementById('guest-badge-menu').style.display='none';
+    document.getElementById('guest-login-notice').style.display='none';
     hideLoad();showPage('menu-page');
-  }else{CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');}
+  }else{
+    // only go to auth page if not already in guest mode
+    if(!isGuest){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');}
+    else hideLoad();
+  }
 });
 function switchAuthTab(t){
   document.getElementById('login-form').style.display=t==='login'?'block':'none';
@@ -558,7 +602,11 @@ async function doRegister(){
   try{const c=await auth.createUserWithEmailAndPassword(em,p);await c.user.updateProfile({displayName:u});await dSet(dDoc('users',c.user.uid),{username:u,email:em,isAdmin:false,createdAt:sts(),totalScore:0,gamesPlayed:0});}
   catch(e){err.textContent=e.code==='auth/email-already-in-use'?'EMAIL IN USE':e.code==='auth/invalid-email'?'INVALID EMAIL':'ERROR: '+e.code;}
 }
-async function doLogout(){stopAll();await auth.signOut();}
+async function doLogout(){
+  stopAll();isGuest=false;
+  if(CU)await auth.signOut();
+  else{CU=null;CUD=null;ADM=false;showPage('auth-page');}
+}
 
 // ── SONGS ─────────────────────────────────────────────────────────────────────
 async function loadSongs(){
@@ -1063,7 +1111,7 @@ async function endPlay2(){
   const tot=gstats.p+gstats.g+gstats.ok+gstats.m,ac=tot?Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100):0;
   const gr=ac>=95?'S':ac>=85?'A':ac>=70?'B':ac>=50?'C':'D';
   const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[gr];
-  if(CS?.id&&!CS.preview&&CU){
+  if(CS?.id&&!CS.preview&&CU&&!isGuest){
     try{
       const snap=await dQ('scores',W('songId','==',CS.id),W('userId','==',CU.uid));
       const prev=snap.empty?0:(snap.docs[0].data().score||0);
@@ -1092,6 +1140,7 @@ async function endPlay2(){
       ${CS?.id&&!fc?`<button class="xbtn am" onclick="showLB('${CS.id}','${esc(CS.title||'')}')">[ SCORES ]</button>`:''}
       ${fc?`<button class="xbtn gn" onclick="goBack()">[ BACK TO EDITOR ]</button>`:`<button class="xbtn rd sm" onclick="goBack()">[ SONG LIST ]</button>`}
     </div>
+    ${isGuest?`<div style="font-size:10px;color:#333;letter-spacing:2px;margin-top:12px;text-align:center;">score not saved · <span style="color:var(--cyan);cursor:pointer;" onclick="showPage('auth-page')">LOGIN TO SAVE SCORES</span></div>`:''}
   `);
 }
 
@@ -1292,51 +1341,10 @@ function _laneUp(lane){
   if(mode==='play')hitPlay(lane,false);
   if(mode==='record')hitRec2(lane,false);
 }
-// Touch on kh buttons
-// touch cancel safety
-document.getElementById('kh').addEventListener('touchcancel',()=>[0,1,2,3].forEach(i=>_laneUp(i)),{passive:false});
-// Pointer events on kh buttons — works for both mouse clicks and touch
-document.getElementById('kh').addEventListener('pointerdown',e=>{
-  e.preventDefault();
-  const el=e.target.closest('[data-lane]');
-  if(!el)return;
-  const lane=parseInt(el.dataset.lane);
-  if(lane>=0&&lane<4)_laneDown(lane);
-});
-document.getElementById('kh').addEventListener('pointerup',e=>{
-  e.preventDefault();
-  const el=e.target.closest('[data-lane]');
-  if(!el)return;
-  const lane=parseInt(el.dataset.lane);
-  if(lane>=0&&lane<4)_laneUp(lane);
-});
-document.getElementById('kh').addEventListener('pointerleave',e=>{
-  // release all if pointer leaves the whole kh area
-  [0,1,2,3].forEach(i=>_laneUp(i));
-});
-document.getElementById('kh').addEventListener('pointercancel',e=>{
-  [0,1,2,3].forEach(i=>_laneUp(i));
-});
-// Touch on canvas itself
-cv.addEventListener('touchstart',e=>{
-  e.preventDefault();
-  const rect=cv.getBoundingClientRect(),lw=rect.width/GLANES;
-  for(const t of e.changedTouches){
-    const lane=Math.floor((t.clientX-rect.left)/lw);
-    if(lane>=0&&lane<GLANES)_laneDown(lane);
-  }
-},{passive:false});
-cv.addEventListener('touchend',e=>{
-  e.preventDefault();
-  const rect=cv.getBoundingClientRect(),lw=rect.width/GLANES;
-  for(const t of e.changedTouches){
-    const lane=Math.floor((t.clientX-rect.left)/lw);
-    if(lane>=0&&lane<GLANES)_laneUp(lane);
-  }
-  if(e.touches.length===0)[0,1,2,3].forEach(i=>_laneUp(i));
-},{passive:false});
+// kh buttons handled via inline ontouchstart/onmousedown in HTML
 
-window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
+window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
+window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
 window.delSong=delSong;window.editSong=editSong;window.initCreatePage=initCreatePage;window.setDiff=setDiff;
 window.onFnInput=onFnInput;window.crStartRec=crStartRec;window.crStopClick=crStopClick;
