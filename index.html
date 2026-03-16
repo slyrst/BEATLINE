@@ -1090,7 +1090,21 @@ function crClearNotes(){crNotes=[];document.getElementById('cr-nc').textContent=
 async function crPreview(){
   if(!crNotes.length){toast('NO NOTES TO PREVIEW','#ff4444');return;}
   const src=crGetAudioSrc();if(!src){toast('SELECT AN AUDIO FILE FIRST','#ff4444');return;}
-  CS={title:document.getElementById('cr-title').value||'PREVIEW',artist:document.getElementById('cr-artist').value||'',difficulty:crDiff,beatmap:crNotes,audioUrl:src,preview:true,fromCreate:true};
+  // carry existing song ID so effect edit can save even before re-publishing
+  const existingId=ESI||CS?.id||null;
+  CS={
+    id:existingId,
+    title:document.getElementById('cr-title').value||'PREVIEW',
+    artist:document.getElementById('cr-artist').value||'',
+    difficulty:crDiff,beatmap:crNotes,audioUrl:src,
+    bgImage:document.getElementById('cr-bg').value.trim()||'',
+    allowFire:crAllowFire,dimEffect:crAllowDim,
+    speedEffect:CS?.speedEffect||1,
+    effectEvents:CS?.effectEvents||[],
+    fireRanges:CS?.fireRanges||[],
+    preview:!existingId, // only mark as preview if no real ID
+    fromCreate:true
+  };
   showPage('game-page');setTimeout(()=>initPlay(),100);
 }
 async function crPublish(){
@@ -1109,9 +1123,18 @@ async function crPublish(){
     const existingEffects=CS?.effectEvents||watchEffectEvents||[];
     const existingFireRanges=existingEffects.filter(e=>e.type==='fire');
     const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',allowFire:crAllowFire,fireStart,dimEffect:crAllowDim,speedEffect,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
-    if(ESI){await dUpd(dDoc('songs',ESI),data);toast('LEVEL UPDATED!','#00ff88');}
-    else{data.createdAt=sts();const ref=await dAdd('songs',data);CS={id:ref.id,...data};toast('LEVEL PUBLISHED!','#00ff88');}
-    ESI=null;crNotes=[];stopBgCanvas();showPage('songs-page');
+    if(ESI){
+      await dUpd(dDoc('songs',ESI),data);
+      CS={id:ESI,...data,preview:false,fromCreate:true};
+      toast('LEVEL UPDATED!','#00ff88');
+    } else {
+      data.createdAt=sts();
+      const ref=await dAdd('songs',data);
+      CS={id:ref.id,...data,preview:false,fromCreate:true};
+      ESI=ref.id; // keep ESI so re-publish updates same doc
+      toast('LEVEL PUBLISHED!','#00ff88');
+    }
+    crNotes=[];stopBgCanvas();showPage('songs-page');
   }catch(e){err.textContent='ERROR: '+e.message;}
   document.getElementById('cr-pub-btn').disabled=false;document.getElementById('cr-pub-btn').textContent='[ PUBLISH LEVEL ]';
 }
