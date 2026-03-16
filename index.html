@@ -558,6 +558,27 @@ canvas#cv{display:block;width:440px;height:620px;}
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">FIRE · SHAKE · FLASH · COLOR EFFECTS</div>
     </div>
+    <!-- ADMIN ONLY -->
+    <div class="settings-section" id="admin-section" style="display:none;border-color:#ff444433;">
+      <div class="settings-section-title" style="color:var(--red);">ADMIN — ACCOUNT RECOVERY</div>
+      <div style="font-size:9px;color:#444;letter-spacing:2px;margin-bottom:12px;">TRANSFER ALL DATA FROM AN OLD ACCOUNT TO A NEW ONE</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label class="xlabel">OLD USERNAME (data source)</label>
+          <input class="xinput" id="recover-old-user" placeholder="OLD USERNAME" autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div>
+          <label class="xlabel">NEW EMAIL</label>
+          <input class="xinput" id="recover-new-email" placeholder="new@email.com" type="email">
+        </div>
+        <div>
+          <label class="xlabel">NEW PASSWORD</label>
+          <input class="xinput" id="recover-new-pass" placeholder="min 6 chars" type="password">
+        </div>
+        <div class="auth-err" id="recover-err" style="text-align:left;min-height:14px;"></div>
+        <button class="xbtn rd" onclick="adminRecoverAccount()" style="width:100%;text-align:center;">[ CREATE RECOVERED ACCOUNT ]</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -785,6 +806,9 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('admin-badge-menu').style.display=ADM?'inline':'none';
     document.getElementById('guest-badge-menu').style.display='none';
     document.getElementById('guest-login-notice').style.display='none';
+    // show admin section in settings
+    const adminSec=document.getElementById('admin-section');
+    if(adminSec)adminSec.style.display=ADM?'block':'none';
     hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();
   }else{
     // only go to auth page if not already in guest mode
@@ -836,6 +860,68 @@ async function doForgotPassword(){
   }
 }
 window.doForgotPassword=doForgotPassword;
+async function adminRecoverAccount(){
+  if(!ADM){toast('ADMIN ONLY','#ff4444');return;}
+  const oldUser=document.getElementById('recover-old-user').value.trim().toUpperCase();
+  const newEmail=document.getElementById('recover-new-email').value.trim();
+  const newPass=document.getElementById('recover-new-pass').value;
+  const err=document.getElementById('recover-err');
+  err.textContent='';err.style.color='var(--red)';
+  if(!oldUser||!newEmail||!newPass){err.textContent='FILL ALL FIELDS';return;}
+  if(newPass.length<6){err.textContent='PASSWORD TOO SHORT';return;}
+  try{
+    // 1. Find old user data
+    const oldSnap=await dQ('users',W('username','==',oldUser));
+    if(oldSnap.empty){err.textContent='USER "'+oldUser+'" NOT FOUND';return;}
+    const oldDoc=oldSnap.docs[0];
+    const oldData=oldDoc.data();
+    const oldUid=oldDoc.id;
+    err.style.color='#ffaa00';
+    err.textContent='FOUND USER — CREATING NEW ACCOUNT...';
+
+    // 2. Create new Firebase Auth account
+    // We use a secondary app instance to avoid logging out the admin
+    const secondaryApp=firebase.initializeApp(firebase.app().options,'recovery-'+Date.now());
+    const secondaryAuth=secondaryApp.auth();
+    let newUid;
+    try{
+      const cred=await secondaryAuth.createUserWithEmailAndPassword(newEmail,newPass);
+      newUid=cred.user.uid;
+      await secondaryAuth.signOut();
+    }finally{secondaryApp.delete();}
+
+    // 3. Copy user doc to new UID
+    const newUserData={
+      ...oldData,
+      email:newEmail,
+      uid:newUid,
+      recoveredFrom:oldUid,
+      recoveredAt:sts()
+    };
+    await dSet(dDoc('users',newUid),newUserData);
+
+    // 4. Transfer scores
+    const scoresSnap=await dQ('scores',W('userId','==',oldUid));
+    let scoreCount=0;
+    for(const sd of scoresSnap.docs){
+      await dAdd('scores',{...sd.data(),userId:newUid,migratedFrom:oldUid});
+      scoreCount++;
+    }
+
+    err.style.color='var(--green)';
+    err.textContent=`✓ DONE — NEW ACCOUNT CREATED, ${scoreCount} SCORES TRANSFERRED. OLD ACCOUNT STILL EXISTS.`;
+
+    // Clear fields
+    document.getElementById('recover-old-user').value='';
+    document.getElementById('recover-new-email').value='';
+    document.getElementById('recover-new-pass').value='';
+
+  }catch(e){
+    err.style.color='var(--red)';
+    err.textContent='ERROR: '+(e.code||e.message);
+  }
+}
+window.adminRecoverAccount=adminRecoverAccount;
 async function doLogout(){
   stopAll();isGuest=false;
   if(CU)await auth.signOut();
