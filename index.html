@@ -507,22 +507,10 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="ov"></div>
     </div>
     <div id="kh">
-      <div class="khi k0" id="khb-0"
-        onmousedown="event.preventDefault();_laneDown(0)" onmouseup="_laneUp(0)" onmouseleave="_laneUp(0)"
-        ontouchstart="event.preventDefault();_laneDown(0)" ontouchend="event.preventDefault();_laneUp(0)" ontouchcancel="_laneUp(0)"
-      >D</div>
-      <div class="khi k1" id="khb-1"
-        onmousedown="event.preventDefault();_laneDown(1)" onmouseup="_laneUp(1)" onmouseleave="_laneUp(1)"
-        ontouchstart="event.preventDefault();_laneDown(1)" ontouchend="event.preventDefault();_laneUp(1)" ontouchcancel="_laneUp(1)"
-      >F</div>
-      <div class="khi k2" id="khb-2"
-        onmousedown="event.preventDefault();_laneDown(2)" onmouseup="_laneUp(2)" onmouseleave="_laneUp(2)"
-        ontouchstart="event.preventDefault();_laneDown(2)" ontouchend="event.preventDefault();_laneUp(2)" ontouchcancel="_laneUp(2)"
-      >J</div>
-      <div class="khi k3" id="khb-3"
-        onmousedown="event.preventDefault();_laneDown(3)" onmouseup="_laneUp(3)" onmouseleave="_laneUp(3)"
-        ontouchstart="event.preventDefault();_laneDown(3)" ontouchend="event.preventDefault();_laneUp(3)" ontouchcancel="_laneUp(3)"
-      >K</div>
+      <div class="khi k0" id="khb-0">D</div>
+      <div class="khi k1" id="khb-1">F</div>
+      <div class="khi k2" id="khb-2">J</div>
+      <div class="khi k3" id="khb-3">K</div>
     </div>
   </div>
 </div>
@@ -1342,6 +1330,50 @@ function _laneUp(lane){
   if(mode==='record')hitRec2(lane,false);
 }
 // kh buttons handled via inline ontouchstart/onmousedown in HTML
+// ── TAP BUTTON LISTENERS ─────────────────────────────────────────────────────
+(function(){
+  const kh=document.getElementById('kh');
+  const btns=[0,1,2,3].map(i=>document.getElementById('khb-'+i));
+  // Map touch identifier → lane so multi-touch works
+  const touchMap={};
+
+  function laneOfTouch(t){
+    const rect=kh.getBoundingClientRect();
+    const x=t.clientX-rect.left;
+    return Math.floor(x/(rect.width/4));
+  }
+
+  kh.addEventListener('touchstart',function(e){
+    e.preventDefault();
+    for(const t of e.changedTouches){
+      const lane=laneOfTouch(t);
+      if(lane>=0&&lane<4){touchMap[t.identifier]=lane;_laneDown(lane);}
+    }
+  },{passive:false});
+
+  kh.addEventListener('touchend',function(e){
+    e.preventDefault();
+    for(const t of e.changedTouches){
+      const lane=touchMap[t.identifier];
+      if(lane!==undefined){_laneUp(lane);delete touchMap[t.identifier];}
+    }
+  },{passive:false});
+
+  kh.addEventListener('touchcancel',function(e){
+    for(const t of e.changedTouches){
+      const lane=touchMap[t.identifier];
+      if(lane!==undefined){_laneUp(lane);delete touchMap[t.identifier];}
+    }
+  },{passive:false});
+
+  // Mouse (desktop)
+  btns.forEach((el,i)=>{
+    if(!el)return;
+    el.addEventListener('mousedown',e=>{e.preventDefault();_laneDown(i);});
+    el.addEventListener('mouseup',  e=>{e.preventDefault();_laneUp(i);});
+    el.addEventListener('mouseleave',()=>_laneUp(i));
+  });
+})();
 
 window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
