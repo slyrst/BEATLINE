@@ -1593,10 +1593,8 @@ function startPlay(){
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
   const spd=CS.speedEffect||1;
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
-  // Debug: show effects count in top-right
   const n=CS.effectEvents?.length||0;
-  console.log('startPlay: CS.id=',CS?.id,'effectEvents=',n,'data=',CS.effectEvents);
-  if(n>0)toast(n+' EFFECTS LOADED','#00f0ff');
+  console.log('effects:',n);
   aud=new Audio(CS.audioUrl);aud.preload='auto'; // no crossOrigin — avoids CORS blocking
   aud.playbackRate=spd;
   aud.onerror=()=>{running=false;showOv(`<div class="ov-title">AUDIO ERROR</div><div class="ov-sub" style="color:#ff4444">FILE NOT FOUND</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
