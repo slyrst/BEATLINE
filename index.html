@@ -1762,9 +1762,13 @@ function getVolume(){
 }
 function loadBgImg(url){
   if(!url){bgImg=null;bgImgUrl='';return;}
-  if(url===bgImgUrl)return;
-  bgImgUrl=url;bgImg=new Image();bgImg.crossOrigin='anonymous';
-  bgImg.src=url;bgImg.onerror=()=>{bgImg=null;};
+  if(url===bgImgUrl&&bgImg)return;
+  bgImgUrl=url;
+  const img=new Image();
+  // No crossOrigin — avoids CORS blocking. We only draw, never read pixels.
+  img.onload=()=>{bgImg=img;};
+  img.onerror=()=>{bgImg=null;console.warn('bg image failed:',url);};
+  img.src=url;
 }
 let fireVol=0,fireCPS=0,_cpsHits=0,_cpsTimer=0; // smoothed volume + CPS for fire
 
