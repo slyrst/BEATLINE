@@ -1438,15 +1438,16 @@ function loadMyPreset(){
 }
 async function saveEffects(){
   const spd=parseFloat(document.getElementById('watch-speed')?.value)||1;
-  // always save locally to CS so effects work in current session
-  CS.effectEvents=JSON.parse(JSON.stringify(watchEffectEvents));
-  CS.fireRanges=watchEffectEvents.filter(e=>e.type==='fire');
-  CS.speedEffect=spd;
-  if(!CS?.id){toast('SAVED LOCALLY (not published yet)','#ffaa00');return;}
+  if(!CS?.id){toast('PUBLISH THE LEVEL FIRST!','#ff4444');return;}
   try{
-    await dUpd(dDoc('songs',CS.id),{effectEvents:watchEffectEvents,fireRanges:CS.fireRanges,speedEffect:spd,updatedAt:sts()});
+    const data={effectEvents:watchEffectEvents,fireRanges:watchEffectEvents.filter(e=>e.type==='fire'),speedEffect:spd,updatedAt:sts()};
+    await dUpd(dDoc('songs',CS.id),data);
+    // update local CS so effects work immediately
+    CS.effectEvents=JSON.parse(JSON.stringify(watchEffectEvents));
+    CS.fireRanges=data.fireRanges;
+    CS.speedEffect=spd;
     toast('EFFECTS SAVED!','#00ff88');
-  }catch(e){toast('LOCAL ONLY — DB: '+e.message,'#ffaa00');}
+  }catch(e){toast('SAVE FAILED: '+e.message,'#ff4444');}
 }
 
 
@@ -1501,7 +1502,7 @@ function watchLoop(){
 
 function exitWatch(){
   watchMode=false;autoMode=false;
-  cancelAnimationFrame(watchRaf);
+  cancelAnimationFrame(watchRaf);watchRaf=0;
   running=false;
   if(aud){aud.pause();aud=null;}
   const gc=document.getElementById('gc');
@@ -1509,11 +1510,8 @@ function exitWatch(){
   document.getElementById('watch-bar').style.display='none';
   document.getElementById('dim-overlay').style.display='none';
   document.getElementById('streak-popup').style.opacity='0';
-  document.getElementById('ov').style.display='none';
-  setTimeout(()=>{
-    if(CS?.fromCreate){goBack();}
-    else{initPlay();}
-  },50);
+  if(CS?.fromCreate){showPage('create-page');startBgCanvas();}
+  else{showPage('game-page');initPlay();}
 }
 function toggleAuto(){
   autoMode=!autoMode;
@@ -1892,7 +1890,7 @@ document.addEventListener('keydown',e=>{
   if(pid==='game-page'){
     const i=KEYS.indexOf(e.key.toLowerCase());
     if(i!==-1){_laneDown(i);}
-    if(e.key==='Escape'){stopAll();goBack();}
+    if(e.key==='Escape'){if(watchMode){exitWatch();}else{stopAll();goBack();}}
   }
 });
 document.addEventListener('keyup',e=>{
