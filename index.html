@@ -564,6 +564,20 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div id="effects-toggle-btn" onclick="toggleEffectsSetting()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">FIRE · SHAKE · FLASH · COLOR EFFECTS</div>
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+      <div class="keybind-row" style="margin-bottom:6px;">
+        <div class="keybind-label">NOTE SPEED</div>
+        <div style="font-size:16px;font-weight:bold;letter-spacing:2px;color:var(--cyan);min-width:40px;text-align:center;" id="note-speed-display">2×</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="xbtn sm" id="ns-1" onclick="setNoteSpeed(1)" style="letter-spacing:1px;">1×</button>
+        <button class="xbtn sm" id="ns-1.5" onclick="setNoteSpeed(1.5)" style="letter-spacing:1px;">1.5×</button>
+        <button class="xbtn sm cy" id="ns-2" onclick="setNoteSpeed(2)" style="letter-spacing:1px;">2×</button>
+        <button class="xbtn sm" id="ns-2.5" onclick="setNoteSpeed(2.5)" style="letter-spacing:1px;">2.5×</button>
+        <button class="xbtn sm" id="ns-3" onclick="setNoteSpeed(3)" style="letter-spacing:1px;">3×</button>
+        <button class="xbtn sm" id="ns-4" onclick="setNoteSpeed(4)" style="letter-spacing:1px;">4×</button>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:8px;">ONLY NOTE FALL SPEED · SONG TEMPO UNCHANGED</div>
     </div>
     <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
       <div class="settings-section-title" style="color:var(--pink);">ADMIN — MANAGE ROLES</div>
@@ -1089,16 +1103,19 @@ function startPresence(){
   const updatePresence=()=>dUpd(dDoc('users',CU.uid),{lastSeen:firebase.firestore.FieldValue.serverTimestamp(),online:true}).catch(()=>{});
   updatePresence();
   _presenceInterval=setInterval(updatePresence,30000);
-  // mark offline on page hide/unload
   document.addEventListener('visibilitychange',()=>{
-    if(document.hidden)dUpd(dDoc('users',CU.uid),{online:false}).catch(()=>{});
+    if(document.hidden)dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{});
     else updatePresence();
   });
-  window.addEventListener('beforeunload',()=>navigator.sendBeacon&&dUpd(dDoc('users',CU.uid),{online:false}).catch(()=>{}));
+  window.addEventListener('beforeunload',()=>navigator.sendBeacon&&dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{}));
+}
+function broadcastPlaying(songId,songTitle){
+  if(!CU)return;
+  dUpd(dDoc('users',CU.uid),{playingNow:songId?{songId,songTitle,startedAt:firebase.firestore.FieldValue.serverTimestamp()}:null}).catch(()=>{});
 }
 function stopPresence(){
   clearInterval(_presenceInterval);_presenceInterval=null;
-  if(CU)dUpd(dDoc('users',CU.uid),{online:false}).catch(()=>{});
+  if(CU)dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{});
 }
 function isOnline(ud){
   if(!ud)return false;
@@ -1201,7 +1218,17 @@ async function openProfile(uid, backPage){
         ${isSelf?`<button class="xbtn sm rd" onclick="event.stopPropagation();removeFriend('${f.id}')" style="padding:3px 8px;font-size:9px;">✕</button>`:''}
       </div>`;}).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no friends yet</div>';
 
-    // Friend button: on others' profiles show add/pending/already friends
+    // Now playing badge
+    const nowPlaying=ud.playingNow;
+    const nowPlayingHtml=nowPlaying?.songId?`
+      <div style="margin-top:8px;padding:8px 12px;background:#00f0ff0a;border:1px solid #00f0ff22;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;">🎮</span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:9px;color:var(--cyan);letter-spacing:3px;">NOW PLAYING</div>
+          <div style="font-size:11px;color:#aaa;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nowPlaying.songTitle||'?')}</div>
+        </div>
+        ${!isSelf&&CU?`<button class="xbtn cy sm" onclick="spectatePlayer('${uid}','${nowPlaying.songId}')" style="padding:4px 12px;font-size:9px;">👁 WATCH</button>`:''}
+      </div>`:'';
     let friendBtn='';
     if(!isSelf&&CU&&uid){
       const myFriends=CUD?.friends||[];
@@ -1256,6 +1283,7 @@ async function openProfile(uid, backPage){
             ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;letter-spacing:2px;" onclick="startEditUsername()">✏ RENAME</button>`:''}
           </div>
           ${bioSection}
+          ${nowPlayingHtml}
           <div class="profile-stats-row" style="margin-top:10px;">
             <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">SCORE</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${ud.gamesPlayed||0}</div><div class="profile-stat-lbl">PLAYS</div></div>
@@ -1459,7 +1487,11 @@ async function loadFriendsPage(){
         const av=fd.avatar?`<img src="${esc(fd.avatar)}" style="width:36px;height:36px;object-fit:cover;">`:`<div class="friend-avatar">${(fd.username||'?').slice(0,2).toUpperCase()}</div>`;
         rows+=`<div class="friend-row">
           ${av}
-          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}</div>
+          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">
+            ${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}
+            ${fd.playingNow?.songId?'<span style="font-size:9px;color:var(--cyan);margin-left:6px;">🎮</span>':''}
+          </div>
+          ${fd.playingNow?.songId?`<button class="xbtn sm cy" onclick="spectatePlayer('${fid}','${fd.playingNow.songId}')" style="padding:3px 8px;font-size:9px;">👁</button>`:''}
           <button class="xbtn sm" onclick="openChat('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:var(--cyan);border-color:#00f0ff33;">💬</button>
           <button class="xbtn sm rd" onclick="removeFriend('${fid}')" style="padding:3px 8px;font-size:9px;">✕</button>
         </div>`;
@@ -1574,7 +1606,53 @@ async function sendChatMsg(){
   }catch(e){toast('SEND FAILED: '+e.message,'#ff4444');}
 }
 
-// ── LEADERBOARD ───────────────────────────────────────────────────────────────
+// ── SPECTATE ──────────────────────────────────────────────────────────────────
+let _spectatingUid=null,_spectateUnsub=null;
+
+async function spectatePlayer(uid,songId){
+  if(!uid||!songId)return;
+  setLoad('LOADING SONG...');
+  try{
+    const [s,efx]=await Promise.all([
+      db.collection('songs').doc(songId).get({source:'server'}).catch(()=>dGet(dDoc('songs',songId))),
+      db.collection('songeffects').doc(songId).get({source:'server'}).catch(()=>db.collection('songeffects').doc(songId).get())
+    ]);
+    if(!s.exists){hideLoad();toast('SONG NOT FOUND','#ff4444');return;}
+    CS={id:songId,...s.data(),spectating:true};
+    if(efx.exists){const e=efx.data();CS.effectEvents=e.effectEvents||[];CS.fireRanges=e.fireRanges||[];CS.speedEffect=e.speedEffect||1;}
+    _spectatingUid=uid;
+    hideLoad();showPage('game-page');
+    setTimeout(()=>{
+      autoMode=true; // watch mode — notes auto
+      initPlay();
+      startSpectateListener(uid);
+    },100);
+  }catch(e){hideLoad();toast('ERROR: '+e.message,'#ff4444');}
+}
+
+function startSpectateListener(uid){
+  if(_spectateUnsub)_spectateUnsub();
+  // Watch for the host to stop playing
+  _spectateUnsub=db.collection('users').doc(uid).onSnapshot(snap=>{
+    if(!snap.exists)return;
+    const d=snap.data();
+    const stillPlaying=d?.playingNow?.songId===CS?.id;
+    if(!stillPlaying&&_spectatingUid){
+      // Host left — kick us back
+      toast('PLAYER LEFT THE GAME','#ffaa00');
+      _spectatingUid=null;if(_spectateUnsub){_spectateUnsub();_spectateUnsub=null;}
+      autoMode=false;
+      stopAll();
+      goPageBack();
+    }
+  });
+}
+
+function stopSpectate(){
+  _spectatingUid=null;
+  if(_spectateUnsub){_spectateUnsub();_spectateUnsub=null;}
+}
+window.spectatePlayer=spectatePlayer;
 async function showLB(songId,title){
   document.getElementById('lb-title').textContent='LEADERBOARD';
   document.getElementById('lb-song-name').textContent=title||'';
@@ -2002,7 +2080,9 @@ async function playSong(id){
 // ── GAME ENGINE ───────────────────────────────────────────────────────────────
 const cv=document.getElementById('cv'),ctx2=cv.getContext('2d');
 const GLANES=4;
-const GNR=22,GPPM=0.44;
+const GNR=22,_GPPM_BASE=0.22; // 1x base, 2x = current feel (0.44)
+let _noteSpeed=2; // default 2x = current speed
+function GPPM(){return _GPPM_BASE*_noteSpeed;}
 const WP=50,WG=100,WO=150;
 const GKEYS=['d','f','j','k'];
 // Dynamic dimensions — read from canvas each frame
@@ -2010,7 +2090,7 @@ function GW(){return cv.width||440;}
 function GH(){return cv.height||620;}
 function GLW(){return GW()/GLANES;}
 function GHIT_Y(){return GH()-90;}
-function GAPP_MS(){return(GHIT_Y()+GNR)/GPPM;}
+function GAPP_MS(){return(GHIT_Y()+GNR)/GPPM();}
 let aud=null,_cBase=0,_cOff=0;
 function sNow(){return aud&&!aud.paused?_cOff+(performance.now()-_cBase):aud?aud.currentTime*1000:0;}
 function playAudGame(){aud.currentTime=0;return aud.play().then(()=>{_cBase=performance.now();_cOff=0;}).catch(e=>console.warn(e));}
@@ -2149,7 +2229,10 @@ function stopAll(){
   _paused=false;
   if(_countdownRaf)cancelAnimationFrame(_countdownRaf);_countdownRaf=null;
   const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
-  running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
+  running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}
+  laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
+  broadcastPlaying(null,null); // clear now-playing
+  stopSpectate();
 }
 function showOv(html){document.getElementById('ov').innerHTML=html;document.getElementById('ov').style.display='flex';}
 function hideOv(){document.getElementById('ov').style.display='none';}
@@ -2445,7 +2528,7 @@ function watchLoop(){
     notes.push({lane:b.lane,sMs:b.sMs,hMs:b.hMs||0,hit:false,missed:false,holding:false,hp:0,cy:0});
   }
   for(let n of notes){
-    n.cy=GHIT_Y()-(n.sMs-now)*GPPM;
+    n.cy=GHIT_Y()-(n.sMs-now)*GPPM();
     if(!n.hit&&!n.missed&&!n.holding&&Math.abs(now-n.sMs)<18){
       if(n.hMs>80){n.holding=true;laneHolding[n.lane]=true;pulseTimer[n.lane]=0;}
       else{n.hit=true;burstP(n.lane,n.cy);}
@@ -2545,6 +2628,7 @@ function startPlay(){
   aud.playbackRate=spd;
   aud.onerror=()=>{running=false;showOv(`<div class="ov-title">AUDIO ERROR</div><div class="ov-sub" style="color:#ff4444">FILE NOT FOUND</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
   playAudGame().then(()=>{initAnalyser(aud);running=true;raf2=requestAnimationFrame(pLoop2);});
+  broadcastPlaying(CS?.id,CS?.title||'');
 }
 function pLoop2(){if(!running||mode!=='play')return;pUpdate2();drawPlay2();raf2=requestAnimationFrame(pLoop2);}
 function pUpdate2(){
@@ -2556,7 +2640,7 @@ function pUpdate2(){
   }
   while(bpIdx<beatmap.length&&now>=beatmap[bpIdx].sMs-GAPP_MS()){const b=beatmap[bpIdx++];notes.push({lane:b.lane,sMs:b.sMs,hMs:b.hMs||0,hit:false,missed:false,holding:false,hp:0,cy:0});}
   for(let n of notes){
-    n.cy=GHIT_Y()-(n.sMs-now)*GPPM;
+    n.cy=GHIT_Y()-(n.sMs-now)*GPPM();
     if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){n.missed=true;combo=0;gstats.m++;judgeShow('MISS','#ff4444');laneHolding[n.lane]=false;}
     if(n.holding){n.hp=Math.min(1,(now-n.sMs)/Math.max(n.hMs,1));if(n.hp>=1){n.hit=true;n.holding=false;laneHolding[n.lane]=false;combo++;if(combo>maxC)maxC=combo;score+=Math.floor(200*(1+combo*.04));judgeShow('PERFECT','#00f0ff');burstP(n.lane,GHIT_Y());}}
   }
@@ -2747,7 +2831,7 @@ function drawPlay2(){
     const cx=n.lane*GLW()+GLW()/2,ny=n.cy;const[r,g,b]=rgbC(COLS[n.lane]);
     if(n.missed){ctx2.fillStyle=`rgba(${r},${g},${b},.08)`;ctx2.beginPath();ctx2.arc(cx,ny,GNR,0,Math.PI*2);ctx2.fill();continue;}
     if(n.hMs>80){
-      const hpx=n.hMs*GPPM;let bt,bh;
+      const hpx=n.hMs*GPPM();let bt,bh;
       if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}
       ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);
       ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);
@@ -2792,7 +2876,7 @@ function drawPlay2_nofire(){
     if(n.hit&&!n.holding)continue;
     const cx=n.lane*GLW()+GLW()/2,ny=n.cy;const[r,g,b]=rgbC(COLS[n.lane]);
     if(n.missed){ctx2.fillStyle=`rgba(${r},${g},${b},.08)`;ctx2.beginPath();ctx2.arc(cx,ny,GNR,0,Math.PI*2);ctx2.fill();continue;}
-    if(n.hMs>80){const hpx=n.hMs*GPPM;let bt,bh;if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);if(n.holding){ctx2.fillStyle=`rgba(${r},${g},${b},.95)`;ctx2.fillRect(cx-GNR*.38,GHIT_Y()+20-hpx*(1-n.hp)-3,GNR*.76,4);}}
+    if(n.hMs>80){const hpx=n.hMs*GPPM();let bt,bh;if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);if(n.holding){ctx2.fillStyle=`rgba(${r},${g},${b},.95)`;ctx2.fillRect(cx-GNR*.38,GHIT_Y()+20-hpx*(1-n.hp)-3,GNR*.76,4);}}
     const grd=ctx2.createRadialGradient(cx,ny,0,cx,ny,GNR+8);grd.addColorStop(0,`rgba(${r},${g},${b},.55)`);grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
     ctx2.fillStyle=grd;ctx2.beginPath();ctx2.arc(cx,ny,GNR+8,0,Math.PI*2);ctx2.fill();
     const nr=n.holding?GNR*(1+Math.sin(fn*.18)*.08):GNR;
@@ -2805,7 +2889,7 @@ function drawPlay2_nofire(){
 }
 function drawRec2(){
   drawBase();
-  for(let n of rNotes2){const age=(now-n.sMs)/1800;if(age<0||age>1)continue;const[r,g,b]=rgbC(COLS[n.lane]),cx=n.lane*GLW()+GLW()/2,gy=GHIT_Y()-(now-n.sMs)*GPPM;if(n.hMs>80){const hpx=n.hMs*GPPM;ctx2.fillStyle=`rgba(${r},${g},${b},${(1-age)*.18})`;ctx2.fillRect(cx-GNR*.38,gy-hpx,GNR*.76,hpx);}ctx2.fillStyle=`rgba(${r},${g},${b},${(1-age)*.55})`;ctx2.beginPath();ctx2.arc(cx,gy,GNR*(1-age*.4),0,Math.PI*2);ctx2.fill();}
+  for(let n of rNotes2){const age=(now-n.sMs)/1800;if(age<0||age>1)continue;const[r,g,b]=rgbC(COLS[n.lane]),cx=n.lane*GLW()+GLW()/2,gy=GHIT_Y()-(now-n.sMs)*GPPM();if(n.hMs>80){const hpx=n.hMs*GPPM();ctx2.fillStyle=`rgba(${r},${g},${b},${(1-age)*.18})`;ctx2.fillRect(cx-GNR*.38,gy-hpx,GNR*.76,hpx);}ctx2.fillStyle=`rgba(${r},${g},${b},${(1-age)*.55})`;ctx2.beginPath();ctx2.arc(cx,gy,GNR*(1-age*.4),0,Math.PI*2);ctx2.fill();}
   drawParts2();
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#ff4444';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
   fl=fl.map(v=>Math.max(0,v-1));tickP();tickPulses();
@@ -2841,6 +2925,22 @@ function toggleEffectsSetting(){
   const btn=document.getElementById('effects-toggle-btn');
   if(btn){btn.textContent=effectsEnabled?'ON':'OFF';btn.style.borderColor=effectsEnabled?'#00ff8844':'#ff444433';btn.style.color=effectsEnabled?'var(--green)':'var(--red)';btn.style.background=effectsEnabled?'#00ff8811':'#ff44441a';}
 }
+function setNoteSpeed(v){
+  _noteSpeed=v;
+  try{localStorage.setItem('bl_notespeed',v);}catch(e){}
+  document.getElementById('note-speed-display').textContent=v+'×';
+  // update button highlights
+  [1,1.5,2,2.5,3,4].forEach(s=>{
+    const btn=document.getElementById('ns-'+s);
+    if(!btn)return;
+    btn.className=s===v?'xbtn sm cy':'xbtn sm';
+  });
+}
+function loadNoteSpeed(){
+  try{const v=parseFloat(localStorage.getItem('bl_notespeed'));if(v&&!isNaN(v))_noteSpeed=v;}catch(e){}
+  setNoteSpeed(_noteSpeed);
+}
+window.setNoteSpeed=setNoteSpeed;
 function loadEffectsSetting(){
   try{const v=localStorage.getItem('bl_effects');if(v==='0')effectsEnabled=false;}catch(e){}
   const btn=document.getElementById('effects-toggle-btn');
@@ -3050,6 +3150,8 @@ window.onFnInput=onFnInput;window.crStartRec=crStartRec;window.crStopClick=crSto
 window.crPreview=crPreview;window.crClearNotes=crClearNotes;window.crPublish=crPublish;
 window.confirmLeaveCreate=confirmLeaveCreate;window.endRecord=endRecord;window.initPlay=initPlay;
 window.startPlay=startPlay;window.startAdminRec=startAdminRec;window.goBack=goBack;
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadKeys();loadEffectsSetting();loadNoteSpeed();
 </script>
 </body>
 </html>
