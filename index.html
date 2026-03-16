@@ -1475,14 +1475,23 @@ function loadMyPreset(){
 async function saveEffects(){
   const spd=parseFloat(document.getElementById('watch-speed')?.value)||1;
   if(!CS?.id||CS.preview){toast('PUBLISH THE LEVEL FIRST!','#ff4444');return;}
+  if(!watchEffectEvents.length&&spd===1){toast('NO EFFECTS TO SAVE','#ffaa00');return;}
+  const btn=document.querySelector('[onclick="saveEffects()"]');
+  if(btn)btn.textContent='SAVING...';
   try{
-    const data={effectEvents:watchEffectEvents,fireRanges:watchEffectEvents.filter(e=>e.type==='fire'),speedEffect:spd,updatedAt:sts()};
+    // Firestore arrays must be plain objects — strip any prototype methods
+    const eventsToSave=JSON.parse(JSON.stringify(watchEffectEvents));
+    const data={effectEvents:eventsToSave,fireRanges:eventsToSave.filter(e=>e.type==='fire'),speedEffect:spd,updatedAt:sts()};
     await dUpd(dDoc('songs',CS.id),data);
-    CS.effectEvents=JSON.parse(JSON.stringify(watchEffectEvents));
+    CS.effectEvents=eventsToSave;
     CS.fireRanges=data.fireRanges;
     CS.speedEffect=spd;
-    toast('EFFECTS SAVED! ✓','#00ff88');
-  }catch(e){toast('SAVE FAILED: '+e.message,'#ff4444');}
+    toast(`SAVED ${eventsToSave.length} EFFECTS ✓`,'#00ff88');
+  }catch(e){
+    console.error('saveEffects error',e);
+    toast('SAVE FAILED: '+e.message,'#ff4444');
+  }
+  if(btn)btn.textContent='[ SAVE ]';
 }
 
 
