@@ -776,8 +776,8 @@ function initCreatePage(existing=null){
   crFireStart=existing?.fireStart||0;
   crAllowDim=existing?.dimEffect||false;
   crSpeed=existing?.speedEffect||1;
-  document.getElementById('cr-fire-start').value=crFireStart||'';
-  document.getElementById('cr-speed').value=String(crSpeed);
+  const fsEl=document.getElementById('cr-fire-start');if(fsEl)fsEl.value=crFireStart||'';
+  const spEl=document.getElementById('cr-speed');if(spEl)spEl.value=String(crSpeed);
   const fBtn=document.getElementById('cr-fire-toggle');
   if(fBtn){
     if(crAllowFire){fBtn.textContent='YES — FIRE ON';fBtn.style.borderColor='#00ff8844';fBtn.style.color='var(--green)';fBtn.style.background='#00ff8811';}
@@ -1052,8 +1052,8 @@ async function crPublish(){
   document.getElementById('cr-pub-btn').disabled=true;document.getElementById('cr-pub-btn').textContent='[ PUBLISHING... ]';
   try{
     const bgImage=document.getElementById('cr-bg').value.trim();
-    const fireStart=parseFloat(document.getElementById('cr-fire-start').value)||0;
-    const speedEffect=parseFloat(document.getElementById('cr-speed').value)||1;
+    const fireStart=parseFloat(document.getElementById('cr-fire-start')?.value)||0;
+    const speedEffect=parseFloat(document.getElementById('cr-speed')?.value)||1;
     const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',allowFire:crAllowFire,fireStart,dimEffect:crAllowDim,speedEffect,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
     if(ESI){await dUpd(dDoc('songs',ESI),data);toast('LEVEL UPDATED!','#00ff88');}
     else{data.createdAt=sts();await dAdd('songs',data);toast('LEVEL PUBLISHED!','#00ff88');}
