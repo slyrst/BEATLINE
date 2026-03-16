@@ -328,6 +328,22 @@ canvas#cv{display:block;width:440px;height:620px;}
 .confirm-box{background:var(--bg3);border:1px solid var(--border);padding:28px 32px;max-width:340px;width:90%;display:flex;flex-direction:column;gap:14px;align-items:center;}
 .confirm-msg{font-size:12px;color:var(--text2);letter-spacing:2px;text-align:center;line-height:1.9;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
+/* NOTIFICATION POPUP */
+#notif-stack{position:fixed;bottom:60px;right:16px;display:flex;flex-direction:column-reverse;gap:8px;z-index:500;align-items:flex-end;pointer-events:none;}
+@media(max-width:600px){#notif-stack{bottom:auto;top:12px;right:8px;left:8px;align-items:stretch;flex-direction:column;}}
+.notif-card{background:rgba(10,10,22,0.97);border:1px solid var(--border);padding:10px 14px;min-width:240px;max-width:300px;display:flex;align-items:flex-start;gap:10px;pointer-events:all;box-shadow:0 4px 24px rgba(0,0,0,.6);transform:translateX(120%);transition:transform .3s cubic-bezier(.2,.8,.3,1),opacity .3s;cursor:pointer;}
+@media(max-width:600px){.notif-card{transform:translateY(-80px);max-width:100%;min-width:0;}}
+.notif-card.show{transform:translateX(0)!important;}
+@media(max-width:600px){.notif-card.show{transform:translateY(0)!important;}}
+.notif-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.notif-body{flex:1;min-width:0;}
+.notif-title{font-size:9px;letter-spacing:3px;margin-bottom:3px;}
+.notif-title.notif-friend{color:var(--pink);}
+.notif-title.notif-msg{color:var(--cyan);}
+.notif-title.notif-song{color:var(--green);}
+.notif-text{font-size:11px;color:#aaa;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.notif-close{font-size:14px;color:#444;flex-shrink:0;cursor:pointer;margin-top:-2px;padding:0 2px;line-height:1;}
+.notif-close:hover{color:#fff;}
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -339,6 +355,7 @@ canvas#cv{display:block;width:440px;height:620px;}
   <div class="spinner"></div>
   <div id="loading-text">CONNECTING...</div>
 </div>
+<div id="notif-stack"></div>
 <div id="toast"></div>
 <div id="confirm-modal">
   <div class="confirm-box">
@@ -830,25 +847,9 @@ let isGuest=false,guestName='GUEST';
 
 async function doGuest(){
   let name=(document.getElementById('guest-name-input')?.value||'').trim().toUpperCase()||'GUEST';
-  // check uniqueness against users collection, find a unique name
-  try{
-    const snap=await dQ('users',W('username','==',name));
-    const snap2=await dQ('guestNames',W('name','==',name));
-    if(!snap.empty||!snap2.empty){
-      // find next available number
-      let n=2;
-      while(true){
-        const candidate=name+' '+n;
-        const s1=await dQ('users',W('username','==',candidate));
-        const s2=await dQ('guestNames',W('name','==',candidate));
-        if(s1.empty&&s2.empty){name=candidate;break;}
-        n++;
-        if(n>99){name=name+' '+Date.now()%1000;break;}
-      }
-    }
-    // register this guest name so nobody gets the same one
-    await dAdd('guestNames',{name,createdAt:sts()});
-  }catch(e){/* offline fallback */}
+  if(!name)name='GUEST';
+
+  // Set guest state IMMEDIATELY — don't wait for Firestore
   guestName=name;
   isGuest=true;CU=null;CUD=null;ADM=false;
   document.getElementById('menu-username').textContent=guestName;
@@ -858,6 +859,35 @@ async function doGuest(){
   const nd=document.getElementById('guest-name-display');
   if(nd)nd.textContent='playing as '+guestName+' · scores saved';
   hideLoad();showPage('menu-page');updateBottomBar();
+
+  // Check uniqueness and register in background — doesn't block UI
+  (async()=>{
+    try{
+      const [snap,snap2]=await Promise.all([
+        dQ('users',W('username','==',name)),
+        dQ('guestNames',W('name','==',name))
+      ]);
+      if(!snap.empty||!snap2.empty){
+        // Name taken — append number, fast
+        let n=2,finalName=name;
+        while(n<=20){
+          const candidate=name+' '+n;
+          const [s1,s2]=await Promise.all([
+            dQ('users',W('username','==',candidate)),
+            dQ('guestNames',W('name','==',candidate))
+          ]);
+          if(s1.empty&&s2.empty){finalName=candidate;break;}
+          n++;
+        }
+        if(finalName!==name){
+          guestName=finalName;
+          document.getElementById('menu-username').textContent=guestName;
+          if(nd)nd.textContent='playing as '+guestName+' · scores saved';
+        }
+      }
+      await dAdd('guestNames',{name:guestName,createdAt:sts()});
+    }catch(e){/* offline — fine, name may not be unique */}
+  })();
 }
 
 auth.onAuthStateChanged(async user=>{
@@ -1502,14 +1532,96 @@ async function loadFriendsPage(){
 }
 
 // Global notif listener — starts after login
-let _globalReqUnsub=null;
+// ── NOTIFICATIONS ─────────────────────────────────────────────────────────────
+let _globalReqUnsub=null,_globalMsgUnsub=null,_globalSongUnsub=null;
+let _seenNotifs=new Set(); // prevent re-showing on reconnect
+
+function showNotif(icon,titleText,titleClass,text,onClick){
+  const stack=document.getElementById('notif-stack');if(!stack)return;
+  const card=document.createElement('div');card.className='notif-card';
+  card.innerHTML=`<div class="notif-icon">${icon}</div>
+    <div class="notif-body" onclick="">
+      <div class="notif-title ${titleClass}">${titleText}</div>
+      <div class="notif-text">${esc(text)}</div>
+    </div>
+    <div class="notif-close" onclick="event.stopPropagation();this.closest('.notif-card').remove()">✕</div>`;
+  card.onclick=()=>{card.remove();if(onClick)onClick();};
+  stack.appendChild(card);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>card.classList.add('show')));
+  setTimeout(()=>{card.style.opacity='0';setTimeout(()=>card.remove(),300);},6000);
+}
+
 function startGlobalNotifListener(){
-  if(!CU||_globalReqUnsub)return;
-  _globalReqUnsub=db.collection('friendRequests').where('to','==',CU.uid)
-    .onSnapshot(snap=>{
-      const dot=document.getElementById('friend-notif-dot');
-      if(dot)dot.style.display=snap.empty?'none':'inline-block';
-    });
+  if(!CU)return;
+
+  // 1. Friend requests
+  if(!_globalReqUnsub){
+    let _firstFRLoad=true;
+    _globalReqUnsub=db.collection('friendRequests').where('to','==',CU.uid)
+      .onSnapshot(snap=>{
+        const dot=document.getElementById('friend-notif-dot');
+        if(dot)dot.style.display=snap.empty?'none':'inline-block';
+        if(_firstFRLoad){_firstFRLoad=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
+        snap.docChanges().forEach(change=>{
+          if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
+            _seenNotifs.add(change.doc.id);
+            const r=change.doc.data();
+            showNotif('👤','FRIEND REQUEST','notif-friend',
+              (r.fromName||'?')+' sent you a request',
+              ()=>{showPage('friends-page');loadFriendsPage();});
+          }
+        });
+      });
+  }
+
+  // 2. New chat messages (listen to all chats with this user as recipient)
+  if(!_globalMsgUnsub){
+    const friends=CUD?.friends||[];
+    if(friends.length){
+      // listen to most recent message in each chat
+      let _firstMsgLoad=true;
+      const chatIds=friends.map(fid=>[CU.uid,fid].sort().join('_'));
+      // onSnapshot per chat is expensive — listen to a single query via 'to' field
+      _globalMsgUnsub=db.collectionGroup('messages')
+        .where('to','==',CU.uid)
+        .orderBy('createdAt','desc')
+        .limit(1)
+        .onSnapshot(snap=>{
+          if(_firstMsgLoad){_firstMsgLoad=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
+          snap.docChanges().forEach(change=>{
+            if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
+              _seenNotifs.add(change.doc.id);
+              const m=change.doc.data();
+              // don't notify if chat is currently open with this sender
+              if(_chatFriendId===m.from)return;
+              const preview=m.img?'📷 image':m.text||'';
+              showNotif('💬','NEW MESSAGE','notif-msg',
+                (m.fromName||'?')+': '+preview,
+                ()=>{if(m.from)openChat(m.from,m.fromName||'?');});
+            }
+          });
+        });
+    }
+  }
+
+  // 3. New songs published
+  if(!_globalSongUnsub){
+    let _firstSongLoad=true;
+    _globalSongUnsub=db.collection('songs').orderBy('createdAt','desc').limit(5)
+      .onSnapshot(snap=>{
+        if(_firstSongLoad){_firstSongLoad=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
+        snap.docChanges().forEach(change=>{
+          if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
+            _seenNotifs.add(change.doc.id);
+            const s=change.doc.data();
+            if(s.authorId===CU.uid)return; // don't notify own publishes
+            showNotif('🎵','NEW SONG PUBLISHED','notif-song',
+              (s.title||'?')+' by '+(s.authorName||'?'),
+              ()=>{showPage('songs-page');});
+          }
+        });
+      });
+  }
 }
 // ── CHAT ──────────────────────────────────────────────────────────────────────
 let _chatFriendId=null,_chatFriendName='',_chatUnsub=null;
