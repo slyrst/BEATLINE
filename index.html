@@ -809,7 +809,7 @@ auth.onAuthStateChanged(async user=>{
     // show admin section in settings
     const adminSec=document.getElementById('admin-section');
     if(adminSec)adminSec.style.display=ADM?'block':'none';
-    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();
+    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();
   }else{
     // only go to auth page if not already in guest mode
     if(!isGuest){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
@@ -923,7 +923,7 @@ async function adminRecoverAccount(){
 }
 window.adminRecoverAccount=adminRecoverAccount;
 async function doLogout(){
-  stopAll();isGuest=false;
+  stopPresence();stopAll();isGuest=false;
   if(CU)await auth.signOut();
   else{CU=null;CUD=null;ADM=false;showPage('auth-page');}
 }
@@ -974,7 +974,34 @@ async function editSong(id){
   ESI=id;initCreatePage({id,...d});hideLoad();showPage('create-page');
 }
 
-// ── BOTTOM BAR ────────────────────────────────────────────────────────────────
+// ── PRESENCE ─────────────────────────────────────────────────────────────────
+let _presenceInterval=null;
+function startPresence(){
+  if(!CU)return;
+  const updatePresence=()=>dUpd(dDoc('users',CU.uid),{lastSeen:firebase.firestore.FieldValue.serverTimestamp(),online:true}).catch(()=>{});
+  updatePresence();
+  _presenceInterval=setInterval(updatePresence,30000);
+  // mark offline on page hide/unload
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden)dUpd(dDoc('users',CU.uid),{online:false}).catch(()=>{});
+    else updatePresence();
+  });
+  window.addEventListener('beforeunload',()=>navigator.sendBeacon&&dUpd(dDoc('users',CU.uid),{online:false}).catch(()=>{}));
+}
+function stopPresence(){
+  clearInterval(_presenceInterval);_presenceInterval=null;
+  if(CU)dUpd(dDoc('users',CU.uid),{online:false}).catch(()=>{});
+}
+function isOnline(ud){
+  if(!ud)return false;
+  if(ud.online===false)return false;
+  if(!ud.lastSeen)return false;
+  const t=ud.lastSeen.toDate?ud.lastSeen.toDate():new Date(ud.lastSeen);
+  return(Date.now()-t.getTime())<90000; // 90s threshold
+}
+function onlineDot(online){
+  return`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${online?'#00ff88':'#333'};margin-left:5px;vertical-align:middle;" title="${online?'ONLINE':'OFFLINE'}"></span>`;
+}
 function updateBottomBar(){
   const bar=document.getElementById('menu-bottom-bar');
   if(!bar)return;
@@ -1098,7 +1125,7 @@ async function openProfile(uid, backPage){
         </div>
         <div class="profile-info">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div class="profile-name">${esc(username)}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
+            <div class="profile-name">${esc(username)}${onlineDot(isOnline(ud))}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
             ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;letter-spacing:2px;" onclick="startEditUsername()">✏ RENAME</button>`:''}
           </div>
           ${bioSection}
@@ -1305,7 +1332,7 @@ async function loadFriendsPage(){
         const av=fd.avatar?`<img src="${esc(fd.avatar)}" style="width:36px;height:36px;object-fit:cover;">`:`<div class="friend-avatar">${(fd.username||'?').slice(0,2).toUpperCase()}</div>`;
         rows+=`<div class="friend-row">
           ${av}
-          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">${esc(fd.username||'?')}</div>
+          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}</div>
           <button class="xbtn sm" onclick="openChat('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:var(--cyan);border-color:#00f0ff33;">💬</button>
           <button class="xbtn sm rd" onclick="removeFriend('${fid}')" style="padding:3px 8px;font-size:9px;">✕</button>
         </div>`;
