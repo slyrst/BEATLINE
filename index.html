@@ -156,6 +156,7 @@ canvas#cv{display:block;width:440px;height:620px;}
   flex-shrink:0;
   user-select:none;
   -webkit-user-select:none;
+  touch-action:none;
 }
 .khi{
   flex:1;
@@ -245,8 +246,7 @@ canvas#cv{display:block;width:440px;height:620px;}
 #stopbtn{display:none;position:absolute;bottom:14px;left:50%;transform:translateX(-50%);background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:11px;letter-spacing:4px;padding:9px 22px;cursor:pointer;z-index:16;white-space:nowrap;}
 #stopbtn:hover{background:var(--red);color:#000;border-color:var(--red);}
 #ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(5,5,13,.96);z-index:20;padding:20px;overflow-y:auto;}
-#kh{display:flex;width:440px;}
-.khi{flex:1;text-align:center;font-size:10px;padding:5px 0 2px;letter-spacing:2px;border-top:1px solid #0f0f1e;}
+#kh{display:flex;width:440px;user-select:none;-webkit-user-select:none;touch-action:none;}
 .ov-title{font-size:38px;letter-spacing:8px;color:#fff;margin-bottom:4px;text-shadow:0 0 30px rgba(0,240,255,.3);text-align:center;}
 .ov-song{font-size:13px;letter-spacing:3px;color:var(--text2);margin-bottom:4px;text-align:center;}
 .ov-artist{font-size:10px;color:#444;letter-spacing:3px;margin-bottom:20px;text-align:center;}
