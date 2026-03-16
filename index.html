@@ -1502,11 +1502,16 @@ function watchLoop(){
 function exitWatch(){
   watchMode=false;autoMode=false;
   cancelAnimationFrame(watchRaf);
-  stopAll();
-  const gc=document.getElementById('gc');if(gc){gc.style.filter='';gc.style.transform='';}
+  running=false;
+  if(aud){aud.pause();aud=null;}
+  const gc=document.getElementById('gc');
+  if(gc){gc.style.filter='';gc.style.transform='';}
   document.getElementById('watch-bar').style.display='none';
   document.getElementById('dim-overlay').style.display='none';
-  initPlay();
+  document.getElementById('streak-popup').style.opacity='0';
+  document.getElementById('ov').style.display='none';
+  // small delay so RAF fully stops before reinit
+  setTimeout(()=>initPlay(),50);
 }
 function toggleAuto(){
   autoMode=!autoMode;
