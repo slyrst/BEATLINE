@@ -658,9 +658,16 @@ function renderLB(snap){
   const list=document.getElementById('lb-list');
   if(snap.empty){list.innerHTML='<div class="empty-state">NO SCORES YET<br>BE THE FIRST!</div>';return;}
   list.innerHTML='';let rk=1;
-  snap.forEach(d=>{const sc=d.data(),me=sc.userId===CU?.uid;const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[sc.grade]||'#aaa';
+  snap.forEach(d=>{
+    const sc=d.data(),me=sc.userId===CU?.uid;
+    const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[sc.grade]||'#aaa';
+    const fc=sc.miss===0&&sc.fullCombo?`<span style="font-size:9px;letter-spacing:2px;color:var(--amber);border:1px solid var(--amber);padding:1px 5px;margin-left:6px;">FC</span>`:'';
     const row=document.createElement('div');row.className='lb-row'+(me?' lb-me':'');
-    row.innerHTML=`<div class="lb-rank ${rk===1?'r1':rk===2?'r2':rk===3?'r3':''}">${rk}</div><div class="lb-name">${esc(sc.username||'?')}${me?' ◄':''}</div><div class="lb-grade" style="color:${gc}">${sc.grade||'?'}</div><div><div class="lb-score">${(sc.score||0).toLocaleString()}</div><div class="lb-acc">${sc.accuracy||0}% · ${sc.maxCombo||0}×</div></div>`;
+    row.innerHTML=`<div class="lb-rank ${rk===1?'r1':rk===2?'r2':rk===3?'r3':''}">${rk}</div>
+      <div class="lb-name">${esc(sc.username||'?')}${fc}${me?' ◄':''}</div>
+      <div class="lb-grade" style="color:${gc}">${sc.grade||'?'}</div>
+      <div><div class="lb-score">${(sc.score||0).toLocaleString()}</div>
+      <div class="lb-acc">${sc.accuracy||0}% · ${sc.maxCombo||0}×</div></div>`;
     list.appendChild(row);rk++;});
 }
 
