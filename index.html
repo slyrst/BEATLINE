@@ -129,7 +129,10 @@ body{background:var(--bg);font-family:'Courier New',monospace;color:var(--text);
 .file-pick-name{font-size:12px;letter-spacing:2px;color:var(--green);min-height:16px;}
 .file-pick-name.empty{color:#252540;}
 input[type=file]#cr-file{display:none;}
-/* GAME */
+/* EFFECT EDIT BUTTONS */
+.eff-btn{background:transparent;border:1px solid color-mix(in srgb,var(--ec) 30%,transparent);color:var(--ec,#aaa);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:4px 9px;cursor:pointer;transition:background .1s;}
+.eff-btn:hover{background:color-mix(in srgb,var(--ec) 15%,transparent);}
+.eff-btn.active{background:color-mix(in srgb,var(--ec) 25%,transparent);border-color:var(--ec);}
 #game-page{justify-content:center;align-items:center;overflow:hidden;}
 #game-wrap{
   display:flex;flex-direction:column;
@@ -544,21 +547,40 @@ canvas#cv{display:block;width:440px;height:620px;}
         <!-- fire ranges list -->
         <div id="fire-range-list" style="margin-bottom:8px;min-height:16px;"></div>
         <!-- controls -->
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          <div style="font-size:9px;color:#333;letter-spacing:2px;">EFFECT EDIT</div>
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:9px;color:#444;letter-spacing:2px;">EFFECT EDIT MODE</span>
           <div style="flex:1;"></div>
-          <div style="font-size:9px;color:#333;letter-spacing:2px;">SPEED</div>
-          <select id="watch-speed" onchange="applyWatchSpeed()" style="background:#0d0d1a;border:1px solid #252540;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 6px;cursor:pointer;">
-            <option value="0.75">0.75×</option>
-            <option value="1" selected>1×</option>
-            <option value="1.25">1.25×</option>
-            <option value="1.5">1.5×</option>
-          </select>
-          <button id="fire-add-btn" onclick="addFireRangeClick()" style="background:#ffaa0011;border:1px solid #ffaa0044;color:var(--amber);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:4px 10px;cursor:pointer;">🔥 SET FIRE START</button>
-          <button onclick="clearAllFireRanges()" style="background:none;border:1px solid #333;color:#444;font-family:'Courier New',monospace;font-size:9px;padding:4px 8px;cursor:pointer;">CLEAR ALL</button>
-          <button onclick="saveEffects()" style="background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:5px 12px;cursor:pointer;">[ SAVE ]</button>
+          <button onclick="saveEffects()" style="background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:5px 14px;cursor:pointer;font-weight:bold;">[ SAVE ]</button>
           <button onclick="exitWatch()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">✕ EXIT</button>
         </div>
+        <!-- effect type picker -->
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:9px;color:#333;letter-spacing:2px;align-self:center;">ADD:</span>
+          <button class="eff-btn" data-type="fire"    onclick="startEffectRange('fire')"    style="--ec:#ffaa00;">🔥 FIRE</button>
+          <button class="eff-btn" data-type="speed"   onclick="startEffectRange('speed')"   style="--ec:#00f0ff;">⚡ SPEED</button>
+          <button class="eff-btn" data-type="dark"    onclick="startEffectRange('dark')"    style="--ec:#aaaaaa;">🌑 DARK</button>
+          <button class="eff-btn" data-type="flash"   onclick="startEffectRange('flash')"   style="--ec:#ffffff;">💡 FLASH</button>
+          <button class="eff-btn" data-type="shake"   onclick="startEffectRange('shake')"   style="--ec:#ff4444;">💥 SHAKE</button>
+          <button class="eff-btn" data-type="red"     onclick="startEffectRange('red')"     style="--ec:#ff4444;">🔴 RED</button>
+          <button class="eff-btn" data-type="blue"    onclick="startEffectRange('blue')"    style="--ec:#4488ff;">🔵 BLUE</button>
+          <button class="eff-btn" data-type="invert"  onclick="startEffectRange('invert')"  style="--ec:#ff00aa;">🌀 INVERT</button>
+          <button class="eff-btn" data-type="rainbow" onclick="startEffectRange('rainbow')" style="--ec:#ff44ff;">🌈 RAINBOW</button>
+        </div>
+        <!-- speed value picker (shown when speed mode) -->
+        <div id="speed-val-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:9px;color:var(--cyan);letter-spacing:2px;">SPEED VALUE:</span>
+          <select id="effect-speed-val" style="background:#0d0d1a;border:1px solid #252540;color:#fff;font-family:'Courier New',monospace;font-size:10px;padding:3px 8px;">
+            <option value="0.5">0.5× (HALF)</option>
+            <option value="0.75">0.75× (SLOW)</option>
+            <option value="1.25">1.25× (FAST)</option>
+            <option value="1.5">1.5× (FASTER)</option>
+            <option value="2">2× (DOUBLE)</option>
+          </select>
+        </div>
+        <!-- pending label -->
+        <div id="effect-pending-label" style="display:none;font-size:10px;letter-spacing:2px;margin-bottom:6px;padding:4px 10px;border:1px solid;"></div>
+        <!-- event list -->
+        <div id="effect-event-list" style="max-height:120px;overflow-y:auto;"></div>
       </div>
       <button id="stopbtn" onclick="endRecord()">[ STOP &amp; SAVE ]</button>
       <div id="ov"></div>
@@ -1146,15 +1168,47 @@ function hudUpdate(now){
 function stopAll(){running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);}
 function showOv(html){document.getElementById('ov').innerHTML=html;document.getElementById('ov').style.display='flex';}
 function hideOv(){document.getElementById('ov').style.display='none';}
-// ── WATCH / EFFECT EDIT MODE ─────────────────────────────────────────────────
+// ── VISUAL EFFECTS OVERLAY ────────────────────────────────────────────────────
+let _shakeX=0,_shakeY=0,_rainbowHue=0;
+function applyVisualEffects(t){
+  const active=watchEffectEvents.filter(e=>t>=e.s&&t<=e.e&&e.type!=='fire'&&e.type!=='speed');
+  const gc=document.getElementById('gc');
+  if(!gc)return;
+  // reset
+  gc.style.filter='';gc.style.transform='';
+  ctx2.globalCompositeOperation='source-over';
+  const W=GW(),H=GH();
+  for(const ev of active){
+    switch(ev.type){
+      case 'dark':
+        ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(0,0,W,H);break;
+      case 'flash':
+        {const t2=(Date.now()/100)%2;if(t2<1){ctx2.fillStyle='rgba(255,255,255,0.18)';ctx2.fillRect(0,0,W,H);}}break;
+      case 'shake':
+        _shakeX=(Math.random()-0.5)*8;_shakeY=(Math.random()-0.5)*8;
+        gc.style.transform=`translate(${_shakeX}px,${_shakeY}px)`;break;
+      case 'red':
+        ctx2.fillStyle='rgba(255,0,0,0.22)';ctx2.fillRect(0,0,W,H);break;
+      case 'blue':
+        ctx2.fillStyle='rgba(0,80,255,0.22)';ctx2.fillRect(0,0,W,H);break;
+      case 'invert':
+        gc.style.filter='invert(1)';break;
+      case 'rainbow':
+        _rainbowHue=(_rainbowHue+2)%360;
+        gc.style.filter=`hue-rotate(${_rainbowHue}deg) saturate(1.4)`;break;
+    }
+  }
+  if(!active.some(e=>e.type==='shake'))gc.style.transform='';
+  if(!active.some(e=>e.type==='invert'||e.type==='rainbow'))gc.style.filter='';
+}
 let watchMode=false,watchRaf=0,watchFireStart=0;
 
 function startWatch(){
   stopAll();
   if(!CS||!CS.beatmap||!CS.audioUrl){toast('NO SONG DATA','#ff4444');return;}
   watchMode=true;
-  watchFireRanges=CS.fireRanges?JSON.parse(JSON.stringify(CS.fireRanges)):[];
-  pendingFireStart=null;
+  watchEffectEvents=CS.effectEvents?JSON.parse(JSON.stringify(CS.effectEvents)):(CS.fireRanges?CS.fireRanges.map(r=>({...r,type:'fire'})):[]);
+  pendingEffectType=null;pendingEffectStart=null;
   beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:n.time,lane:n.lane,hMs:n.hMs||0})).sort((a,b)=>a.sMs-b.sMs);
   fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
@@ -1211,101 +1265,105 @@ function seekWatch(clientX,track){
   while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;
 }
 
-// ── FIRE RANGES (array of {start, end} in seconds) ───────────────────────────
-let watchFireRanges=[]; // [{s:start, e:end}, ...]
-let pendingFireStart=null; // when user clicked START but not END yet
-
-function updateFireRangesUI(){
+// ── EFFECT EVENTS SYSTEM ─────────────────────────────────────────────────────
+let watchEffectEvents=[];
+let pendingEffectType=null,pendingEffectStart=null;
+const EFFECT_META={
+  fire:  {label:'🔥 FIRE',    col:'#ffaa00'},
+  speed: {label:'⚡ SPEED',   col:'#00f0ff'},
+  dark:  {label:'🌑 DARK',    col:'#888888'},
+  flash: {label:'💡 FLASH',   col:'#ffffff'},
+  shake: {label:'💥 SHAKE',   col:'#ff4444'},
+  red:   {label:'🔴 RED',     col:'#ff4444'},
+  blue:  {label:'🔵 BLUE',    col:'#4488ff'},
+  invert:{label:'🌀 INVERT',  col:'#ff00aa'},
+  rainbow:{label:'🌈 RAINBOW',col:'#ff44ff'},
+};
+window.startEffectRange=function(type){
+  if(pendingEffectType===type&&pendingEffectStart!==null){
+    const end=aud?aud.currentTime:pendingEffectStart+1;
+    if(end>pendingEffectStart){
+      const ev={type,s:pendingEffectStart,e:end};
+      if(type==='speed')ev.val=parseFloat(document.getElementById('effect-speed-val')?.value)||1.5;
+      watchEffectEvents.push(ev);watchEffectEvents.sort((a,b)=>a.s-b.s);
+    }
+    pendingEffectType=null;pendingEffectStart=null;
+    document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
+    document.getElementById('effect-pending-label').style.display='none';
+    const spd=document.getElementById('speed-val-row');if(spd)spd.style.display='none';
+    updateEffectUI();
+  } else {
+    pendingEffectType=type;pendingEffectStart=aud?aud.currentTime:0;
+    document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
+    const btn=document.querySelector('.eff-btn[data-type="'+type+'"]');if(btn)btn.classList.add('active');
+    const m=EFFECT_META[type]||{};
+    const lbl=document.getElementById('effect-pending-label');
+    if(lbl){lbl.style.display='block';lbl.style.color=m.col||'#aaa';lbl.style.borderColor=(m.col||'#aaa')+'66';lbl.textContent=m.label+' START = '+fmtT(pendingEffectStart*1000)+' — seek to END and press again';}
+    const spd=document.getElementById('speed-val-row');if(spd)spd.style.display=type==='speed'?'flex':'none';
+    updateEffectUI();
+  }
+};
+function removeEffectEvent(i){watchEffectEvents.splice(i,1);updateEffectUI();}
+function clearAllFireRanges(){watchEffectEvents=[];pendingEffectType=null;pendingEffectStart=null;document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));const lbl=document.getElementById('effect-pending-label');if(lbl)lbl.style.display='none';updateEffectUI();}
+function addFireRangeClick(){startEffectRange('fire');}
+function isInFireRange(t){return watchEffectEvents.some(e=>e.type==='fire'&&t>=e.s&&t<=e.e);}
+function getActiveEffects(t){return watchEffectEvents.filter(e=>t>=e.s&&t<=e.e);}
+function updateEffectUI(){
   const track=document.getElementById('watch-track');
   if(!track||!aud||!aud.duration)return;
-  // remove old range elements
-  track.querySelectorAll('.fire-range,.fire-pending').forEach(el=>el.remove());
-  // draw existing ranges
-  watchFireRanges.forEach((range,i)=>{
-    const pctS=(range.s/aud.duration)*100;
-    const pctE=(range.e/aud.duration)*100;
-    const el=document.createElement('div');
-    el.className='fire-range';
-    el.style.cssText=`position:absolute;top:0;height:100%;left:${pctS}%;width:${pctE-pctS}%;background:rgba(255,140,0,0.5);border-radius:3px;pointer-events:none;`;
-    // start pin
-    const pin=document.createElement('div');
-    pin.style.cssText=`position:absolute;left:${pctS}%;top:-6px;width:2px;height:18px;background:var(--amber);pointer-events:none;`;
-    const endPin=document.createElement('div');
-    endPin.style.cssText=`position:absolute;left:${pctE}%;top:-6px;width:2px;height:18px;background:#ff6600;pointer-events:none;`;
-    track.appendChild(el);track.appendChild(pin);track.appendChild(endPin);
+  track.querySelectorAll('.eff-zone,.eff-pending').forEach(el=>el.remove());
+  watchEffectEvents.forEach(ev=>{
+    const m=EFFECT_META[ev.type]||{col:'#aaa'};
+    const pctS=(ev.s/aud.duration)*100,pctE=(ev.e/aud.duration)*100;
+    const el=document.createElement('div');el.className='eff-zone';
+    el.style.cssText='position:absolute;top:0;height:100%;left:'+pctS+'%;width:'+Math.max(0.5,pctE-pctS)+'%;background:'+m.col+'55;border-radius:3px;pointer-events:none;';
+    track.appendChild(el);
   });
-  // pending start marker
-  if(pendingFireStart!==null){
-    const pct=(pendingFireStart/aud.duration)*100;
-    const el=document.createElement('div');
-    el.className='fire-pending';
-    el.style.cssText=`position:absolute;left:${pct}%;top:-8px;width:3px;height:22px;background:var(--amber);border-radius:2px;pointer-events:none;animation:blink .5s infinite;`;
+  if(pendingEffectType!==null&&pendingEffectStart!==null){
+    const m=EFFECT_META[pendingEffectType]||{col:'#aaa'};
+    const pct=(pendingEffectStart/aud.duration)*100;
+    const el=document.createElement('div');el.className='eff-pending';
+    el.style.cssText='position:absolute;left:'+pct+'%;top:-8px;width:3px;height:24px;background:'+m.col+';border-radius:2px;pointer-events:none;';
     track.appendChild(el);
   }
-  // update list below
-  renderFireList();
+  const list=document.getElementById('effect-event-list');
+  if(!list)return;
+  if(!watchEffectEvents.length){list.innerHTML='<div style="font-size:9px;color:#333;letter-spacing:2px;padding:4px 0;">no effects yet</div>';return;}
+  list.innerHTML=watchEffectEvents.map(function(ev,i){
+    const m=EFFECT_META[ev.type]||{label:ev.type,col:'#aaa'};
+    const extra=ev.type==='speed'?' ('+ev.val+'x)':'';
+    return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
+      +'<span style="color:'+m.col+';font-size:9px;min-width:85px;">'+m.label+extra+'</span>'
+      +'<span style="color:#555;font-size:9px;">'+fmtT(ev.s*1000)+' → '+fmtT(ev.e*1000)+'</span>'
+      +'<button onclick="seekToRange('+i+')" style="background:none;border:1px solid #333;color:#666;font-size:8px;padding:2px 5px;cursor:pointer;">▶</button>'
+      +'<button onclick="removeEffectEvent('+i+')" style="background:none;border:1px solid #ff444433;color:#ff6666;font-size:8px;padding:2px 5px;cursor:pointer;">✕</button>'
+      +'</div>';}).join('');
 }
-
-function renderFireList(){
-  let el=document.getElementById('fire-range-list');
-  if(!el)return;
-  if(!watchFireRanges.length){el.innerHTML='<span style="color:#333;font-size:9px;letter-spacing:2px;">NO FIRE RANGES YET</span>';return;}
-  el.innerHTML=watchFireRanges.map((r,i)=>`
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-      <span style="color:var(--amber);font-size:10px;">🔥 ${fmtT(r.s*1000)} → ${fmtT(r.e*1000)}</span>
-      <button onclick="removeFireRange(${i})" style="background:none;border:1px solid #ff444433;color:#ff6666;font-size:9px;padding:2px 6px;cursor:pointer;font-family:'Courier New',monospace;">✕</button>
-      <button onclick="seekToRange(${i})" style="background:none;border:1px solid #ffaa0033;color:var(--amber);font-size:9px;padding:2px 6px;cursor:pointer;font-family:'Courier New',monospace;">▶</button>
-    </div>`).join('');
-}
-
-function addFireRangeClick(){
-  if(!aud)return;
-  if(pendingFireStart===null){
-    // set start
-    pendingFireStart=aud.currentTime;
-    document.getElementById('fire-add-btn').textContent='🔥 SET END HERE';
-    document.getElementById('fire-add-btn').style.borderColor='var(--red)';
-    document.getElementById('fire-add-btn').style.color='var(--red)';
-  } else {
-    // set end
-    const end=aud.currentTime;
-    if(end>pendingFireStart){
-      watchFireRanges.push({s:pendingFireStart,e:end});
-      watchFireRanges.sort((a,b)=>a.s-b.s);
-    }
-    pendingFireStart=null;
-    document.getElementById('fire-add-btn').textContent='🔥 SET FIRE START';
-    document.getElementById('fire-add-btn').style.borderColor='#ffaa0044';
-    document.getElementById('fire-add-btn').style.color='var(--amber)';
-  }
-  updateFireRangesUI();
-}
-
-function removeFireRange(i){watchFireRanges.splice(i,1);updateFireRangesUI();}
-function clearAllFireRanges(){watchFireRanges=[];pendingFireStart=null;document.getElementById('fire-add-btn').textContent='🔥 SET FIRE START';document.getElementById('fire-add-btn').style.borderColor='#ffaa0044';document.getElementById('fire-add-btn').style.color='var(--amber)';updateFireRangesUI();}
-function seekToRange(i){if(watchFireRanges[i]&&aud){const track=document.getElementById('watch-track');seekWatch(0,{getBoundingClientRect:()=>({left:0,width:1})});aud.currentTime=watchFireRanges[i].s;_cBase=performance.now();_cOff=aud.currentTime*1000;notes=[];parts=[];ripples=[];laneHolding=[false,false,false,false];holdPulses=[];const nowMs=aud.currentTime*1000;bpIdx=0;while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;}}
-
-function isInFireRange(t){return watchFireRanges.some(r=>t>=r.s&&t<=r.e);}
-
-function updateFireMarkerUI(){updateFireRangesUI();}
-function setFireStartHere(){addFireRangeClick();}
+function updateFireMarkerUI(){updateEffectUI();}
+function setFireStartHere(){startEffectRange('fire');}
 function clearFireStart(){clearAllFireRanges();}
-
-function applyWatchSpeed(){
-  const v=parseFloat(document.getElementById('watch-speed').value)||1;
-  if(aud)aud.playbackRate=v;
+function seekToRange(i){
+  const ev=watchEffectEvents[i];if(!ev||!aud)return;
+  aud.currentTime=ev.s;_cBase=performance.now();_cOff=ev.s*1000;
+  notes=[];parts=[];ripples=[];laneHolding=[false,false,false,false];holdPulses=[];
+  bpIdx=0;const nowMs=ev.s*1000;while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;
 }
-
+function applyWatchSpeed(){const v=parseFloat(document.getElementById('watch-speed')?.value)||1;if(aud)aud.playbackRate=v;}
 async function saveEffects(){
-  if(!CS?.id){toast('PREVIEW ONLY — PUBLISH FIRST','#ff4444');return;}
   const spd=parseFloat(document.getElementById('watch-speed')?.value)||1;
+  // always save locally to CS so effects work in current session
+  CS.effectEvents=JSON.parse(JSON.stringify(watchEffectEvents));
+  CS.fireRanges=watchEffectEvents.filter(e=>e.type==='fire');
+  CS.speedEffect=spd;
+  if(!CS?.id){toast('SAVED LOCALLY (not published yet)','#ffaa00');return;}
   try{
-    await dUpd(dDoc('songs',CS.id),{fireRanges:watchFireRanges,speedEffect:spd,updatedAt:sts()});
-    CS.fireRanges=watchFireRanges;CS.speedEffect=spd;
+    await dUpd(dDoc('songs',CS.id),{effectEvents:watchEffectEvents,fireRanges:CS.fireRanges,speedEffect:spd,updatedAt:sts()});
     toast('EFFECTS SAVED!','#00ff88');
-  }catch(e){toast('SAVE FAILED: '+e.message,'#ff4444');}
+  }catch(e){toast('LOCAL ONLY — DB: '+e.message,'#ffaa00');}
 }
 
+
+let _watchUiTick=0;
 function watchLoop(){
   if(!running||!watchMode)return;
   fn++;
@@ -1315,13 +1373,12 @@ function watchLoop(){
     const b=beatmap[bpIdx++];
     notes.push({lane:b.lane,sMs:b.sMs,hMs:b.hMs||0,hit:false,missed:false,holding:false,hp:0,cy:0});
   }
-  // auto-hit notes perfectly
   for(let n of notes){
     n.cy=GHIT_Y()-(n.sMs-now)*GPPM;
     if(!n.hit&&!n.missed&&!n.holding&&Math.abs(now-n.sMs)<16){
       if(n.hMs>80){n.holding=true;laneHolding[n.lane]=true;pulseTimer[n.lane]=0;}
       else{n.hit=true;burstP(n.lane,n.cy);}
-      combo++;if(combo>maxC)maxC=combo;score+=300;gstats.p++;judgeShow('PERFECT','#00f0ff');
+      combo++;if(combo>maxC)maxC=combo;gstats.p++;judgeShow('PERFECT','#00f0ff');
     }
     if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){n.missed=true;laneHolding[n.lane]=false;}
     if(n.holding){n.hp=Math.min(1,(now-n.sMs)/Math.max(n.hMs,1));if(n.hp>=1){n.hit=true;n.holding=false;laneHolding[n.lane]=false;}}
@@ -1329,23 +1386,28 @@ function watchLoop(){
   notes=notes.filter(n=>!(n.hit&&!n.holding)&&!(n.missed&&n.cy>GH()+60));
   tickP();tickPulses();fl=fl.map(v=>Math.max(0,v-1));
   jAlpha=Math.max(0,jAlpha-.022);document.getElementById('jt').style.opacity=jAlpha;
-  // fire
+  // draw first, then fire on top
+  drawPlay2_nofire();
   if(CS?.allowFire!==false){
     const rawVol=getVolume();
     fireVol=fireVol*0.85+rawVol*0.15;
     if(fireVol>0.45)spawnFire(fireVol,false);
-    if(aud&&isInFireRange(aud.currentTime))spawnFire(Math.min(0.7,0.5+fireVol),true);
+    if(aud&&isInFireRange(aud.currentTime))spawnFire(Math.max(0.6,0.5+fireVol),true);
     drawFire();
   }
-  drawPlay2_nofire(); // draw without double fire call
-  // update timeline UI
-  if(aud&&aud.duration){
+  // visual effects overlay
+  if(aud){
+    applyVisualEffects(aud.currentTime);
+    const speedEv=watchEffectEvents.find(e=>e.type==='speed'&&aud.currentTime>=e.s&&aud.currentTime<=e.e);
+    aud.playbackRate=speedEv?speedEv.val:(CS?.speedEffect||1);
+  }
+  // timeline UI — throttle to every 3rd frame to reduce DOM work
+  _watchUiTick++;
+  if(_watchUiTick%3===0&&aud&&aud.duration){
     const pct=aud.currentTime/aud.duration;
     document.getElementById('watch-fill').style.width=(pct*100)+'%';
     document.getElementById('watch-thumb').style.left=(pct*100)+'%';
     document.getElementById('watch-cur').textContent=fmtT(aud.currentTime*1000);
-    document.getElementById('watch-dur').textContent=fmtT(aud.duration*1000);
-    updateFireMarkerUI();
   }
   watchRaf=requestAnimationFrame(watchLoop);
 }
@@ -1354,6 +1416,7 @@ function exitWatch(){
   watchMode=false;autoMode=false;
   cancelAnimationFrame(watchRaf);
   stopAll();
+  const gc=document.getElementById('gc');if(gc){gc.style.filter='';gc.style.transform='';}
   document.getElementById('watch-bar').style.display='none';
   document.getElementById('dim-overlay').style.display='none';
   initPlay();
@@ -1858,8 +1921,8 @@ function _laneUp(lane){
 })();
 
 window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
-window.startWatch=startWatch;window.exitWatch=exitWatch;window.setFireStartHere=setFireStartHere;window.clearFireStart=clearFireStart;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
-window.addFireRangeClick=addFireRangeClick;window.removeFireRange=removeFireRange;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;
+window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
+window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;
 window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
