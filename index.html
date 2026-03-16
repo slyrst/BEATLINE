@@ -1136,8 +1136,11 @@ function startPresence(){
   updatePresence();
   _presenceInterval=setInterval(updatePresence,30000);
   document.addEventListener('visibilitychange',()=>{
-    if(document.hidden)dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{});
-    else updatePresence();
+    if(document.hidden){
+      dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{});
+      // auto-pause if playing
+      if(mode==='play'&&running&&!_paused)togglePause();
+    } else updatePresence();
   });
   window.addEventListener('beforeunload',()=>navigator.sendBeacon&&dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{}));
 }
