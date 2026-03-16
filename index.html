@@ -1474,22 +1474,30 @@ function loadMyPreset(){
 }
 async function saveEffects(){
   const spd=parseFloat(document.getElementById('watch-speed')?.value)||1;
-  if(!CS?.id||CS.preview){toast('PUBLISH THE LEVEL FIRST!','#ff4444');return;}
-  if(!watchEffectEvents.length&&spd===1){toast('NO EFFECTS TO SAVE','#ffaa00');return;}
+  if(!CS?.id){toast('NO SONG ID','#ff4444');return;}
+  if(CS.preview){toast('PUBLISH THE LEVEL FIRST','#ff4444');return;}
   const btn=document.querySelector('[onclick="saveEffects()"]');
   if(btn)btn.textContent='SAVING...';
   try{
-    // Firestore arrays must be plain objects — strip any prototype methods
     const eventsToSave=JSON.parse(JSON.stringify(watchEffectEvents));
-    const data={effectEvents:eventsToSave,fireRanges:eventsToSave.filter(e=>e.type==='fire'),speedEffect:spd,updatedAt:sts()};
-    await dUpd(dDoc('songs',CS.id),data);
-    CS.effectEvents=eventsToSave;
-    CS.fireRanges=data.fireRanges;
-    CS.speedEffect=spd;
-    toast(`SAVED ${eventsToSave.length} EFFECTS ✓`,'#00ff88');
+    const data={effectEvents:eventsToSave,fireRanges:eventsToSave.filter(e=>e.type==='fire'),speedEffect:spd};
+    // Force server write (bypass cache) using set with merge
+    await db.collection('songs').doc(CS.id).set(data,{merge:true});
+    // Verify it actually saved by reading back from server
+    const verify=await db.collection('songs').doc(CS.id).get({source:'server'});
+    const saved=verify.data();
+    const savedCount=saved?.effectEvents?.length||0;
+    if(savedCount===eventsToSave.length){
+      CS.effectEvents=eventsToSave;
+      CS.fireRanges=data.fireRanges;
+      CS.speedEffect=spd;
+      toast('SAVED '+savedCount+' EFFECTS TO SERVER ✓','#00ff88');
+    } else {
+      toast('WRITE SUCCEEDED BUT VERIFY FAILED ('+savedCount+'/'+eventsToSave.length+')','#ffaa00');
+    }
   }catch(e){
-    console.error('saveEffects error',e);
-    toast('SAVE FAILED: '+e.message,'#ff4444');
+    console.error('saveEffects',e);
+    toast('ERROR: '+e.code+': '+e.message,'#ff4444');
   }
   if(btn)btn.textContent='[ SAVE ]';
 }
