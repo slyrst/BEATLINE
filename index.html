@@ -1146,7 +1146,7 @@ function startPresence(){
 }
 function broadcastPlaying(songId,songTitle){
   if(!CU)return;
-  dUpd(dDoc('users',CU.uid),{playingNow:songId?{songId,songTitle,startedAt:firebase.firestore.FieldValue.serverTimestamp()}:null}).catch(()=>{});
+  dUpd(dDoc('users',CU.uid),{playingNow:songId?{songId,songTitle,startedAt:firebase.firestore.FieldValue.serverTimestamp(),clientStartMs:Date.now()}:null}).catch(()=>{});
 }
 function stopPresence(){
   clearInterval(_presenceInterval);_presenceInterval=null;
@@ -1730,20 +1730,52 @@ async function spectatePlayer(uid,songId){
   if(!uid||!songId)return;
   setLoad('LOADING SONG...');
   try{
-    const [s,efx]=await Promise.all([
+    // Load song, effects, AND host's current position simultaneously
+    const [s,efx,hostSnap]=await Promise.all([
       db.collection('songs').doc(songId).get({source:'server'}).catch(()=>dGet(dDoc('songs',songId))),
-      db.collection('songeffects').doc(songId).get({source:'server'}).catch(()=>db.collection('songeffects').doc(songId).get())
+      db.collection('songeffects').doc(songId).get({source:'server'}).catch(()=>db.collection('songeffects').doc(songId).get()),
+      db.collection('users').doc(uid).get({source:'server'}).catch(()=>dGet(dDoc('users',uid)))
     ]);
     if(!s.exists){hideLoad();toast('SONG NOT FOUND','#ff4444');return;}
     CS={id:songId,...s.data(),spectating:true};
     if(efx.exists){const e=efx.data();CS.effectEvents=e.effectEvents||[];CS.fireRanges=e.fireRanges||[];CS.speedEffect=e.speedEffect||1;}
+
+    // Calculate host's elapsed time
+    let seekTo=0;
+    if(hostSnap.exists){
+      const pn=hostSnap.data()?.playingNow;
+      if(pn?.clientStartMs){
+        seekTo=Math.max(0,(Date.now()-pn.clientStartMs)/1000);
+      } else if(pn?.startedAt){
+        const startMs=pn.startedAt.toDate?pn.startedAt.toDate().getTime():pn.startedAt;
+        seekTo=Math.max(0,(Date.now()-startMs)/1000);
+      }
+    }
+
     _spectatingUid=uid;
     hideLoad();showPage('game-page');
     setTimeout(()=>{
       autoMode=true;
-      // Skip overlay — go straight to playing
       beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:(n.songMs!==undefined?n.songMs:n.time),lane:n.lane,hMs:n.hMs!==undefined?n.hMs:(n.holdMs!==undefined?n.holdMs:(n.hold||0))})).sort((a,b)=>a.sMs-b.sMs);
+      // Start play then seek to host position
       startPlay();
+      if(seekTo>0){
+        // Wait for audio to be ready then seek
+        const trySeek=()=>{
+          if(aud&&aud.readyState>=2){
+            aud.currentTime=Math.min(seekTo,aud.duration||seekTo);
+            _cBase=performance.now();
+            _cOff=aud.currentTime*1000;
+            // rebuild bpIdx from new position
+            notes=[];parts=[];ripples=[];laneHolding=[false,false,false,false];holdPulses=[];
+            bpIdx=0;const nowMs=aud.currentTime*1000;
+            while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;
+          } else {
+            setTimeout(trySeek,100);
+          }
+        };
+        setTimeout(trySeek,200);
+      }
       startSpectateListener(uid);
     },100);
   }catch(e){hideLoad();toast('ERROR: '+e.message,'#ff4444');}
