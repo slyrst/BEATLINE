@@ -401,7 +401,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="menu-btns">
       <button class="xbtn cy lg" onclick="showPage('songs-page')">[ PLAY ]</button>
       <button class="xbtn gn" onclick="showPage('create-page');initCreatePage()">[ CREATE LEVEL ]</button>
-      <button class="xbtn pk" onclick="showPage('friends-page');loadFriendsPage()">[ FRIENDS ]</button>
+      <button class="xbtn pk" onclick="showPage('friends-page');loadFriendsPage()">[ FRIENDS <span id="friend-notif-dot" style="display:none;width:7px;height:7px;background:var(--pink);border-radius:50%;display:none;vertical-align:middle;margin-left:4px;"></span>]</button>
       <button class="xbtn am" onclick="showLeaderboardGlobal()">[ LEADERBOARD ]</button>
       <button class="xbtn" onclick="showPage('settings-page')">[ SETTINGS ]</button>
       <button class="xbtn rd sm" onclick="doLogout()">[ LOGOUT ]</button>
@@ -768,7 +768,7 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('admin-badge-menu').style.display=ADM?'inline':'none';
     document.getElementById('guest-badge-menu').style.display='none';
     document.getElementById('guest-login-notice').style.display='none';
-    hideLoad();showPage('menu-page');updateBottomBar();
+    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();
   }else{
     // only go to auth page if not already in guest mode
     if(!isGuest){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
@@ -1105,29 +1105,33 @@ async function removeFriend(fid){
   }catch(e){toast('ERROR: '+e.message,'#ff4444');}
 }
 
+let _friendReqUnsub=null;
 async function loadFriendsPage(){
-  if(!CU){return;}
+  if(!CU)return;
   const reqList=document.getElementById('friend-requests-list');
   const friendsList=document.getElementById('friends-list-inner');
   if(!reqList||!friendsList)return;
 
-  // Incoming requests
-  try{
-    const reqs=await dQ('friendRequests',W('to','==',CU.uid));
-    const badge=document.getElementById('req-badge');
-    if(badge)badge.textContent=reqs.empty?'':'('+reqs.docs.length+')';
-    if(reqs.empty){
-      reqList.innerHTML='<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;">no pending requests</div>';
-    } else {
-      reqList.innerHTML=reqs.docs.map(d=>{
-        const r=d.data();
-        return`<div class="req-row">
-          <div style="flex:1;font-size:11px;letter-spacing:2px;color:#aaa;">${esc(r.fromName||'?')}</div>
-          <button class="xbtn cy sm" onclick="acceptFriendRequest('${d.id}','${r.from}')" style="padding:3px 10px;font-size:9px;">✓ ACCEPT</button>
-          <button class="xbtn rd sm" onclick="declineFriendRequest('${d.id}')" style="padding:3px 8px;font-size:9px;">✕</button>
-        </div>`;}).join('');
-    }
-  }catch(e){reqList.innerHTML='<div style="font-size:10px;color:#ff4444;">error loading requests</div>';}
+  // Real-time requests listener
+  if(_friendReqUnsub)_friendReqUnsub();
+  _friendReqUnsub=db.collection('friendRequests').where('to','==',CU.uid)
+    .onSnapshot(reqs=>{
+      const badge=document.getElementById('req-badge');
+      if(badge)badge.textContent=reqs.empty?'':'('+reqs.docs.length+')';
+      const dot=document.getElementById('friend-notif-dot');
+      if(dot)dot.style.display=reqs.empty?'none':'inline-block';
+      if(reqs.empty){
+        reqList.innerHTML='<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;">no pending requests</div>';
+      } else {
+        reqList.innerHTML=reqs.docs.map(d=>{
+          const r=d.data();
+          return`<div class="req-row">
+            <div style="flex:1;font-size:11px;letter-spacing:2px;color:#aaa;">${esc(r.fromName||'?')}</div>
+            <button class="xbtn cy sm" onclick="acceptFriendRequest('${d.id}','${r.from}')" style="padding:3px 10px;font-size:9px;">✓ ACCEPT</button>
+            <button class="xbtn rd sm" onclick="declineFriendRequest('${d.id}')" style="padding:3px 8px;font-size:9px;">✕</button>
+          </div>`;}).join('');
+      }
+    });
 
   // Friends list
   try{
@@ -1155,6 +1159,16 @@ async function loadFriendsPage(){
   }catch(e){friendsList.innerHTML='<div style="font-size:10px;color:#ff4444;">error loading friends</div>';}
 }
 
+// Global notif listener — starts after login
+let _globalReqUnsub=null;
+function startGlobalNotifListener(){
+  if(!CU||_globalReqUnsub)return;
+  _globalReqUnsub=db.collection('friendRequests').where('to','==',CU.uid)
+    .onSnapshot(snap=>{
+      const dot=document.getElementById('friend-notif-dot');
+      if(dot)dot.style.display=snap.empty?'none':'inline-block';
+    });
+}
 // ── CHAT ──────────────────────────────────────────────────────────────────────
 let _chatFriendId=null,_chatFriendName='',_chatUnsub=null;
 
@@ -2534,7 +2548,7 @@ window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
 window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.startEditUsername=startEditUsername;window.removeFriend=removeFriend;
-window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;
+window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;window.startGlobalNotifListener=startGlobalNotifListener;
 window.openChat=openChat;window.closeChat=closeChat;window.sendChatMsg=sendChatMsg;
 window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
