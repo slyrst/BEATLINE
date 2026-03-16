@@ -1510,8 +1510,10 @@ function exitWatch(){
   document.getElementById('dim-overlay').style.display='none';
   document.getElementById('streak-popup').style.opacity='0';
   document.getElementById('ov').style.display='none';
-  // small delay so RAF fully stops before reinit
-  setTimeout(()=>initPlay(),50);
+  setTimeout(()=>{
+    if(CS?.fromCreate){goBack();}
+    else{initPlay();}
+  },50);
 }
 function toggleAuto(){
   autoMode=!autoMode;
