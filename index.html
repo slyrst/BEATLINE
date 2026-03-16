@@ -2061,36 +2061,91 @@ function hudUpdate(now){
 }
 
 // ── PAUSE ─────────────────────────────────────────────────────────────────────
-let _paused=false;
+let _paused=false,_countdownRaf=null;
+
 function togglePause(){
   if(mode!=='play')return;
   if(_paused){
-    _paused=false;
-    document.getElementById('pausebtn').textContent='⏸';
-    document.getElementById('pausebtn').style.color='#555';
-    if(aud)aud.play().then(()=>{_cBase=performance.now();_cOff=aud.currentTime*1000;});
-    running=true;raf2=requestAnimationFrame(pLoop2);
-    const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
+    resumeWithCountdown();
   } else {
+    // PAUSE
     _paused=true;running=false;cancelAnimationFrame(raf2);
     if(aud)aud.pause();
-    document.getElementById('pausebtn').textContent='▶';
-    document.getElementById('pausebtn').style.color='var(--cyan)';
+    const pbtn=document.getElementById('pausebtn');
+    if(pbtn){pbtn.textContent='▶';pbtn.style.color='var(--cyan)';}
+
+    // Smooth fade-in overlay
     const pov=document.createElement('div');pov.id='pause-overlay';
-    pov.style.cssText='position:absolute;inset:0;background:rgba(5,5,13,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:19;gap:14px;';
-    pov.innerHTML=`<div style="font-size:28px;letter-spacing:8px;color:#fff;">PAUSED</div>
-      <div style="font-size:11px;color:#444;letter-spacing:3px;">${esc(CS?.title||'')}</div>
-      <div style="display:flex;gap:10px;margin-top:8px;">
+    pov.style.cssText='position:absolute;inset:0;background:rgba(5,5,13,0);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:19;gap:14px;transition:background .25s;';
+    pov.innerHTML=`
+      <div style="font-size:28px;letter-spacing:8px;color:#fff;opacity:0;transition:opacity .25s;" id="pause-title">PAUSED</div>
+      <div style="font-size:11px;color:#444;letter-spacing:3px;opacity:0;transition:opacity .3s;transition-delay:.1s;" id="pause-song">${esc(CS?.title||'')}</div>
+      <div style="display:flex;gap:10px;margin-top:8px;opacity:0;transition:opacity .3s;transition-delay:.2s;" id="pause-btns">
         <button class="xbtn cy" onclick="togglePause()">[ RESUME ]</button>
-        <button class="xbtn rd sm" onclick="_paused=false;stopAll();goBack()">[ QUIT ]</button>
+        <button class="xbtn rd sm" onclick="_paused=false;if(_countdownRaf)cancelAnimationFrame(_countdownRaf);stopAll();goBack()">[ QUIT ]</button>
       </div>`;
     document.getElementById('gc').appendChild(pov);
+    requestAnimationFrame(()=>{
+      pov.style.background='rgba(5,5,13,.88)';
+      const t=pov.querySelector('#pause-title'),s=pov.querySelector('#pause-song'),b=pov.querySelector('#pause-btns');
+      if(t)t.style.opacity='1';if(s)s.style.opacity='1';if(b)b.style.opacity='1';
+    });
   }
 }
-window.togglePause=togglePause;
+
+function resumeWithCountdown(){
+  const pov=document.getElementById('pause-overlay');
+  if(!pov)return;
+  // Replace content with countdown
+  pov.innerHTML=`<div id="countdown-num" style="font-size:110px;font-weight:bold;letter-spacing:-4px;color:#fff;text-shadow:0 0 40px rgba(0,240,255,.5);transition:transform .08s,opacity .08s;">3</div>`;
+  const numEl=()=>document.getElementById('countdown-num');
+  let count=3;
+
+  function tick(){
+    const el=numEl();if(!el)return;
+    el.style.transform='scale(1.15)';el.style.opacity='1';
+    el.textContent=count;
+    // color per count
+    el.style.color=count===3?'var(--cyan)':count===2?'#00ff88':'#ffaa00';
+    el.style.textShadow=`0 0 40px ${count===3?'rgba(0,240,255,.6)':count===2?'rgba(0,255,136,.6)':'rgba(255,170,0,.6)'}`;
+    setTimeout(()=>{if(el){el.style.transform='scale(0.7)';el.style.opacity='0';}},700);
+    count--;
+    if(count>0){
+      setTimeout(tick,900);
+    } else {
+      setTimeout(()=>{
+        // GO!
+        const el2=numEl();if(el2){el2.style.transform='scale(1.2)';el2.style.opacity='1';el2.textContent='GO';el2.style.color='#fff';el2.style.textShadow='0 0 40px rgba(255,255,255,.7)';}
+        // Fade overlay out
+        if(pov)pov.style.transition='opacity .3s';
+        if(pov)pov.style.opacity='0';
+        setTimeout(()=>{
+          _paused=false;
+          const p=document.getElementById('pause-overlay');if(p)p.remove();
+          const pbtn=document.getElementById('pausebtn');
+          if(pbtn){pbtn.textContent='⏸';pbtn.style.color='#555';}
+          // Resume audio and resync clock — wait for audio to actually start
+          if(aud){
+            aud.play().then(()=>{
+              _cBase=performance.now();
+              _cOff=aud.currentTime*1000;
+              running=true;
+              raf2=requestAnimationFrame(pLoop2);
+            });
+          } else {
+            running=true;raf2=requestAnimationFrame(pLoop2);
+          }
+        },300);
+      },900);
+    }
+  }
+  tick();
+}
+window.togglePause=togglePause;window.resumeWithCountdown=resumeWithCountdown;
 
 function stopAll(){
   _paused=false;
+  if(_countdownRaf)cancelAnimationFrame(_countdownRaf);_countdownRaf=null;
   const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
   running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
 }
