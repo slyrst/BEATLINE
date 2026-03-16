@@ -1333,6 +1333,7 @@ function initCreatePage(existing=null){
   document.getElementById('cr-stop-btn').style.display='none';
   startBgCanvas();
 }
+function setDiff(d){crDiff=d;['easy','medium','hard','expert'].forEach(x=>document.getElementById('diff-'+x).classList.toggle('active',x===d));}
 function setEndTimeNow(){
   // try create page audio, fallback to game audio
   const a=crAud||aud;
