@@ -815,6 +815,22 @@ const dGet=r=>r.get({source:'server'}).catch(()=>r.get()),dSet=(r,d)=>r.set(d),d
 let CU=null,CUD=null,ADM=false,CS=null,ESI=null;
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
+const _ACTIVITY_LABELS={
+  'menu-page':'In Menu',
+  'songs-page':'Selecting Song',
+  'create-page':'Creating Level',
+  'lb-page':'Viewing Leaderboard',
+  'profile-page':'Viewing Profile',
+  'friends-page':'In Friends',
+  'settings-page':'In Settings',
+  'game-page':'Playing',
+};
+function broadcastActivity(pageId){
+  if(!CU)return;
+  const label=_ACTIVITY_LABELS[pageId]||pageId;
+  dUpd(dDoc('users',CU.uid),{activity:label,activityAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+}
+
 // ── PAGE HISTORY ─────────────────────────────────────────────────────────────
 const _pageHistory=[];
 function showPage(id,skipHistory=false){
@@ -824,6 +840,7 @@ function showPage(id,skipHistory=false){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='songs-page')loadSongs();
+  broadcastActivity(id);
   const bar=document.getElementById('menu-bottom-bar');
   if(bar)bar.style.display=(id==='game-page'||id==='auth-page')?'none':((CU||isGuest)?'flex':'none');
 }
@@ -1263,7 +1280,7 @@ async function openProfile(uid, backPage){
           <div style="font-size:11px;color:#aaa;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nowPlaying.songTitle||'?')}</div>
         </div>
         ${!isSelf&&CU?`<button class="xbtn cy sm" onclick="spectatePlayer('${uid}','${nowPlaying.songId}')" style="padding:4px 12px;font-size:9px;">👁 WATCH</button>`:''}
-      </div>`:'';
+      </div>`:ud.activity&&!nowPlaying?.songId?`<div style="margin-top:6px;font-size:9px;color:#333;letter-spacing:2px;">${esc(ud.activity)}</div>`:'';
     let friendBtn='';
     if(!isSelf&&CU&&uid){
       const myFriends=CUD?.friends||[];
@@ -1522,9 +1539,9 @@ async function loadFriendsPage(){
         const av=fd.avatar?`<img src="${esc(fd.avatar)}" style="width:36px;height:36px;object-fit:cover;">`:`<div class="friend-avatar">${(fd.username||'?').slice(0,2).toUpperCase()}</div>`;
         rows+=`<div class="friend-row">
           ${av}
-          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">
-            ${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}
-            ${fd.playingNow?.songId?'<span style="font-size:9px;color:var(--cyan);margin-left:6px;">🎮</span>':''}
+          <div style="flex:1;min-width:0;cursor:pointer;" onclick="openProfile('${fid}','friends-page')">
+            <div class="friend-name">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}${fd.playingNow?.songId?'<span style="font-size:9px;color:var(--cyan);margin-left:6px;">🎮</span>':''}</div>
+            ${fd.activity?`<div style="font-size:9px;color:#333;letter-spacing:1px;">${esc(fd.activity)}${fd.playingNow?.songTitle?' — '+esc(fd.playingNow.songTitle):''}</div>`:''}
           </div>
           ${fd.playingNow?.songId?`<button class="xbtn sm cy" onclick="spectatePlayer('${fid}','${fd.playingNow.songId}')" style="padding:3px 8px;font-size:9px;">👁</button>`:''}
           <button class="xbtn sm" onclick="openChat('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:var(--cyan);border-color:#00f0ff33;">💬</button>
@@ -1541,11 +1558,23 @@ async function loadFriendsPage(){
 let _globalReqUnsub=null,_globalMsgUnsub=null,_globalSongUnsub=null;
 let _seenNotifs=new Set(); // prevent re-showing on reconnect
 
+function _notifBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=ctx.createOscillator();const g=ctx.createGain();
+    o.connect(g);g.connect(ctx.destination);
+    o.type='sine';o.frequency.setValueAtTime(880,ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(1200,ctx.currentTime+0.08);
+    g.gain.setValueAtTime(0.18,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.25);
+    o.start(ctx.currentTime);o.stop(ctx.currentTime+0.25);
+  }catch(e){}
+}
 function showNotif(icon,titleText,titleClass,text,onClick){
   const stack=document.getElementById('notif-stack');if(!stack)return;
   const card=document.createElement('div');card.className='notif-card';
   card.innerHTML=`<div class="notif-icon">${icon}</div>
-    <div class="notif-body" onclick="">
+    <div class="notif-body">
       <div class="notif-title ${titleClass}">${titleText}</div>
       <div class="notif-text">${esc(text)}</div>
     </div>
@@ -1553,6 +1582,7 @@ function showNotif(icon,titleText,titleClass,text,onClick){
   card.onclick=()=>{card.remove();if(onClick)onClick();};
   stack.appendChild(card);
   requestAnimationFrame(()=>requestAnimationFrame(()=>card.classList.add('show')));
+  _notifBeep();
   setTimeout(()=>{card.style.opacity='0';setTimeout(()=>card.remove(),300);},6000);
 }
 
@@ -1579,26 +1609,23 @@ function startGlobalNotifListener(){
       });
   }
 
-  // 2. New chat messages (listen to all chats with this user as recipient)
+  // 2. New chat messages — listen per friend chat (avoids collectionGroup index)
   if(!_globalMsgUnsub){
     const friends=CUD?.friends||[];
-    if(friends.length){
-      // listen to most recent message in each chat
-      let _firstMsgLoad=true;
-      const chatIds=friends.map(fid=>[CU.uid,fid].sort().join('_'));
-      // onSnapshot per chat is expensive — listen to a single query via 'to' field
-      _globalMsgUnsub=db.collectionGroup('messages')
-        .where('to','==',CU.uid)
-        .orderBy('createdAt','desc')
-        .limit(1)
+    const unsubs=[];
+    for(const fid of friends.slice(0,10)){
+      const chatId=[CU.uid,fid].sort().join('_');
+      let _first=true;
+      const unsub=db.collection('chats').doc(chatId).collection('messages')
+        .orderBy('createdAt','desc').limit(1)
         .onSnapshot(snap=>{
-          if(_firstMsgLoad){_firstMsgLoad=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
+          if(_first){_first=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
           snap.docChanges().forEach(change=>{
             if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
               _seenNotifs.add(change.doc.id);
               const m=change.doc.data();
-              // don't notify if chat is currently open with this sender
-              if(_chatFriendId===m.from)return;
+              if(m.from===CU.uid)return; // own message
+              if(_chatFriendId===m.from)return; // chat open
               const preview=m.img?'📷 image':m.text||'';
               showNotif('💬','NEW MESSAGE','notif-msg',
                 (m.fromName||'?')+': '+preview,
@@ -1606,7 +1633,9 @@ function startGlobalNotifListener(){
             }
           });
         });
+      unsubs.push(unsub);
     }
+    _globalMsgUnsub=()=>unsubs.forEach(u=>u());
   }
 
   // 3. New songs published
@@ -1780,7 +1809,6 @@ async function spectatePlayer(uid,songId){
     _spectatingUid=uid;
     hideLoad();showPage('game-page');
     setTimeout(()=>{
-      autoMode=true;
       beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:(n.songMs!==undefined?n.songMs:n.time),lane:n.lane,hMs:n.hMs!==undefined?n.hMs:(n.holdMs!==undefined?n.holdMs:(n.hold||0))})).sort((a,b)=>a.sMs-b.sMs);
       // Start play then seek to host position
       startPlay();
@@ -1825,6 +1853,7 @@ function startSpectateListener(uid){
 }
 
 function stopSpectate(){
+  if(_spectatingUid)autoMode=false; // reset auto when leaving spectate
   _spectatingUid=null;
   if(_spectateUnsub){_spectateUnsub();_spectateUnsub=null;}
   if(_spectateHitUnsub){_spectateHitUnsub();_spectateHitUnsub=null;}
@@ -2764,6 +2793,7 @@ function goBack(){if(CS?.fromCreate){showPage('create-page');startBgCanvas();}el
 
 function initPlay(){
   stopAll();
+  if(!_spectatingUid)autoMode=false; // never carry over auto from previous session
   if(!CS||!CS.beatmap||!CS.audioUrl){showOv(`<div class="ov-title">ERROR</div><div class="ov-sub">NO SONG DATA</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);return;}
   beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:(n.songMs!==undefined?n.songMs:n.time),lane:n.lane,hMs:n.hMs!==undefined?n.hMs:(n.holdMs!==undefined?n.holdMs:(n.hold||0))})).sort((a,b)=>a.sMs-b.sMs);
   aud=new Audio(CS.audioUrl);aud.preload='auto';
@@ -2816,6 +2846,7 @@ function startPlay(){
   aud.onerror=()=>{running=false;showOv(`<div class="ov-title">AUDIO ERROR</div><div class="ov-sub" style="color:#ff4444">FILE NOT FOUND</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
   playAudGame().then(()=>{initAnalyser(aud);running=true;raf2=requestAnimationFrame(pLoop2);});
   broadcastPlaying(CS?.id,CS?.title||'');
+  broadcastActivity('game-page');
 }
 function pLoop2(){if(!running||mode!=='play')return;pUpdate2();drawPlay2();raf2=requestAnimationFrame(pLoop2);}
 function pUpdate2(){
@@ -3209,8 +3240,7 @@ function setAuto(on){
   else{b.textContent='AUTO';b.style.display=on?'block':'none';}
 }
 function autoTick(now){
-  if(!autoMode)return;
-  if(_spectatingUid)return; // spectate uses host's real hits via broadcastHit
+  if(!autoMode||_spectatingUid)return; // spectate: notes just fall visually, no auto-hit
   for(let n of notes){
     if(n.hit||n.missed||n.holding)continue;
     if(Math.abs(now-n.sMs)<16){
