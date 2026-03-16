@@ -424,25 +424,13 @@ canvas#cv{display:block;width:440px;height:620px;}
       </div>
       <div><label class="xlabel">BPM (optional)</label><input class="xinput" id="cr-bpm" placeholder="120" type="number" min="1" max="999"></div>
     </div>
-    <div class="section-title">BACKGROUND IMAGE (optional)</div>
+    <div class="section-title">EFFECTS</div>
     <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input class="xinput" id="cr-bg" placeholder="https://... (gif or image URL)" autocomplete="off" spellcheck="false" oninput="onBgInput()" style="flex:1;">
-        <button class="xbtn sm" onclick="previewBg()">[ TEST ]</button>
-      </div>
-      <div style="font-size:10px;color:#252540;letter-spacing:2px;">PASTE A GIF OR IMAGE URL · SHOWS BEHIND THE GAME WHILE PLAYING</div>
-      <div id="cr-bg-preview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;border:1px solid var(--border);position:relative;">
-        <button onclick="document.getElementById('cr-bg').value='';onBgInput();document.getElementById('cr-bg-preview').style.display='none';" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;color:#fff;cursor:pointer;font-size:10px;padding:2px 6px;">✕</button>
-      </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:10px;letter-spacing:3px;color:#444;">FIRE EFFECT (volume-based)</div>
         <div id="cr-fire-toggle" onclick="toggleFireOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">YES — ON</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:10px;letter-spacing:3px;color:#444;">SCREEN DIM</div>
-        <div id="cr-dim-toggle" onclick="toggleDimOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #1a1a30;color:#444;cursor:pointer;">OFF</div>
-      </div>
-      <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;margin-top:2px;">SPEED BOOST + SOLO FIRE TIMING → SET IN EFFECT EDIT MODE (preview)</div>
+      <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;">FIRE RANGES + SPEED + OTHER EFFECTS → SET IN EFFECT EDIT MODE (after publish)</div>
     </div>
     <div class="section-title">AUDIO</div>
     <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;">
@@ -722,11 +710,8 @@ function buildCard(s){
   const dc={easy:'#00ff88',medium:'#ffaa00',hard:'#ff4444',expert:'#ff00aa'}[s.difficulty]||'#aaa';
   const nc=s.beatmap?s.beatmap.length:0;
   const canEdit=ADM||(CU&&s.authorId===CU.uid);
-  const bgThumb=s.bgImage?`background-image:url('${esc(s.bgImage)}');background-size:cover;background-position:center;`:'';
   div.innerHTML=`
-    <div class="song-thumb" style="border-color:${dc}44;${bgThumb}">
-      ${s.bgImage?'':`<span style="color:${dc}">♪</span>`}
-    </div>
+    <div class="song-thumb" style="border-color:${dc}44;color:${dc};">♪</div>
     <div class="song-info">
       <div class="song-title">${esc(s.title||'UNTITLED')}</div>
       <div class="song-artist">${esc(s.artist||'UNKNOWN ARTIST')}</div>
@@ -823,7 +808,6 @@ function initCreatePage(existing=null){
   document.getElementById('cr-artist').value=existing?.artist||'';
   document.getElementById('cr-bpm').value=existing?.bpm||'';
   // reset file picker
-  document.getElementById('cr-bg').value=existing?.bgImage||'';
   crAllowFire=existing?.allowFire!==false;
   crFireStart=existing?.fireStart||0;
   crAllowDim=existing?.dimEffect||false;
@@ -837,9 +821,7 @@ function initCreatePage(existing=null){
   }
   const dBtn=document.getElementById('cr-dim-toggle');
   if(dBtn){if(crAllowDim){dBtn.textContent='ON';dBtn.style.borderColor='var(--amber)';dBtn.style.color='var(--amber)';}else{dBtn.textContent='OFF';dBtn.style.borderColor='#1a1a30';dBtn.style.color='#444';}}
-  const bgp=document.getElementById('cr-bg-preview');
-  if(existing?.bgImage){bgp.style.backgroundImage=`url('${existing.bgImage}')`;bgp.style.display='block';}
-  else{bgp.style.display='none';}
+
   crExistingAudioUrl=existing?.audioUrl||'';
   let ef=existing?.audioUrl||'';if(ef.startsWith('./'))ef=ef.slice(2);
   document.getElementById('cr-fn').value=ef;
@@ -861,13 +843,7 @@ function initCreatePage(existing=null){
   startBgCanvas();
 }
 function setDiff(d){crDiff=d;['easy','medium','hard','expert'].forEach(x=>document.getElementById('diff-'+x).classList.toggle('active',x===d));}
-function onBgInput(){/* live clear handled inline */}
-function previewBg(){
-  const v=document.getElementById('cr-bg').value.trim();
-  const p=document.getElementById('cr-bg-preview');
-  if(!v){p.style.display='none';return;}
-  p.style.backgroundImage=`url('${v}')`;p.style.display='block';
-}
+
 let crAllowFire=true,crFireStart=0,crAllowDim=false,crSpeed=1;
 function toggleFireOpt(){
   crAllowFire=!crAllowFire;
@@ -1097,7 +1073,6 @@ async function crPreview(){
     title:document.getElementById('cr-title').value||'PREVIEW',
     artist:document.getElementById('cr-artist').value||'',
     difficulty:crDiff,beatmap:crNotes,audioUrl:src,
-    bgImage:document.getElementById('cr-bg').value.trim()||'',
     allowFire:crAllowFire,dimEffect:crAllowDim,
     speedEffect:CS?.speedEffect||1,
     effectEvents:CS?.effectEvents||[],
@@ -1116,13 +1091,12 @@ async function crPublish(){
   const audioUrl=src;
   document.getElementById('cr-pub-btn').disabled=true;document.getElementById('cr-pub-btn').textContent='[ PUBLISHING... ]';
   try{
-    const bgImage=document.getElementById('cr-bg').value.trim();
     const fireStart=parseFloat(document.getElementById('cr-fire-start')?.value)||0;
     const speedEffect=CS?.speedEffect||parseFloat(document.getElementById('cr-speed')?.value)||1;
     // always use CS.effectEvents — kept up to date by saveEffects in effect edit mode
     const existingEffects=CS?.effectEvents||watchEffectEvents||[];
     const existingFireRanges=existingEffects.filter(e=>e.type==='fire');
-    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',allowFire:crAllowFire,fireStart,dimEffect:crAllowDim,speedEffect,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
+    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,allowFire:crAllowFire,dimEffect:crAllowDim,speedEffect,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
     if(ESI){
       await dUpd(dDoc('songs',ESI),data);
       CS={id:ESI,...data,preview:false,fromCreate:true};
@@ -1158,9 +1132,15 @@ document.getElementById('cr-cv').addEventListener('touchend',e=>{
 // ── PLAY SONG ─────────────────────────────────────────────────────────────────
 async function playSong(id){
   setLoad('LOADING SONG...');
-  const s=await db.collection('songs').doc(id).get({source:'server'}).catch(()=>dGet(dDoc('songs',id)));
+  const [s, efx] = await Promise.all([
+    db.collection('songs').doc(id).get({source:'server'}).catch(()=>dGet(dDoc('songs',id))),
+    db.collection('songeffects').doc(id).get({source:'server'}).catch(()=>db.collection('songeffects').doc(id).get())
+  ]);
   if(!s.exists){hideLoad();toast('NOT FOUND','#ff4444');return;}
-  CS={id,...s.data()};hideLoad();showPage('game-page');setTimeout(()=>initPlay(),100);
+  CS={id,...s.data()};
+  // overlay effects from dedicated collection (always fresh)
+  if(efx.exists){const e=efx.data();CS.effectEvents=e.effectEvents||[];CS.fireRanges=e.fireRanges||[];CS.speedEffect=e.speedEffect||CS.speedEffect||1;}
+  hideLoad();showPage('game-page');setTimeout(()=>initPlay(),100);
   dUpd(dDoc('songs',id),{plays:(CS.plays||0)+1}).catch(()=>{});
 }
 
@@ -1265,10 +1245,17 @@ function applyVisualEffects(t){
 }
 let watchMode=false,watchRaf=0,watchFireStart=0;
 
-function startWatch(){
+async function startWatch(){
   stopAll();
   if(!CS||!CS.beatmap||!CS.audioUrl){toast('NO SONG DATA','#ff4444');return;}
   watchMode=true;
+  // load fresh effects from songeffects collection
+  if(CS?.id&&!CS.preview){
+    try{
+      const efx=await db.collection('songeffects').doc(CS.id).get({source:'server'});
+      if(efx.exists){const e=efx.data();CS.effectEvents=e.effectEvents||[];CS.fireRanges=e.fireRanges||[];CS.speedEffect=e.speedEffect||CS.speedEffect||1;}
+    }catch(ex){console.warn('songeffects load',ex);}
+  }
   watchEffectEvents=CS.effectEvents?JSON.parse(JSON.stringify(CS.effectEvents)):(CS.fireRanges?CS.fireRanges.map(r=>({...r,type:'fire'})):[]);
   pendingEffectType=null;pendingEffectStart=null;
   document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
@@ -1277,7 +1264,6 @@ function startWatch(){
   fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
   fn=0;jAlpha=0;bpIdx=0;score=0;combo=0;maxC=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;
-  loadBgImg(CS.bgImage||'');
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
   document.getElementById('watch-bar').style.display='block';
   document.getElementById('ov').style.display='none';
@@ -1476,29 +1462,27 @@ function loadMyPreset(){
 async function saveEffects(){
   const spd=parseFloat(document.getElementById('watch-speed')?.value)||1;
   if(!CS?.id){toast('NO SONG ID','#ff4444');return;}
-  if(CS.preview){toast('PUBLISH THE LEVEL FIRST','#ff4444');return;}
   const btn=document.querySelector('[onclick="saveEffects()"]');
   if(btn)btn.textContent='SAVING...';
   try{
     const eventsToSave=JSON.parse(JSON.stringify(watchEffectEvents));
-    const data={effectEvents:eventsToSave,fireRanges:eventsToSave.filter(e=>e.type==='fire'),speedEffect:spd};
-    // Force server write (bypass cache) using set with merge
-    await db.collection('songs').doc(CS.id).set(data,{merge:true});
-    // Verify it actually saved by reading back from server
-    const verify=await db.collection('songs').doc(CS.id).get({source:'server'});
-    const saved=verify.data();
-    const savedCount=saved?.effectEvents?.length||0;
+    const data={effectEvents:eventsToSave,fireRanges:eventsToSave.filter(e=>e.type==='fire'),speedEffect:spd,songId:CS.id,updatedAt:sts()};
+    // Write to dedicated songeffects collection — open read/write, no permission issues
+    await db.collection('songeffects').doc(CS.id).set(data);
+    // Verify
+    const verify=await db.collection('songeffects').doc(CS.id).get({source:'server'});
+    const savedCount=verify.data()?.effectEvents?.length||0;
     if(savedCount===eventsToSave.length){
       CS.effectEvents=eventsToSave;
       CS.fireRanges=data.fireRanges;
       CS.speedEffect=spd;
-      toast('SAVED '+savedCount+' EFFECTS TO SERVER ✓','#00ff88');
+      toast('SAVED '+savedCount+' EFFECTS ✓','#00ff88');
     } else {
-      toast('WRITE SUCCEEDED BUT VERIFY FAILED ('+savedCount+'/'+eventsToSave.length+')','#ffaa00');
+      toast('VERIFY FAILED ('+savedCount+'/'+eventsToSave.length+')','#ffaa00');
     }
   }catch(e){
     console.error('saveEffects',e);
-    toast('ERROR: '+e.code+': '+e.message,'#ff4444');
+    toast('ERROR: '+e.message,'#ff4444');
   }
   if(btn)btn.textContent='[ SAVE ]';
 }
@@ -1603,7 +1587,6 @@ function startPlay(){
   document.getElementById('streak-popup').style.opacity='0';
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
-  loadBgImg(CS.bgImage||'');
   // Apply effects
   const spd=CS.speedEffect||1;
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
@@ -1741,7 +1724,7 @@ async function endRecord(){
 }
 
 // ── AUDIO ANALYSER + BG IMAGE ─────────────────────────────────────────────────
-let analyser=null,analyserData=null,audioCtx=null,bgImg=null,bgImgUrl='';
+let analyser=null,analyserData=null,audioCtx=null;
 let fireParticles=[];
 
 function initAnalyser(audioEl){
@@ -1760,16 +1743,7 @@ function getVolume(){
   let sum=0;for(let i=0;i<analyserData.length;i++)sum+=analyserData[i];
   return sum/(analyserData.length*255);
 }
-function loadBgImg(url){
-  if(!url){bgImg=null;bgImgUrl='';return;}
-  if(url===bgImgUrl&&bgImg)return;
-  bgImgUrl=url;
-  const img=new Image();
-  // No crossOrigin — avoids CORS blocking. We only draw, never read pixels.
-  img.onload=()=>{bgImg=img;};
-  img.onerror=()=>{bgImg=null;console.warn('bg image failed:',url);};
-  img.src=url;
-}
+// bg image removed
 let fireVol=0,fireCPS=0,_cpsHits=0,_cpsTimer=0; // smoothed volume + CPS for fire
 
 function spawnFire(vol,fromTop){
@@ -1805,14 +1779,6 @@ function drawFire(){
 // ── DRAW ──────────────────────────────────────────────────────────────────────
 function drawBase(){
   ctx2.fillStyle='#08080f';ctx2.fillRect(0,0,GW(),GH());
-  // bg image — draw at 55% opacity so it's clearly visible
-  if(bgImg&&bgImg.naturalWidth>0){
-    ctx2.globalAlpha=0.55;
-    ctx2.drawImage(bgImg,0,0,GW(),GH());
-    ctx2.globalAlpha=1;
-    // dark overlay so notes stay readable
-    ctx2.fillStyle='rgba(4,4,14,0.5)';ctx2.fillRect(0,0,GW(),GH());
-  }
   for(let y=-(fn*.5%40);y<GH();y+=40){ctx2.fillStyle='rgba(255,255,255,.012)';ctx2.fillRect(0,y,GW(),1);}
   for(let i=1;i<GLANES;i++){ctx2.strokeStyle='#12122a';ctx2.lineWidth=1;ctx2.beginPath();ctx2.moveTo(i*GLW(),0);ctx2.lineTo(i*GLW(),GH());ctx2.stroke();}
 }
@@ -2097,7 +2063,7 @@ function _laneUp(lane){
   });
 })();
 
-window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
+window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
 window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
