@@ -508,6 +508,14 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div style="font-size:10px;color:#333;letter-spacing:2px;margin-top:12px;">CLICK A KEY BUTTON THEN PRESS THE KEY YOU WANT</div>
       <button class="xbtn sm rd" style="margin-top:12px;" onclick="resetKeys()">[ RESET TO DEFAULT ]</button>
     </div>
+    <div class="settings-section">
+      <div class="settings-section-title">GAMEPLAY</div>
+      <div class="keybind-row">
+        <div class="keybind-label">VISUAL EFFECTS</div>
+        <div id="effects-toggle-btn" onclick="toggleEffectsSetting()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">FIRE · SHAKE · FLASH · COLOR EFFECTS</div>
+    </div>
   </div>
 </div>
 
@@ -1239,6 +1247,8 @@ function startWatch(){
   watchMode=true;
   watchEffectEvents=CS.effectEvents?JSON.parse(JSON.stringify(CS.effectEvents)):(CS.fireRanges?CS.fireRanges.map(r=>({...r,type:'fire'})):[]);
   pendingEffectType=null;pendingEffectStart=null;
+  document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
+  const lbl=document.getElementById('effect-pending-label');if(lbl)lbl.style.display='none';
   beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:n.time,lane:n.lane,hMs:n.hMs||0})).sort((a,b)=>a.sMs-b.sMs);
   fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
@@ -1276,6 +1286,9 @@ function startWatch(){
   initAnalyser(aud);
   playAudGame().then(()=>{
     running=true;mode='play';
+    // sync timing same as play mode — sNow() based on audio position
+    _cBase=performance.now();_cOff=0;
+    setTimeout(()=>updateEffectUI(),200); // update after aud.duration is known
     watchRaf=requestAnimationFrame(watchLoop);
   });
   aud.onended=()=>{if(watchMode){watchMode=false;autoMode=false;document.getElementById('watch-bar').style.display='none';initPlay();}};
@@ -1454,15 +1467,14 @@ let _watchUiTick=0;
 function watchLoop(){
   if(!running||!watchMode)return;
   fn++;
-  const now=sNow();
-  // auto spawn notes
+  const now=sNow(); // use same clock as play mode
   while(bpIdx<beatmap.length&&now>=beatmap[bpIdx].sMs-GAPP_MS()){
     const b=beatmap[bpIdx++];
     notes.push({lane:b.lane,sMs:b.sMs,hMs:b.hMs||0,hit:false,missed:false,holding:false,hp:0,cy:0});
   }
   for(let n of notes){
     n.cy=GHIT_Y()-(n.sMs-now)*GPPM;
-    if(!n.hit&&!n.missed&&!n.holding&&Math.abs(now-n.sMs)<16){
+    if(!n.hit&&!n.missed&&!n.holding&&Math.abs(now-n.sMs)<18){
       if(n.hMs>80){n.holding=true;laneHolding[n.lane]=true;pulseTimer[n.lane]=0;}
       else{n.hit=true;burstP(n.lane,n.cy);}
       combo++;if(combo>maxC)maxC=combo;gstats.p++;judgeShow('PERFECT','#00f0ff');
@@ -1473,22 +1485,19 @@ function watchLoop(){
   notes=notes.filter(n=>!(n.hit&&!n.holding)&&!(n.missed&&n.cy>GH()+60));
   tickP();tickPulses();fl=fl.map(v=>Math.max(0,v-1));
   jAlpha=Math.max(0,jAlpha-.022);document.getElementById('jt').style.opacity=jAlpha;
-  // draw first, then fire on top
   drawPlay2_nofire();
-  if(CS?.allowFire!==false){
+  if(effectsEnabled&&CS?.allowFire!==false){
     const rawVol=getVolume();
     fireVol=fireVol*0.85+rawVol*0.15;
     if(fireVol>0.45)spawnFire(fireVol,false);
     if(aud&&isInFireRange(aud.currentTime))spawnFire(Math.max(0.6,0.5+fireVol),true);
     drawFire();
   }
-  // visual effects overlay
+  if(effectsEnabled&&aud&&watchEffectEvents.length)applyVisualEffects(aud.currentTime);
   if(aud){
-    applyVisualEffects(aud.currentTime);
     const speedEv=watchEffectEvents.find(e=>e.type==='speed'&&aud.currentTime>=e.s&&aud.currentTime<=e.e);
     aud.playbackRate=speedEv?speedEv.val:(CS?.speedEffect||1);
   }
-  // timeline UI — throttle to every 3rd frame to reduce DOM work
   _watchUiTick++;
   if(_watchUiTick%3===0&&aud&&aud.duration){
     const pct=aud.currentTime/aud.duration;
@@ -1789,21 +1798,19 @@ function drawPlay2(){
     ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;ctx2.lineWidth=n.holding?2:1.5;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
   }
   drawParts2();
-  if(CS?.allowFire!==false){
+  if(effectsEnabled&&CS?.allowFire!==false){
     const rawVol=getVolume();
     fireVol=fireVol*0.85+rawVol*0.15;
     if(fireVol>0.45)spawnFire(fireVol,false);
     _cpsTimer+=1/60;
     if(_cpsTimer>=1){fireCPS=_cpsHits;_cpsHits=0;_cpsTimer=0;}
     const nowSec=aud?aud.currentTime:0;
-    // fire ranges from effectEvents (new) or fireRanges (legacy)
     const evts=CS?.effectEvents||[];
     const inFireRange=evts.some(e=>e.type==='fire'&&nowSec>=e.s&&nowSec<=e.e)||(CS?.fireRanges?.some(r=>nowSec>=r.s&&nowSec<=r.e));
     if(fireCPS>=6&&inFireRange)spawnFire(Math.min(0.5+fireCPS*0.04,1),true);
     drawFire();
   }
-  // apply visual effects from effectEvents
-  if(aud&&CS?.effectEvents?.length)applyVisualEffects(aud.currentTime);
+  if(effectsEnabled&&aud&&CS?.effectEvents?.length)applyVisualEffects(aud.currentTime);
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
 }
 // Watch mode draws without its own fire logic (watchLoop handles fire separately)
@@ -1861,6 +1868,18 @@ function loadKeys(){
   try{const k=JSON.parse(localStorage.getItem('bl_keys'));if(k&&k.length===4)KEYS=k;}catch(e){}
   updateKeyDisplay();
 }
+let effectsEnabled=true;
+function toggleEffectsSetting(){
+  effectsEnabled=!effectsEnabled;
+  try{localStorage.setItem('bl_effects',effectsEnabled?'1':'0');}catch(e){}
+  const btn=document.getElementById('effects-toggle-btn');
+  if(btn){btn.textContent=effectsEnabled?'ON':'OFF';btn.style.borderColor=effectsEnabled?'#00ff8844':'#ff444433';btn.style.color=effectsEnabled?'var(--green)':'var(--red)';btn.style.background=effectsEnabled?'#00ff8811':'#ff44441a';}
+}
+function loadEffectsSetting(){
+  try{const v=localStorage.getItem('bl_effects');if(v==='0')effectsEnabled=false;}catch(e){}
+  const btn=document.getElementById('effects-toggle-btn');
+  if(btn){btn.textContent=effectsEnabled?'ON':'OFF';btn.style.borderColor=effectsEnabled?'#00ff8844':'#ff444433';btn.style.color=effectsEnabled?'var(--green)':'var(--red)';btn.style.background=effectsEnabled?'#00ff8811':'#ff44441a';}
+}
 function saveKeys(){try{localStorage.setItem('bl_keys',JSON.stringify(KEYS));}catch(e){}}
 function updateKeyDisplay(){
   KEYS.forEach((k,i)=>{
@@ -1907,7 +1926,7 @@ document.addEventListener('keyup',e=>{
   if(pid==='create-page'&&crRec){const i=KEYS.indexOf(e.key.toLowerCase());if(i!==-1&&crAct[i]){const hMs=Math.max(0,performance.now()-crHW[i]-30);crNotes.push({sMs:crHW[i]-crWall,lane:i,hMs});crAct[i]=false;if(hMs>80)crCvBurst(i,true,Math.min(hMs*0.44,130));}}
   if(pid==='game-page'){const i=KEYS.indexOf(e.key.toLowerCase());if(i!==-1){_laneUp(i);}}
 });
-loadKeys();
+loadKeys();loadEffectsSetting();
 
 // ── AUTO MODE ─────────────────────────────────────────────────────────────────
 let autoMode=false;
@@ -2034,6 +2053,7 @@ function _laneUp(lane){
 })();
 
 window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
+window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
 window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
