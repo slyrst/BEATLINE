@@ -686,6 +686,7 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div id="effect-event-list" style="max-height:120px;overflow-y:auto;"></div>
       </div>
       <button id="stopbtn" onclick="endRecord()">[ STOP &amp; SAVE ]</button>
+      <button id="pausebtn" onclick="togglePause()" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:9px;letter-spacing:3px;padding:4px 12px;cursor:pointer;z-index:16;">⏸</button>
       <div id="ov"></div>
     </div>
     <div id="kh">
@@ -700,7 +701,7 @@ canvas#cv{display:block;width:440px;height:620px;}
 <div class="page" id="profile-page">
   <div class="page-header">
     <div class="page-header-title">PROFILE</div>
-    <button class="xbtn sm" id="profile-back-btn" onclick="showPage('menu-page')">[ BACK ]</button>
+    <button class="xbtn sm" id="profile-back-btn" onclick="goPageBack()">[ BACK ]</button>
   </div>
   <div class="profile-inner" id="profile-inner">
     <div class="empty-state" style="padding:40px;">LOADING...</div>
@@ -781,13 +782,25 @@ const dGet=r=>r.get({source:'server'}).catch(()=>r.get()),dSet=(r,d)=>r.set(d),d
 let CU=null,CUD=null,ADM=false,CS=null,ESI=null;
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function showPage(id){
+// ── PAGE HISTORY ─────────────────────────────────────────────────────────────
+const _pageHistory=[];
+function showPage(id,skipHistory=false){
+  const cur=document.querySelector('.page.active');
+  if(cur&&cur.id!==id&&!skipHistory)_pageHistory.push(cur.id);
+  if(_pageHistory.length>20)_pageHistory.shift();
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   if(id==='songs-page')loadSongs();
-  // hide bottom bar on game page
   const bar=document.getElementById('menu-bottom-bar');
   if(bar)bar.style.display=(id==='game-page'||id==='auth-page')?'none':((CU||isGuest)?'flex':'none');
+}
+function goPageBack(){
+  // pop until we find a page that exists and is not current
+  while(_pageHistory.length){
+    const prev=_pageHistory.pop();
+    if(prev&&document.getElementById(prev)){showPage(prev,true);return;}
+  }
+  showPage('menu-page',true);
 }
 function toast(msg,col='#aaa'){const t=document.getElementById('toast');t.textContent=msg;t.style.color=col;t.style.opacity=1;clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.opacity=0,2800);}
 function confirm2(msg){return new Promise(res=>{const m=document.getElementById('confirm-modal');document.getElementById('confirm-msg').textContent=msg;m.classList.add('show');const y=document.getElementById('confirm-yes'),n=document.getElementById('confirm-no');const done=v=>{m.classList.remove('show');y.onclick=null;n.onclick=null;res(v);};y.onclick=()=>done(true);n.onclick=()=>done(false);});}
@@ -1113,8 +1126,6 @@ async function openProfile(uid, backPage){
   const inner=document.getElementById('profile-inner');
   inner.innerHTML='<div class="empty-state" style="padding:40px;">LOADING...</div>';
   const isSelf=uid&&CU&&uid===CU.uid;
-  const backBtn=document.getElementById('profile-back-btn');
-  if(backBtn)backBtn.onclick=()=>showPage(backPage||'menu-page');
 
   try{
     const usnap=uid?await dGet(dDoc('users',uid)):null;
@@ -2049,7 +2060,40 @@ function hudUpdate(now){
   if(cpsEl)cpsEl.textContent=fireCPS>0?`${fireCPS} CPS`:'';
 }
 
-function stopAll(){running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);}
+// ── PAUSE ─────────────────────────────────────────────────────────────────────
+let _paused=false;
+function togglePause(){
+  if(mode!=='play')return;
+  if(_paused){
+    _paused=false;
+    document.getElementById('pausebtn').textContent='⏸';
+    document.getElementById('pausebtn').style.color='#555';
+    if(aud)aud.play().then(()=>{_cBase=performance.now();_cOff=aud.currentTime*1000;});
+    running=true;raf2=requestAnimationFrame(pLoop2);
+    const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
+  } else {
+    _paused=true;running=false;cancelAnimationFrame(raf2);
+    if(aud)aud.pause();
+    document.getElementById('pausebtn').textContent='▶';
+    document.getElementById('pausebtn').style.color='var(--cyan)';
+    const pov=document.createElement('div');pov.id='pause-overlay';
+    pov.style.cssText='position:absolute;inset:0;background:rgba(5,5,13,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:19;gap:14px;';
+    pov.innerHTML=`<div style="font-size:28px;letter-spacing:8px;color:#fff;">PAUSED</div>
+      <div style="font-size:11px;color:#444;letter-spacing:3px;">${esc(CS?.title||'')}</div>
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button class="xbtn cy" onclick="togglePause()">[ RESUME ]</button>
+        <button class="xbtn rd sm" onclick="_paused=false;stopAll();goBack()">[ QUIT ]</button>
+      </div>`;
+    document.getElementById('gc').appendChild(pov);
+  }
+}
+window.togglePause=togglePause;
+
+function stopAll(){
+  _paused=false;
+  const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
+  running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
+}
 function showOv(html){document.getElementById('ov').innerHTML=html;document.getElementById('ov').style.display='flex';}
 function hideOv(){document.getElementById('ov').style.display='none';}
 // ── VISUAL EFFECTS OVERLAY ────────────────────────────────────────────────────
@@ -2424,6 +2468,7 @@ function initPlay(){
   `);
   document.getElementById('mb').textContent='BEATLINE';document.getElementById('mb').className='';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
+  const pbtn=document.getElementById('pausebtn');if(pbtn)pbtn.style.display='none';
   drawIdle2();
 }
 
@@ -2431,8 +2476,10 @@ function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
   score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   document.getElementById('streak-popup').style.opacity='0';
+  _paused=false;
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
+  const pbtn=document.getElementById('pausebtn');if(pbtn){pbtn.style.display='block';pbtn.textContent='⏸';pbtn.style.color='#555';}
   const spd=CS.speedEffect||1;
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
   const n=CS.effectEvents?.length||0;
@@ -2779,7 +2826,7 @@ document.addEventListener('keydown',e=>{
   if(pid==='game-page'){
     const i=KEYS.indexOf(e.key.toLowerCase());
     if(i!==-1){_laneDown(i);}
-    if(e.key==='Escape'){if(watchMode){exitWatch();}else{stopAll();goBack();}}
+    if(e.key==='Escape'){if(watchMode){exitWatch();}else if(mode==='play'){togglePause();}else{stopAll();goBack();}}
   }
 });
 document.addEventListener('keyup',e=>{
@@ -2921,7 +2968,7 @@ window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFir
 window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.startEditUsername=startEditUsername;window.removeFriend=removeFriend;
 window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;window.startGlobalNotifListener=startGlobalNotifListener;
 window.openChat=openChat;window.closeChat=closeChat;window.sendChatMsg=sendChatMsg;window.handleChatImg=handleChatImg;window.clearChatImg=clearChatImg;
-window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
+window.showPage=showPage;window.goPageBack=goPageBack;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
 window.delSong=delSong;window.editSong=editSong;window.initCreatePage=initCreatePage;window.setDiff=setDiff;
