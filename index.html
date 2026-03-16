@@ -360,6 +360,7 @@ canvas#cv{display:block;width:440px;height:620px;}
           <div><label class="xlabel">PASSWORD</label><input class="xinput" id="li-pass" type="password" placeholder="••••••••"></div>
           <div class="auth-err" id="li-err"></div>
           <button class="xbtn cy" onclick="doLogin()" style="width:100%;text-align:center;">[ LOGIN ]</button>
+          <button onclick="doForgotPassword()" style="background:none;border:none;color:#333;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;cursor:pointer;text-align:center;width:100%;margin-top:-4px;">FORGOT PASSWORD?</button>
         </div>
       </div>
       <div id="register-form" style="display:none;">
@@ -814,6 +815,27 @@ async function doRegister(){
   try{const c=await auth.createUserWithEmailAndPassword(em,p);await c.user.updateProfile({displayName:u});await dSet(dDoc('users',c.user.uid),{username:u,email:em,isAdmin:false,bio:'',friends:[],createdAt:sts(),totalScore:0,gamesPlayed:0});}
   catch(e){err.textContent=e.code==='auth/email-already-in-use'?'EMAIL IN USE':e.code==='auth/invalid-email'?'INVALID EMAIL':'ERROR: '+e.code;}
 }
+async function doForgotPassword(){
+  const u=document.getElementById('li-user').value.trim();
+  const err=document.getElementById('li-err');err.textContent='';
+  let email=u;
+  if(!u){err.textContent='ENTER YOUR USERNAME OR EMAIL FIRST';return;}
+  try{
+    if(!u.includes('@')){
+      const s=await dQ('users',W('username','==',u.toUpperCase()));
+      if(s.empty){err.textContent='USER NOT FOUND';return;}
+      email=s.docs[0].data().email;
+    }
+    await auth.sendPasswordResetEmail(email);
+    err.style.color='var(--green)';
+    err.textContent='RESET EMAIL SENT TO '+email;
+    setTimeout(()=>{err.textContent='';err.style.color='';},5000);
+  }catch(e){
+    err.style.color='';
+    err.textContent=e.code==='auth/user-not-found'?'EMAIL NOT FOUND':'ERROR: '+e.code;
+  }
+}
+window.doForgotPassword=doForgotPassword;
 async function doLogout(){
   stopAll();isGuest=false;
   if(CU)await auth.signOut();
