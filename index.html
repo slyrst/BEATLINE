@@ -476,10 +476,20 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;">FIRE RANGES + SPEED + OTHER EFFECTS → SET IN EFFECT EDIT MODE (after publish)</div>
     </div>
     <div class="section-title">AUDIO</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;">
-      <label class="xlabel">FILENAME</label>
-      <input class="xinput" id="cr-fn" placeholder="universecollapse.mp3" autocomplete="off" spellcheck="false" oninput="onFnInput()">
-      <div class="audio-st hint" id="cr-audio-st" style="margin-top:8px;">TYPE THE FILENAME — FILE MUST BE IN THE SAME FOLDER AS THIS PAGE</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+      <div>
+        <label class="xlabel">FILENAME</label>
+        <input class="xinput" id="cr-fn" placeholder="universecollapse.mp3" autocomplete="off" spellcheck="false" oninput="onFnInput()">
+        <div class="audio-st hint" id="cr-audio-st" style="margin-top:8px;">TYPE THE FILENAME — FILE MUST BE IN THE SAME FOLDER AS THIS PAGE</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;">
+          <label class="xlabel">SONG END TIME (optional)</label>
+          <input class="xinput" id="cr-end-time" placeholder="e.g. 3:42 or 222" autocomplete="off" style="font-size:12px;">
+        </div>
+        <button class="xbtn sm" onclick="setEndTimeNow()" style="margin-top:16px;" title="Set to current position if audio is playing">[ SET NOW ]</button>
+      </div>
+      <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;">LEAVE EMPTY TO PLAY FULL SONG · FORMAT: MM:SS OR SECONDS</div>
     </div>
     <div class="section-title">BEATMAP</div>
     <div class="rec-status">
@@ -1300,6 +1310,10 @@ function initCreatePage(existing=null){
   if(dBtn){if(crAllowDim){dBtn.textContent='ON';dBtn.style.borderColor='var(--amber)';dBtn.style.color='var(--amber)';}else{dBtn.textContent='OFF';dBtn.style.borderColor='#1a1a30';dBtn.style.color='#444';}}
 
   crExistingAudioUrl=existing?.audioUrl||'';
+  // load end time
+  const endSec=existing?.endTime||0;
+  const etEl=document.getElementById('cr-end-time');
+  if(etEl)etEl.value=endSec>0?fmtT(endSec*1000):'';
   let ef=existing?.audioUrl||'';if(ef.startsWith('./'))ef=ef.slice(2);
   document.getElementById('cr-fn').value=ef;
   const st=document.getElementById('cr-audio-st');
@@ -1319,7 +1333,25 @@ function initCreatePage(existing=null){
   document.getElementById('cr-stop-btn').style.display='none';
   startBgCanvas();
 }
-function setDiff(d){crDiff=d;['easy','medium','hard','expert'].forEach(x=>document.getElementById('diff-'+x).classList.toggle('active',x===d));}
+function setEndTimeNow(){
+  // try create page audio, fallback to game audio
+  const a=crAud||aud;
+  if(!a||!a.currentTime){toast('PLAY THE AUDIO FIRST','#ff4444');return;}
+  const t=a.currentTime;
+  const el=document.getElementById('cr-end-time');
+  if(el)el.value=fmtT(t*1000);
+  toast('END TIME SET: '+fmtT(t*1000),'#00ff88');
+}
+function parseEndTime(val){
+  if(!val||!val.trim())return 0;
+  val=val.trim();
+  if(val.includes(':')){
+    const[m,s]=val.split(':').map(Number);
+    return(m*60)+(s||0);
+  }
+  return parseFloat(val)||0;
+}
+window.setEndTimeNow=setEndTimeNow;
 
 let crAllowFire=true,crFireStart=0,crAllowDim=false,crSpeed=1;
 function toggleFireOpt(){
@@ -1570,10 +1602,10 @@ async function crPublish(){
   try{
     const fireStart=parseFloat(document.getElementById('cr-fire-start')?.value)||0;
     const speedEffect=CS?.speedEffect||parseFloat(document.getElementById('cr-speed')?.value)||1;
-    // always use CS.effectEvents — kept up to date by saveEffects in effect edit mode
+    const endTime=parseEndTime(document.getElementById('cr-end-time')?.value||'');
     const existingEffects=CS?.effectEvents||watchEffectEvents||[];
     const existingFireRanges=existingEffects.filter(e=>e.type==='fire');
-    const baseData={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,allowFire:crAllowFire,dimEffect:crAllowDim,speedEffect,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',updatedAt:sts()};
+    const baseData={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,allowFire:crAllowFire,dimEffect:crAllowDim,speedEffect,endTime:endTime||null,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',updatedAt:sts()};
     const data=ESI?baseData:{...baseData,plays:0}; // don't reset plays on update
     if(ESI){
       await dUpd(dDoc('songs',ESI),data);
@@ -2097,8 +2129,10 @@ function pUpdate2(){
   autoTick(now);
   jAlpha=Math.max(0,jAlpha-.022);document.getElementById('jt').style.opacity=jAlpha;
   hudUpdate(now);
-  if(bpIdx>=beatmap.length&&notes.length===0&&now>500){running=false;setTimeout(endPlay2,800);}
-  if(aud&&aud.ended){running=false;setTimeout(endPlay2,1000);}
+  if(bpIdx>=beatmap.length&&notes.length===0&&now>500){running=false;setTimeout(endPlay2,800);return;}
+  if(aud&&aud.ended){running=false;setTimeout(endPlay2,1000);return;}
+  // custom end time
+  if(CS?.endTime&&aud&&aud.currentTime>=CS.endTime){running=false;aud.pause();setTimeout(endPlay2,600);return;}
 }
 function hitPlay(lane,down){
   if(!running||mode!=='play')return;
@@ -2302,7 +2336,12 @@ function drawPlay2(){
   }
   const evtsForEffects=CS?.effectEvents||[];
   if(effectsEnabled&&aud&&evtsForEffects.length)applyVisualEffects(aud.currentTime);
-  if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
+  if(aud&&aud.duration){
+    const dur=CS?.endTime||aud.duration;
+    const pct=Math.min(1,aud.currentTime/dur);
+    ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);
+    ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*pct,5);
+  }
 }
 // Watch mode draws without its own fire logic (watchLoop handles fire separately)
 function drawPlay2_nofire(){
