@@ -58,25 +58,26 @@ body{background:var(--bg);font-family:'Courier New',monospace;color:var(--text);
 .admin-badge{font-size:9px;background:#ff00aa22;border:1px solid #ff00aa44;color:var(--pink);padding:2px 8px;letter-spacing:2px;}
 /* SONGS */
 #songs-page{padding-top:0;}
-.page-header{width:100%;max-width:700px;display:flex;align-items:center;justify-content:space-between;padding:18px 20px 14px;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);}
-.page-header-title{font-size:14px;letter-spacing:4px;color:var(--text2);}
-.songs-list{width:100%;max-width:700px;padding:12px 20px 60px;display:flex;flex-direction:column;gap:8px;}
-.song-card{background:var(--bg3);border:1px solid var(--border);padding:14px 14px;transition:border-color .15s;display:flex;align-items:flex-start;gap:12px;}
+.page-header{width:100%;max-width:700px;display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);}
+.page-header-title{font-size:13px;letter-spacing:4px;color:var(--text2);}
+.songs-list{width:100%;max-width:700px;padding:10px 12px 60px;display:flex;flex-direction:column;gap:6px;}
+.song-card{background:var(--bg3);border:1px solid var(--border);padding:12px 12px 10px;display:flex;flex-direction:column;gap:6px;}
 .song-card:hover{border-color:var(--border2);}
-.song-thumb{width:44px;height:44px;min-width:44px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.song-info{flex:1;min-width:0;overflow:hidden;}
-.song-title{font-size:13px;font-weight:bold;letter-spacing:1px;margin-bottom:2px;word-break:break-word;white-space:normal;line-height:1.3;}
+.song-card-top{display:flex;align-items:center;gap:10px;}
+.song-thumb{width:36px;height:36px;min-width:36px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.song-info{flex:1;min-width:0;}
+.song-title{font-size:13px;font-weight:bold;letter-spacing:1px;margin-bottom:1px;word-break:break-word;white-space:normal;line-height:1.3;color:#fff;}
 .song-artist{font-size:10px;color:#555;letter-spacing:1px;}
-.song-author{font-size:9px;color:#1e1e32;letter-spacing:2px;margin-top:3px;}
+.song-author{font-size:9px;color:#1e1e32;letter-spacing:1px;margin-top:2px;}
 .song-author b{color:#2e2e4e;font-weight:normal;}
-.song-meta{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
-.song-tag{font-size:9px;letter-spacing:1px;padding:2px 6px;border:1px solid;opacity:.7;}
+.song-card-bottom{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.song-meta{display:flex;gap:4px;flex-wrap:wrap;flex:1;}
+.song-tag{font-size:8px;letter-spacing:1px;padding:2px 5px;border:1px solid;opacity:.8;}
 .song-tag.diff-easy{border-color:#00ff88;color:#00ff88;}
 .song-tag.diff-medium{border-color:#ffaa00;color:#ffaa00;}
 .song-tag.diff-hard{border-color:#ff4444;color:#ff4444;}
 .song-tag.diff-expert{border-color:#ff00aa;color:#ff00aa;}
-.song-actions{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;min-width:80px;}
-.song-actions-btns{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;}
+.song-actions-btns{display:flex;gap:4px;flex-shrink:0;}
 /* LB */
 #lb-page{padding-top:0;}
 .lb-list{width:100%;max-width:700px;padding:12px 20px 60px;display:flex;flex-direction:column;gap:6px;}
@@ -183,7 +184,38 @@ canvas#cv{display:block;width:440px;height:620px;}
 .khi.k1{border-top-color:#ff00aa44;color:var(--pink);}
 .khi.k2{border-top-color:#00ff8844;color:var(--green);}
 .khi.k3{border-top-color:#ffaa0044;color:var(--amber);}
-/* SETTINGS */
+/* PROFILE */
+#profile-page{padding-top:0;}
+.profile-inner{width:100%;max-width:600px;padding:0 0 60px;}
+.profile-header-card{background:var(--bg3);border-bottom:1px solid var(--border);padding:28px 24px 20px;display:flex;gap:20px;align-items:flex-start;}
+.profile-avatar{width:64px;height:64px;min-width:64px;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:bold;color:var(--cyan);background:#001a1f;letter-spacing:0;}
+.profile-info{flex:1;min-width:0;}
+.profile-name{font-size:20px;letter-spacing:4px;font-weight:bold;margin-bottom:4px;}
+.profile-bio{font-size:11px;color:#555;letter-spacing:1px;line-height:1.6;margin-bottom:10px;white-space:pre-wrap;word-break:break-word;}
+.profile-bio-empty{font-size:10px;color:#2a2a44;letter-spacing:2px;font-style:italic;}
+.profile-stats-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;}
+.profile-stat{text-align:center;}
+.profile-stat-val{font-size:16px;font-weight:bold;color:var(--cyan);}
+.profile-stat-lbl{font-size:8px;color:#333;letter-spacing:2px;margin-top:1px;}
+.profile-section{padding:16px 24px 0;}
+.profile-section-title{font-size:9px;letter-spacing:4px;color:#333;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:6px;}
+.profile-score-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a;}
+.profile-score-row:last-child{border-bottom:none;}
+.profile-score-rank{font-size:11px;color:#333;width:20px;text-align:right;}
+.profile-score-song{flex:1;min-width:0;}
+.profile-score-title{font-size:11px;letter-spacing:1px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.profile-score-sub{font-size:9px;color:#444;letter-spacing:1px;}
+.profile-score-val{font-size:13px;font-weight:bold;letter-spacing:2px;color:var(--cyan);}
+.profile-score-grade{font-size:11px;font-weight:bold;width:18px;text-align:center;}
+.friend-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #0d0d1a;}
+.friend-row:last-child{border-bottom:none;}
+.friend-avatar{width:32px;height:32px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:var(--cyan);background:#001a1f;flex-shrink:0;}
+.friend-name{flex:1;font-size:11px;letter-spacing:2px;}
+/* menu bottom bar */
+#menu-bottom-bar{position:fixed;bottom:0;left:0;right:0;background:rgba(5,5,13,0.95);border-top:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;z-index:100;}
+#menu-bottom-player{font-size:10px;color:#444;letter-spacing:2px;display:flex;align-items:center;gap:8px;}
+#menu-bottom-player span{color:var(--cyan);}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
 #settings-page{justify-content:flex-start;padding-top:0;}
 .settings-inner{width:100%;max-width:500px;padding:16px 20px 60px;display:flex;flex-direction:column;gap:18px;}
 .settings-section{background:var(--bg3);border:1px solid var(--border);padding:20px;}
@@ -359,6 +391,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="menu-btns">
       <button class="xbtn cy lg" onclick="showPage('songs-page')">[ PLAY ]</button>
       <button class="xbtn gn" onclick="showPage('create-page');initCreatePage()">[ CREATE LEVEL ]</button>
+      <button class="xbtn pk" onclick="openProfile(CU?.uid||null)">[ MY PROFILE ]</button>
       <button class="xbtn am" onclick="showLeaderboardGlobal()">[ LEADERBOARD ]</button>
       <button class="xbtn" onclick="showPage('settings-page')">[ SETTINGS ]</button>
       <button class="xbtn rd sm" onclick="doLogout()">[ LOGOUT ]</button>
@@ -594,6 +627,26 @@ canvas#cv{display:block;width:440px;height:620px;}
     </div>
   </div>
 </div>
+<!-- PROFILE -->
+<div class="page" id="profile-page">
+  <div class="page-header">
+    <div class="page-header-title">PROFILE</div>
+    <button class="xbtn sm" id="profile-back-btn" onclick="showPage('menu-page')">[ BACK ]</button>
+  </div>
+  <div class="profile-inner" id="profile-inner">
+    <div class="empty-state" style="padding:40px;">LOADING...</div>
+  </div>
+</div>
+
+<!-- GLOBAL BOTTOM BAR — current player -->
+<div id="menu-bottom-bar" style="display:none;">
+  <div id="menu-bottom-player">
+    PLAYING AS <span id="bottom-username">—</span>
+    <span id="bottom-guest-badge" style="display:none;font-size:8px;background:#00ff8822;border:1px solid #00ff8844;color:var(--green);padding:1px 6px;letter-spacing:2px;">GUEST</span>
+    <span id="bottom-admin-badge" style="display:none;font-size:8px;background:#00f0ff22;border:1px solid #00f0ff44;color:var(--cyan);padding:1px 6px;letter-spacing:2px;">ADMIN</span>
+  </div>
+  <button class="xbtn sm pk" style="padding:4px 12px;font-size:9px;" onclick="openProfile(CU?.uid||null)">PROFILE</button>
+</div>
 
 </div><!-- #app -->
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
@@ -652,7 +705,7 @@ async function doGuest(){
   document.getElementById('guest-login-notice').style.display='block';
   const nd=document.getElementById('guest-name-display');
   if(nd)nd.textContent='playing as '+guestName+' · scores saved';
-  hideLoad();showPage('menu-page');
+  hideLoad();showPage('menu-page');updateBottomBar();
 }
 
 auth.onAuthStateChanged(async user=>{
@@ -663,10 +716,10 @@ auth.onAuthStateChanged(async user=>{
     document.getElementById('admin-badge-menu').style.display=ADM?'inline':'none';
     document.getElementById('guest-badge-menu').style.display='none';
     document.getElementById('guest-login-notice').style.display='none';
-    hideLoad();showPage('menu-page');
+    hideLoad();showPage('menu-page');updateBottomBar();
   }else{
     // only go to auth page if not already in guest mode
-    if(!isGuest){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');}
+    if(!isGuest){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
     else hideLoad();
   }
 });
@@ -690,7 +743,7 @@ async function doRegister(){
   if(u.length<3){err.textContent='USERNAME TOO SHORT';return;}
   if(p.length<6){err.textContent='PASSWORD TOO SHORT';return;}
   const ex=await dQ('users',W('username','==',u));if(!ex.empty){err.textContent='USERNAME TAKEN';return;}
-  try{const c=await auth.createUserWithEmailAndPassword(em,p);await c.user.updateProfile({displayName:u});await dSet(dDoc('users',c.user.uid),{username:u,email:em,isAdmin:false,createdAt:sts(),totalScore:0,gamesPlayed:0});}
+  try{const c=await auth.createUserWithEmailAndPassword(em,p);await c.user.updateProfile({displayName:u});await dSet(dDoc('users',c.user.uid),{username:u,email:em,isAdmin:false,bio:'',friends:[],createdAt:sts(),totalScore:0,gamesPlayed:0});}
   catch(e){err.textContent=e.code==='auth/email-already-in-use'?'EMAIL IN USE':e.code==='auth/invalid-email'?'INVALID EMAIL':'ERROR: '+e.code;}
 }
 async function doLogout(){
@@ -711,24 +764,26 @@ function buildCard(s){
   const nc=s.beatmap?s.beatmap.length:0;
   const canEdit=ADM||(CU&&s.authorId===CU.uid);
   div.innerHTML=`
-    <div class="song-thumb" style="border-color:${dc}44;color:${dc};">♪</div>
-    <div class="song-info">
-      <div class="song-title">${esc(s.title||'UNTITLED')}</div>
-      <div class="song-artist">${esc(s.artist||'UNKNOWN ARTIST')}</div>
-      <div class="song-author">LEVEL BY <b>${esc(s.authorName||'UNKNOWN')}</b></div>
-      <div class="song-meta">
-        <span class="song-tag diff-${s.difficulty||'easy'}">${(s.difficulty||'EASY').toUpperCase()}</span>
-        ${s.bpm?`<span class="song-tag" style="border-color:#222;color:#3a3a5a;">${s.bpm} BPM</span>`:''}
-        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${nc} NOTES</span>
+    <div class="song-card-top">
+      <div class="song-thumb" style="border-color:${dc}44;color:${dc};">♪</div>
+      <div class="song-info">
+        <div class="song-title">${esc(s.title||'UNTITLED')}</div>
+        <div class="song-artist">${esc(s.artist||'UNKNOWN ARTIST')}</div>
+        <div class="song-author">BY <b>${esc(s.authorName||'?')}</b></div>
       </div>
     </div>
-    <div class="song-actions">
-      <div style="font-size:10px;color:#252540;letter-spacing:1px;">${s.plays||0} plays</div>
+    <div class="song-card-bottom">
+      <div class="song-meta">
+        <span class="song-tag diff-${s.difficulty||'easy'}">${(s.difficulty||'EASY').toUpperCase()}</span>
+        ${s.bpm?`<span class="song-tag" style="border-color:#222;color:#3a3a5a;">${s.bpm}BPM</span>`:''}
+        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${nc}N</span>
+        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${s.plays||0}▶</span>
+      </div>
       <div class="song-actions-btns">
-        <button class="xbtn cy sm" onclick="playSong('${s.id}')">[ PLAY ]</button>
-        <button class="xbtn sm" onclick="showLB('${s.id}','${esc(s.title||'')}')">[ LB ]</button>
-        ${canEdit?`<button class="xbtn am sm" onclick="editSong('${s.id}')">[ EDIT ]</button>`:''}
-        ${ADM?`<button class="xbtn rd sm" onclick="delSong('${s.id}','${esc(s.title||'')}')">[ DEL ]</button>`:''}
+        <button class="xbtn cy sm" onclick="playSong('${s.id}')">▶ PLAY</button>
+        <button class="xbtn sm" onclick="showLB('${s.id}','${esc(s.title||'')}')">LB</button>
+        ${canEdit?`<button class="xbtn am sm" onclick="editSong('${s.id}')">EDIT</button>`:''}
+        ${ADM?`<button class="xbtn rd sm" onclick="delSong('${s.id}','${esc(s.title||'')}')">✕</button>`:''}
       </div>
     </div>`;
   return div;
@@ -741,6 +796,171 @@ async function editSong(id){
   const d=snap.data();
   if(!ADM&&CU?.uid!==d.authorId){hideLoad();toast('NOT YOUR LEVEL','#ff4444');return;}
   ESI=id;initCreatePage({id,...d});hideLoad();showPage('create-page');
+}
+
+// ── BOTTOM BAR ────────────────────────────────────────────────────────────────
+function updateBottomBar(){
+  const bar=document.getElementById('menu-bottom-bar');
+  if(!bar)return;
+  const name=isGuest?guestName:(CUD?.username||CU?.displayName||'PLAYER');
+  document.getElementById('bottom-username').textContent=name;
+  document.getElementById('bottom-guest-badge').style.display=isGuest?'inline':'none';
+  document.getElementById('bottom-admin-badge').style.display=ADM?'inline':'none';
+  bar.style.display=(CU||isGuest)?'flex':'none';
+}
+
+// ── PROFILE ────────────────────────────────────────────────────────────────────
+let _editingBio=false;
+
+async function openProfile(uid){
+  showPage('profile-page');
+  const inner=document.getElementById('profile-inner');
+  inner.innerHTML='<div class="empty-state" style="padding:40px;">LOADING...</div>';
+  const isSelf=uid&&CU&&uid===CU.uid;
+  const backBtn=document.getElementById('profile-back-btn');
+  if(backBtn)backBtn.onclick=()=>showPage('menu-page');
+
+  try{
+    // Load user doc
+    const usnap=uid?await dGet(dDoc('users',uid)):null;
+    const ud=usnap?.data()||{username:guestName||'GUEST',totalScore:0,gamesPlayed:0,bio:'',friends:[]};
+    const username=ud.username||'?';
+
+    // Load top scores for this user
+    let topScores=[];
+    if(uid){
+      const sSnap=await dQ('scores',W('userId','==',uid));
+      topScores=[...sSnap.docs].map(d=>d.data()).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
+    }
+
+    // Load friends
+    const friends=ud.friends||[];
+    let friendDocs=[];
+    for(const fid of friends.slice(0,8)){
+      try{const f=await dGet(dDoc('users',fid));if(f.exists)friendDocs.push({id:fid,...f.data()});}catch(e){}
+    }
+
+    const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'};
+    const initials=username.slice(0,2).toUpperCase();
+
+    const topScoreRows=topScores.length?topScores.map((sc,i)=>`
+      <div class="profile-score-row">
+        <div class="profile-score-rank">${i+1}</div>
+        <div class="profile-score-song">
+          <div class="profile-score-title">${esc(sc.songTitle||'?')}</div>
+          <div class="profile-score-sub">${sc.accuracy||0}% · ${sc.maxCombo||0}× COMBO${sc.fullCombo?' · FC':''}</div>
+        </div>
+        <div class="profile-score-grade" style="color:${gc[sc.grade]||'#aaa'}">${sc.grade||'?'}</div>
+        <div class="profile-score-val">${(sc.score||0).toLocaleString()}</div>
+      </div>`).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no scores yet</div>';
+
+    const friendRows=friendDocs.length?friendDocs.map(f=>`
+      <div class="friend-row">
+        <div class="friend-avatar">${(f.username||'?').slice(0,2).toUpperCase()}</div>
+        <div class="friend-name">${esc(f.username||'?')}</div>
+        <button class="xbtn sm rd" onclick="removeFriend('${f.id}')" style="padding:3px 8px;font-size:9px;">${isSelf?'REMOVE':''}</button>
+      </div>`).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no friends yet</div>';
+
+    // Add friend input (only own profile)
+    const addFriendSection=isSelf?`
+      <div class="profile-section">
+        <div class="profile-section-title">ADD FRIEND</div>
+        <div style="display:flex;gap:8px;">
+          <input class="xinput" id="friend-input" placeholder="username" autocomplete="off" style="flex:1;font-size:11px;" oninput="this.value=this.value.toUpperCase()">
+          <button class="xbtn cy sm" onclick="addFriend()">[ ADD ]</button>
+        </div>
+      </div>`:'';
+
+    const bioSection=isSelf?`
+      <div style="margin-top:10px;">
+        <div id="bio-display" style="display:block;">
+          <div class="${ud.bio?'profile-bio':'profile-bio-empty'}">${ud.bio?esc(ud.bio):'no bio yet — click to add'}</div>
+          <button class="xbtn sm" style="margin-top:6px;padding:3px 10px;font-size:9px;" onclick="startEditBio()">[ EDIT BIO ]</button>
+        </div>
+        <div id="bio-edit" style="display:none;">
+          <textarea id="bio-textarea" maxlength="200" style="background:#0d0d1a;border:1px solid #333;color:#fff;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;padding:10px;width:100%;height:80px;resize:none;outline:none;">${esc(ud.bio||'')}</textarea>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <button class="xbtn cy sm" onclick="saveBio()">[ SAVE ]</button>
+            <button class="xbtn sm" onclick="cancelEditBio()">[ CANCEL ]</button>
+          </div>
+        </div>
+      </div>`:`<div class="profile-bio ${ud.bio?'':'profile-bio-empty'}">${ud.bio?esc(ud.bio):'no bio'}</div>`;
+
+    inner.innerHTML=`
+      <div class="profile-header-card">
+        <div class="profile-avatar">${initials}</div>
+        <div class="profile-info">
+          <div class="profile-name">${esc(username)}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
+          ${bioSection}
+          <div class="profile-stats-row" style="margin-top:10px;">
+            <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">TOTAL SCORE</div></div>
+            <div class="profile-stat"><div class="profile-stat-val">${ud.gamesPlayed||0}</div><div class="profile-stat-lbl">PLAYS</div></div>
+            <div class="profile-stat"><div class="profile-stat-val">${topScores.length}</div><div class="profile-stat-lbl">RANKED</div></div>
+            <div class="profile-stat"><div class="profile-stat-val">${friends.length}</div><div class="profile-stat-lbl">FRIENDS</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="profile-section">
+        <div class="profile-section-title">TOP SCORES</div>
+        ${topScoreRows}
+      </div>
+      <div class="profile-section" style="margin-top:16px;">
+        <div class="profile-section-title">FRIENDS</div>
+        ${friendRows}
+      </div>
+      ${addFriendSection}
+    `;
+  }catch(e){
+    inner.innerHTML=`<div class="empty-state" style="padding:40px;">ERROR: ${esc(e.message)}</div>`;
+  }
+}
+
+function startEditBio(){
+  document.getElementById('bio-display').style.display='none';
+  document.getElementById('bio-edit').style.display='block';
+  document.getElementById('bio-textarea').focus();
+}
+function cancelEditBio(){
+  document.getElementById('bio-display').style.display='block';
+  document.getElementById('bio-edit').style.display='none';
+}
+async function saveBio(){
+  if(!CU)return;
+  const bio=document.getElementById('bio-textarea').value.trim();
+  try{
+    await dUpd(dDoc('users',CU.uid),{bio});
+    if(CUD)CUD.bio=bio;
+    toast('BIO SAVED','#00ff88');
+    openProfile(CU.uid);
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+async function addFriend(){
+  if(!CU)return;
+  const name=document.getElementById('friend-input').value.trim().toUpperCase();
+  if(!name){toast('ENTER A USERNAME','#ff4444');return;}
+  if(name===(CUD?.username||'').toUpperCase()){toast("THAT'S YOU","#ff4444");return;}
+  try{
+    const snap=await dQ('users',W('username','==',name));
+    if(snap.empty){toast('USER NOT FOUND','#ff4444');return;}
+    const friendId=snap.docs[0].id;
+    const cur=CUD?.friends||[];
+    if(cur.includes(friendId)){toast('ALREADY FRIENDS','#ffaa00');return;}
+    await dUpd(dDoc('users',CU.uid),{friends:[...cur,friendId]});
+    if(CUD)CUD.friends=[...cur,friendId];
+    toast('FRIEND ADDED: '+name,'#00ff88');
+    openProfile(CU.uid);
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+async function removeFriend(fid){
+  if(!CU||!CUD)return;
+  const cur=CUD.friends||[];
+  const updated=cur.filter(id=>id!==fid);
+  try{
+    await dUpd(dDoc('users',CU.uid),{friends:updated});
+    CUD.friends=updated;
+    toast('FRIEND REMOVED','#ffaa00');
+    openProfile(CU.uid);
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
 }
 
 // ── LEADERBOARD ───────────────────────────────────────────────────────────────
@@ -1096,7 +1316,8 @@ async function crPublish(){
     // always use CS.effectEvents — kept up to date by saveEffects in effect edit mode
     const existingEffects=CS?.effectEvents||watchEffectEvents||[];
     const existingFireRanges=existingEffects.filter(e=>e.type==='fire');
-    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,allowFire:crAllowFire,dimEffect:crAllowDim,speedEffect,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
+    const baseData={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,allowFire:crAllowFire,dimEffect:crAllowDim,speedEffect,effectEvents:existingEffects,fireRanges:existingFireRanges,authorId:CU.uid,authorName:CUD?.username||'?',updatedAt:sts()};
+    const data=ESI?baseData:{...baseData,plays:0}; // don't reset plays on update
     if(ESI){
       await dUpd(dDoc('songs',ESI),data);
       CS={id:ESI,...data,preview:false,fromCreate:true};
@@ -1519,7 +1740,7 @@ function watchLoop(){
     const rawVol=getVolume();
     fireVol=fireVol*0.85+rawVol*0.15;
     if(fireVol>0.45)spawnFire(fireVol,false);
-    if(aud&&isInFireRange(aud.currentTime))spawnFire(Math.max(0.6,0.5+fireVol),true);
+    if(aud&&isInFireRange(aud.currentTime))spawnFire(0.7,true);
     drawFire();
   }
   if(effectsEnabled&&aud&&watchEffectEvents.length)applyVisualEffects(aud.currentTime);
@@ -1819,7 +2040,7 @@ function drawPlay2(){
     if(fireVol>0.45)spawnFire(fireVol,false);
     _cpsTimer+=1/60;
     if(_cpsTimer>=1){fireCPS=_cpsHits;_cpsHits=0;_cpsTimer=0;}
-    if(fireCPS>=6&&isInFireRange(aud?aud.currentTime:0))spawnFire(Math.min(0.5+fireCPS*0.04,1),true);
+    if(isInFireRange(aud?aud.currentTime:0))spawnFire(0.7,true); // always spawn top fire in range
     drawFire();
   }
   const evtsForEffects=CS?.effectEvents||[];
@@ -2069,7 +2290,8 @@ window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
 window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
-window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
+window.doGuest=doGuest;window.openProfile=openProfile;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.addFriend=addFriend;window.removeFriend=removeFriend;
+window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
 window.delSong=delSong;window.editSong=editSong;window.initCreatePage=initCreatePage;window.setDiff=setDiff;
