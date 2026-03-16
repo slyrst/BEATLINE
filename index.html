@@ -812,28 +812,26 @@ function updateBottomBar(){
 // ── PROFILE ────────────────────────────────────────────────────────────────────
 let _editingBio=false;
 
-async function openProfile(uid){
+async function openProfile(uid, backPage){
   showPage('profile-page');
   const inner=document.getElementById('profile-inner');
   inner.innerHTML='<div class="empty-state" style="padding:40px;">LOADING...</div>';
   const isSelf=uid&&CU&&uid===CU.uid;
   const backBtn=document.getElementById('profile-back-btn');
-  if(backBtn)backBtn.onclick=()=>showPage('menu-page');
+  if(backBtn)backBtn.onclick=()=>showPage(backPage||'menu-page');
 
   try{
-    // Load user doc
     const usnap=uid?await dGet(dDoc('users',uid)):null;
-    const ud=usnap?.data()||{username:guestName||'GUEST',totalScore:0,gamesPlayed:0,bio:'',friends:[]};
+    const ud=usnap?.data()||{username:guestName||'GUEST',totalScore:0,gamesPlayed:0,bio:'',friends:[],avatar:''};
     const username=ud.username||'?';
+    const avatar=ud.avatar||'';
 
-    // Load top scores for this user
     let topScores=[];
     if(uid){
       const sSnap=await dQ('scores',W('userId','==',uid));
       topScores=[...sSnap.docs].map(d=>d.data()).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,5);
     }
 
-    // Load friends
     const friends=ud.friends||[];
     let friendDocs=[];
     for(const fid of friends.slice(0,8)){
@@ -843,57 +841,71 @@ async function openProfile(uid){
     const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'};
     const initials=username.slice(0,2).toUpperCase();
 
+    // Avatar HTML
+    const avatarHtml=avatar
+      ?`<img src="${esc(avatar)}" style="width:64px;height:64px;object-fit:cover;border:2px solid var(--cyan);display:block;">`
+      :`<div class="profile-avatar">${initials}</div>`;
+
+    const uploadBtn=isSelf?`
+      <div style="margin-top:6px;">
+        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
+        <button class="xbtn sm" style="padding:3px 10px;font-size:9px;" onclick="document.getElementById('avatar-file-input').click()">[ CHANGE AVATAR ]</button>
+      </div>`:'';
+
     const topScoreRows=topScores.length?topScores.map((sc,i)=>`
       <div class="profile-score-row">
         <div class="profile-score-rank">${i+1}</div>
         <div class="profile-score-song">
           <div class="profile-score-title">${esc(sc.songTitle||'?')}</div>
-          <div class="profile-score-sub">${sc.accuracy||0}% · ${sc.maxCombo||0}× COMBO${sc.fullCombo?' · FC':''}</div>
+          <div class="profile-score-sub">${sc.accuracy||0}% · ${sc.maxCombo||0}×${sc.fullCombo?' · FC':''}</div>
         </div>
         <div class="profile-score-grade" style="color:${gc[sc.grade]||'#aaa'}">${sc.grade||'?'}</div>
         <div class="profile-score-val">${(sc.score||0).toLocaleString()}</div>
       </div>`).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no scores yet</div>';
 
-    const friendRows=friendDocs.length?friendDocs.map(f=>`
-      <div class="friend-row">
-        <div class="friend-avatar">${(f.username||'?').slice(0,2).toUpperCase()}</div>
+    const friendRows=friendDocs.length?friendDocs.map(f=>{
+      const favatar=f.avatar?`<img src="${esc(f.avatar)}" style="width:32px;height:32px;object-fit:cover;border:1px solid var(--border);">`:`<div class="friend-avatar">${(f.username||'?').slice(0,2).toUpperCase()}</div>`;
+      return`<div class="friend-row" style="cursor:pointer;" onclick="openProfile('${f.id}','profile-page')">
+        ${favatar}
         <div class="friend-name">${esc(f.username||'?')}</div>
-        <button class="xbtn sm rd" onclick="removeFriend('${f.id}')" style="padding:3px 8px;font-size:9px;">${isSelf?'REMOVE':''}</button>
-      </div>`).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no friends yet</div>';
+        ${isSelf?`<button class="xbtn sm rd" onclick="event.stopPropagation();removeFriend('${f.id}')" style="padding:3px 8px;font-size:9px;">✕</button>`:''}
+      </div>`;}).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no friends yet</div>';
 
-    // Add friend input (only own profile)
     const addFriendSection=isSelf?`
       <div class="profile-section">
         <div class="profile-section-title">ADD FRIEND</div>
         <div style="display:flex;gap:8px;">
-          <input class="xinput" id="friend-input" placeholder="username" autocomplete="off" style="flex:1;font-size:11px;" oninput="this.value=this.value.toUpperCase()">
+          <input class="xinput" id="friend-input" placeholder="USERNAME" autocomplete="off" style="flex:1;font-size:11px;" oninput="this.value=this.value.toUpperCase()">
           <button class="xbtn cy sm" onclick="addFriend()">[ ADD ]</button>
         </div>
       </div>`:'';
 
     const bioSection=isSelf?`
-      <div style="margin-top:10px;">
-        <div id="bio-display" style="display:block;">
-          <div class="${ud.bio?'profile-bio':'profile-bio-empty'}">${ud.bio?esc(ud.bio):'no bio yet — click to add'}</div>
-          <button class="xbtn sm" style="margin-top:6px;padding:3px 10px;font-size:9px;" onclick="startEditBio()">[ EDIT BIO ]</button>
+      <div style="margin-top:8px;" id="bio-wrap">
+        <div id="bio-display">
+          <div class="${ud.bio?'profile-bio':'profile-bio-empty'}">${ud.bio?esc(ud.bio):'no bio — tap to add'}</div>
+          <button class="xbtn sm" style="margin-top:4px;padding:3px 10px;font-size:9px;" onclick="startEditBio()">[ EDIT BIO ]</button>
         </div>
         <div id="bio-edit" style="display:none;">
-          <textarea id="bio-textarea" maxlength="200" style="background:#0d0d1a;border:1px solid #333;color:#fff;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;padding:10px;width:100%;height:80px;resize:none;outline:none;">${esc(ud.bio||'')}</textarea>
+          <textarea id="bio-textarea" maxlength="200" style="background:#0d0d1a;border:1px solid #333;color:#fff;font-family:'Courier New',monospace;font-size:11px;padding:10px;width:100%;height:80px;resize:none;outline:none;">${esc(ud.bio||'')}</textarea>
           <div style="display:flex;gap:8px;margin-top:6px;">
             <button class="xbtn cy sm" onclick="saveBio()">[ SAVE ]</button>
             <button class="xbtn sm" onclick="cancelEditBio()">[ CANCEL ]</button>
           </div>
         </div>
-      </div>`:`<div class="profile-bio ${ud.bio?'':'profile-bio-empty'}">${ud.bio?esc(ud.bio):'no bio'}</div>`;
+      </div>`:`<div class="profile-bio ${ud.bio?'':'profile-bio-empty'}" style="margin-top:6px;">${ud.bio?esc(ud.bio):'no bio'}</div>`;
 
     inner.innerHTML=`
       <div class="profile-header-card">
-        <div class="profile-avatar">${initials}</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+          ${avatarHtml}
+          ${uploadBtn}
+        </div>
         <div class="profile-info">
           <div class="profile-name">${esc(username)}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
           ${bioSection}
           <div class="profile-stats-row" style="margin-top:10px;">
-            <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">TOTAL SCORE</div></div>
+            <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">SCORE</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${ud.gamesPlayed||0}</div><div class="profile-stat-lbl">PLAYS</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${topScores.length}</div><div class="profile-stat-lbl">RANKED</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${friends.length}</div><div class="profile-stat-lbl">FRIENDS</div></div>
@@ -913,6 +925,33 @@ async function openProfile(uid){
   }catch(e){
     inner.innerHTML=`<div class="empty-state" style="padding:40px;">ERROR: ${esc(e.message)}</div>`;
   }
+}
+
+async function handleAvatarUpload(event){
+  const file=event.target.files?.[0];if(!file||!CU)return;
+  // Resize to 128x128 via canvas, convert to base64
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const img=new Image();
+    img.onload=async()=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=128;canvas.height=128;
+      const ctx=canvas.getContext('2d');
+      // center-crop
+      const s=Math.min(img.width,img.height);
+      const sx=(img.width-s)/2,sy=(img.height-s)/2;
+      ctx.drawImage(img,sx,sy,s,s,0,0,128,128);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.8);
+      try{
+        await dUpd(dDoc('users',CU.uid),{avatar:dataUrl});
+        if(CUD)CUD.avatar=dataUrl;
+        toast('AVATAR UPDATED','#00ff88');
+        openProfile(CU.uid);
+      }catch(err){toast('UPLOAD FAILED: '+err.message,'#ff4444');}
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function startEditBio(){
@@ -992,7 +1031,7 @@ async function showLeaderboardGlobal(){
     if(snap.empty){list.innerHTML='<div class="empty-state">NO SCORES YET</div>';return;}
     list.innerHTML='';let rk=1;
     snap.forEach(d=>{const u=d.data(),me=d.id===CU?.uid;const row=document.createElement('div');row.className='lb-row'+(me?' lb-me':'');
-      row.innerHTML=`<div class="lb-rank ${rk===1?'r1':rk===2?'r2':rk===3?'r3':''}">${rk}</div><div class="lb-name">${esc(u.username||'?')}${me?' ◄':''}</div><div><div class="lb-score">${(u.totalScore||0).toLocaleString()}</div><div class="lb-acc">${u.gamesPlayed||0} PLAYS</div></div>`;
+      row.innerHTML=`<div class="lb-rank ${rk===1?'r1':rk===2?'r2':rk===3?'r3':''}">${rk}</div><div class="lb-name" style="cursor:pointer;" onclick="openProfile('${d.id}','lb-page')">${esc(u.username||'?')}${me?' ◄':''}</div><div><div class="lb-score">${(u.totalScore||0).toLocaleString()}</div><div class="lb-acc">${u.gamesPlayed||0} PLAYS</div></div>`;
       list.appendChild(row);rk++;});
   }catch(e){
     document.getElementById('lb-list').innerHTML=`<div class="empty-state">ERROR: ${esc(e.message)}</div>`;
@@ -1009,7 +1048,7 @@ function renderLB(snap){
     const fcBadge=sc.fullCombo?`<span style="font-size:9px;letter-spacing:2px;color:var(--amber);border:1px solid #ffaa0066;padding:1px 5px;margin-left:6px;">FC</span>`:'';
     const row=document.createElement('div');row.className='lb-row'+(me?' lb-me':'');
     row.innerHTML=`<div class="lb-rank ${rk===1?'r1':rk===2?'r2':rk===3?'r3':''}">${rk}</div>
-      <div class="lb-name">${esc(sc.username||'?')}${fcBadge}${me?' ◄':''}</div>
+      <div class="lb-name" style="${sc.userId&&sc.userId!=='guest'?'cursor:pointer;'    :''}" onclick="${sc.userId&&sc.userId!=='guest'?`openProfile('${sc.userId}','lb-page')`:''}"">${esc(sc.username||'?')}${fcBadge}${me?' ◄':''}</div>
       <div class="lb-grade" style="color:${gc}">${sc.grade||'?'}</div>
       <div><div class="lb-score">${(sc.score||0).toLocaleString()}</div>
       <div class="lb-acc">${sc.accuracy||0}% · ${sc.maxCombo||0}×</div></div>`;
@@ -2290,7 +2329,7 @@ window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
 window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
-window.doGuest=doGuest;window.openProfile=openProfile;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.addFriend=addFriend;window.removeFriend=removeFriend;
+window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.addFriend=addFriend;window.removeFriend=removeFriend;
 window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
