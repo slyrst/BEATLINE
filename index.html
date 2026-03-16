@@ -1591,10 +1591,13 @@ function startPlay(){
   document.getElementById('streak-popup').style.opacity='0';
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
-  // Apply effects
   const spd=CS.speedEffect||1;
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
-  aud=new Audio(CS.audioUrl);aud.preload='auto';aud.crossOrigin='anonymous';
+  // Debug: show effects count in top-right
+  const n=CS.effectEvents?.length||0;
+  console.log('startPlay: CS.id=',CS?.id,'effectEvents=',n,'data=',CS.effectEvents);
+  if(n>0)toast(n+' EFFECTS LOADED','#00f0ff');
+  aud=new Audio(CS.audioUrl);aud.preload='auto'; // no crossOrigin — avoids CORS blocking
   aud.playbackRate=spd;
   aud.onerror=()=>{running=false;showOv(`<div class="ov-title">AUDIO ERROR</div><div class="ov-sub" style="color:#ff4444">FILE NOT FOUND</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
   playAudGame().then(()=>{initAnalyser(aud);running=true;raf2=requestAnimationFrame(pLoop2);});
