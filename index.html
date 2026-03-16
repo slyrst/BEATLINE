@@ -923,7 +923,7 @@ auth.onAuthStateChanged(async user=>{
     if(adminSec)adminSec.style.display=ADM?'block':'none';
     const roleSec=document.getElementById('admin-role-section');
     if(roleSec)roleSec.style.display=ADM?'block':'none';
-    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();
+    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();
   }else{
     const activePage=document.querySelector('.page.active')?.id;
     const inGame=activePage==='game-page';
@@ -1165,6 +1165,39 @@ function broadcastPlaying(songId,songTitle){
   if(!CU)return;
   dUpd(dDoc('users',CU.uid),{playingNow:songId?{songId,songTitle,startedAt:firebase.firestore.FieldValue.serverTimestamp(),clientStartMs:Date.now()}:null}).catch(()=>{});
 }
+
+// Broadcast live game state (score/combo/judge) to spectators
+let _lastStatsBroadcast=0;
+function broadcastGameState(judgeLabel,judgeColor){
+  if(!CU||_spectatingUid)return; // only host broadcasts
+  const now=Date.now();
+  // Always broadcast judge immediately, throttle score updates to ~500ms
+  const data={liveScore:{score,combo,grade:judgeLabel||'',gradeColor:judgeColor||'',t:now}};
+  dUpd(dDoc('users',CU.uid),data).catch(()=>{});
+}
+
+// Spectator listens to host's live score
+let _spectateStatUnsub=null;
+function startSpectateStatListener(uid){
+  if(_spectateStatUnsub)_spectateStatUnsub();
+  _spectateStatUnsub=db.collection('users').doc(uid).onSnapshot(snap=>{
+    if(!snap.exists||!_spectatingUid)return;
+    const ls=snap.data()?.liveScore;
+    if(!ls||ls.t===_lastSeenStatT)return;
+    _lastSeenStatT=ls.t;
+    // Mirror host score/combo on spectator screen
+    score=ls.score||0;
+    combo=ls.combo||0;
+    document.getElementById('sc').textContent=String(score).padStart(6,'0');
+    document.getElementById('cb').textContent=`COMBO  ${combo}`;
+    if(ls.grade&&ls.gradeColor){
+      judgeShow(ls.grade,ls.gradeColor);
+      if(combo>0&&combo!==_lastCombo){showStreakPopup(combo);_lastCombo=combo;}
+      if(combo===0){_lastCombo=0;document.getElementById('streak-popup').style.opacity='0';}
+    }
+  });
+}
+let _lastSeenStatT=0;
 function stopPresence(){
   clearInterval(_presenceInterval);_presenceInterval=null;
   if(CU)dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{});
@@ -1604,6 +1637,7 @@ function startGlobalNotifListener(){
             showNotif('👤','FRIEND REQUEST','notif-friend',
               (r.fromName||'?')+' sent you a request',
               ()=>{showPage('friends-page');loadFriendsPage();});
+            sendBrowserNotif('👤 Friend Request',(r.fromName||'?')+' sent you a request');
           }
         });
       });
@@ -1638,6 +1672,41 @@ function startGlobalNotifListener(){
     _globalMsgUnsub=()=>unsubs.forEach(u=>u());
   }
 
+  // 2. New chat messages — listen per friend chat (avoids collectionGroup index)
+  if(!_globalMsgUnsub){
+    const friends=CUD?.friends||[];
+    const unsubs=[];
+    let _unreadMsgCount=0;
+    for(const fid of friends.slice(0,15)){
+      const chatId=[CU.uid,fid].sort().join('_');
+      let _first=true;
+      const unsub=db.collection('chats').doc(chatId).collection('messages')
+        .orderBy('createdAt','desc').limit(3)
+        .onSnapshot(snap=>{
+          if(_first){_first=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
+          snap.docChanges().forEach(change=>{
+            if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
+              _seenNotifs.add(change.doc.id);
+              const m=change.doc.data();
+              if(m.from===CU.uid)return;
+              if(_chatFriendId===m.from)return;
+              const preview=m.img?'📷 image':m.text||'';
+              // Red dot on friends button
+              _unreadMsgCount++;
+              updateMsgDot(_unreadMsgCount);
+              showNotif('💬','NEW MESSAGE','notif-msg',
+                (m.fromName||'?')+': '+preview,
+                ()=>{_unreadMsgCount=0;updateMsgDot(0);if(m.from)openChat(m.from,m.fromName||'?');});
+              // Browser push notification
+              sendBrowserNotif('💬 '+(m.fromName||'?'),preview,()=>{window.focus();if(m.from)openChat(m.from,m.fromName||'?');});
+            }
+          });
+        });
+      unsubs.push(unsub);
+    }
+    _globalMsgUnsub=()=>unsubs.forEach(u=>u());
+  }
+
   // 3. New songs published
   if(!_globalSongUnsub){
     let _firstSongLoad=true;
@@ -1648,16 +1717,69 @@ function startGlobalNotifListener(){
           if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
             _seenNotifs.add(change.doc.id);
             const s=change.doc.data();
-            if(s.authorId===CU.uid)return; // don't notify own publishes
+            if(s.authorId===CU.uid)return;
             showNotif('🎵','NEW SONG PUBLISHED','notif-song',
               (s.title||'?')+' by '+(s.authorName||'?'),
               ()=>{showPage('songs-page');});
+            sendBrowserNotif('🎵 New Song: '+(s.title||'?'),'by '+(s.authorName||'?'));
           }
         });
       });
   }
 }
-// ── CHAT ──────────────────────────────────────────────────────────────────────
+
+// ── MSG DOT ON FRIENDS BUTTON ─────────────────────────────────────────────────
+function updateMsgDot(count){
+  let dot=document.getElementById('msg-notif-dot');
+  if(!dot){
+    // Add separate msg dot to FRIENDS button
+    const btn=document.querySelector('[onclick*="friends-page"]');
+    if(btn){dot=document.createElement('span');dot.id='msg-notif-dot';dot.style.cssText='display:none;width:7px;height:7px;background:var(--red);border-radius:50%;vertical-align:middle;margin-left:4px;';btn.appendChild(dot);}
+  }
+  if(dot)dot.style.display=count>0?'inline-block':'none';
+}
+
+// Clear msg dot when opening friends page
+const _origLoadFP=window.loadFriendsPage;
+document.addEventListener('click',e=>{
+  if(e.target.closest('[onclick*="friends-page"]')){setTimeout(()=>{updateMsgDot(0);},100);}
+});
+
+// ── BROWSER PUSH NOTIFICATIONS ────────────────────────────────────────────────
+let _notifPermission='default';
+
+async function requestNotifPermission(){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='granted'){_notifPermission='granted';return;}
+  if(Notification.permission==='denied')return;
+  const p=await Notification.requestPermission();
+  _notifPermission=p;
+}
+
+function sendBrowserNotif(title,body,onClick){
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  if(document.visibilityState==='visible')return; // tab is focused, in-app notif is enough
+  try{
+    const n=new Notification(title,{body,icon:'/favicon.ico',badge:'/favicon.ico',tag:'beatline-'+Date.now()});
+    if(onClick)n.onclick=()=>{onClick();n.close();};
+    setTimeout(()=>n.close(),8000);
+  }catch(e){}
+}
+
+// Ask permission after login with a small delay
+function initNotifPermission(){
+  setTimeout(requestNotifPermission,3000);
+}
+
+// ── RESTART LISTENERS ON VISIBILITY ───────────────────────────────────────────
+// When tab becomes visible again, restart any dead listeners
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&CU){
+    // Re-run listeners in case they died while hidden
+    if(!_globalReqUnsub)startGlobalNotifListener();
+    if(!_globalMsgUnsub){_globalMsgUnsub=null;startGlobalNotifListener();}
+  }
+});
 let _chatFriendId=null,_chatFriendName='',_chatUnsub=null;
 
 function getChatId(uid1,uid2){return [uid1,uid2].sort().join('_');}
@@ -1752,32 +1874,7 @@ async function sendChatMsg(){
   }catch(e){toast('SEND FAILED: '+e.message,'#ff4444');}
 }
 
-// ── HIT BROADCAST (host → spectators) ────────────────────────────────────────
-let _hitBroadcastThrottle=0;
-function broadcastHit(lane){
-  if(!CU||_spectatingUid)return; // only host broadcasts
-  const now=Date.now();
-  if(now-_hitBroadcastThrottle<30)return; // max ~33/s
-  _hitBroadcastThrottle=now;
-  dUpd(dDoc('users',CU.uid),{lastHit:{lane,t:now}}).catch(()=>{});
-}
 
-let _spectateHitUnsub=null,_lastSeenHitT=0;
-function startSpectateHitListener(uid){
-  if(_spectateHitUnsub)_spectateHitUnsub();
-  _spectateHitUnsub=db.collection('users').doc(uid).onSnapshot(snap=>{
-    if(!snap.exists||!_spectatingUid)return;
-    const h=snap.data()?.lastHit;
-    if(!h||h.t===_lastSeenHitT)return;
-    _lastSeenHitT=h.t;
-    const lane=h.lane;
-    if(lane>=0&&lane<4){
-      fl[lane]=14;
-      ripples.push({x:lane*GLW()+GLW()/2,y:GHIT_Y()+20,r:8,c:COLS[lane],a:.8});
-      burstP(lane,GHIT_Y()+20);
-    }
-  });
-}
 let _spectatingUid=null,_spectateUnsub=null;
 
 async function spectatePlayer(uid,songId){
@@ -1809,6 +1906,7 @@ async function spectatePlayer(uid,songId){
     _spectatingUid=uid;
     hideLoad();showPage('game-page');
     setTimeout(()=>{
+      autoMode=true; // notes hit automatically — just watch
       beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:(n.songMs!==undefined?n.songMs:n.time),lane:n.lane,hMs:n.hMs!==undefined?n.hMs:(n.holdMs!==undefined?n.holdMs:(n.hold||0))})).sort((a,b)=>a.sMs-b.sMs);
       // Start play then seek to host position
       startPlay();
@@ -1829,7 +1927,7 @@ async function spectatePlayer(uid,songId){
         setTimeout(trySeek,200);
       }
       startSpectateListener(uid);
-      startSpectateHitListener(uid);
+      startSpectateStatListener(uid);
     },100);
   }catch(e){hideLoad();toast('ERROR: '+e.message,'#ff4444');}
 }
@@ -1853,11 +1951,11 @@ function startSpectateListener(uid){
 }
 
 function stopSpectate(){
-  if(_spectatingUid)autoMode=false; // reset auto when leaving spectate
+  if(_spectatingUid)autoMode=false;
   _spectatingUid=null;
   if(_spectateUnsub){_spectateUnsub();_spectateUnsub=null;}
-  if(_spectateHitUnsub){_spectateHitUnsub();_spectateHitUnsub=null;}
-  _lastSeenHitT=0;
+  if(_spectateStatUnsub){_spectateStatUnsub();_spectateStatUnsub=null;}
+  _lastSeenStatT=0;
 }
 window.spectatePlayer=spectatePlayer;
 async function showLB(songId,title){
@@ -2309,7 +2407,7 @@ let holdPulses=[],laneHolding=[false,false,false,false],pulseTimer=[0,0,0,0];
 let rWall2=0,rNotes2=[],rHW2=[0,0,0,0],rAct2=[false,false,false,false];
 
 function fmtT(ms){const s=Math.floor(ms/1000);return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
-function judgeShow(t,c){const e=document.getElementById('jt');e.textContent=t;e.style.color=c;e.style.opacity=1;jAlpha=1;}
+function judgeShow(t,c){const e=document.getElementById('jt');e.textContent=t;e.style.color=c;e.style.opacity=1;jAlpha=1;broadcastGameState(t,c);}
 function burstP(lane,y){const cx=lane*GLW()+GLW()/2;for(let i=0;i<16;i++){const a=(Math.PI*2/16)*i+(Math.random()-.5)*.5,s=1.5+Math.random()*3;parts.push({x:cx,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1.5,a:1,c:COLS[lane],r:1.5+Math.random()*2.5});}}
 function tickP(){for(let p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=.1;p.a-=.028;}parts=parts.filter(p=>p.a>0);}
 function spawnPulse(l){holdPulses.push({cx:l*GLW()+GLW()/2,cy:GHIT_Y()+20,r:GNR+6,maxR:GNR+44,alpha:.7,color:COLS[l]});}
@@ -2439,6 +2537,7 @@ function stopAll(){
   running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}
   laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
   broadcastPlaying(null,null);
+  if(CU&&!_spectatingUid)dUpd(dDoc('users',CU.uid),{liveScore:null}).catch(()=>{});
   stopSpectate();
   document.getElementById('watch-banner')?.remove();
 }
@@ -2887,7 +2986,6 @@ function hitPlay(lane,down){
       else{best.hit=true;burstP(lane,best.cy);}
       combo++;if(combo>maxC)maxC=combo;score+=Math.floor(pts*(1+combo*.04));judgeShow(lbl,col);
       _cpsHits++;
-      broadcastHit(lane);
     }
   }else{
     for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');}}}
@@ -2900,7 +2998,9 @@ async function endPlay2(){
   const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[gr];
   const isFC=gstats.m===0&&!autoMode;
   let savedNote='';
-  if(CS?.id&&!CS.preview&&!autoMode){
+  // Never save scores when spectating or in auto mode
+  const canSave=CS?.id&&!CS.preview&&!autoMode&&!CS.spectating&&!_spectatingUid;
+  if(canSave){
     try{
       if(CU&&!isGuest){
         // logged-in save — best score per user per song
@@ -2925,6 +3025,19 @@ async function endPlay2(){
     }catch(e){console.warn('score save',e);}
   }
   const fc=CS?.fromCreate;
+  // Spectating — just show a "finished watching" screen, no results
+  if(_spectatingUid||CS?.spectating){
+    stopSpectate();
+    showOv(`
+      <div class="rl">— FINISHED WATCHING —</div>
+      <div class="ov-song">${esc(CS?.title||'')}</div>
+      <div style="font-size:10px;color:#333;letter-spacing:3px;margin:16px 0;">SCORES NOT SAVED IN WATCH MODE</div>
+      <div class="ov-btns">
+        <button class="xbtn cy" onclick="spectatePlayer('${_spectatingUid||''}','${CS?.id||''}')">[ WATCH AGAIN ]</button>
+        <button class="xbtn rd sm" onclick="stopSpectate();goBack()">[ BACK ]</button>
+      </div>`);
+    return;
+  }
   const fcBanner=isFC?`<div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>`:'';
   const autoNote=autoMode?`<div style="font-size:10px;color:#555;letter-spacing:2px;margin-bottom:10px;">AUTO MODE — score not saved</div>`:'';
   showOv(`
@@ -3240,7 +3353,7 @@ function setAuto(on){
   else{b.textContent='AUTO';b.style.display=on?'block':'none';}
 }
 function autoTick(now){
-  if(!autoMode||_spectatingUid)return; // spectate: notes just fall visually, no auto-hit
+  if(!autoMode)return;
   for(let n of notes){
     if(n.hit||n.missed||n.holding)continue;
     if(Math.abs(now-n.sMs)<16){
@@ -3361,7 +3474,7 @@ window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
 window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.startEditUsername=startEditUsername;window.removeFriend=removeFriend;
-window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;window.startGlobalNotifListener=startGlobalNotifListener;
+window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;window.startGlobalNotifListener=startGlobalNotifListener;window.requestNotifPermission=requestNotifPermission;
 window.openChat=openChat;window.closeChat=closeChat;window.sendChatMsg=sendChatMsg;window.handleChatImg=handleChatImg;window.clearChatImg=clearChatImg;
 window.showPage=showPage;window.goPageBack=goPageBack;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
