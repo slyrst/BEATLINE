@@ -613,10 +613,10 @@ canvas#cv{display:block;width:440px;height:620px;}
 firebase.initializeApp({apiKey:"AIzaSyDUb5czI32n8GiWYy6_CZCGx-MmmHsbm6A",authDomain:"keough-f3d6b.firebaseapp.com",projectId:"keough-f3d6b",storageBucket:"keough-f3d6b.firebasestorage.app",messagingSenderId:"946275933372",appId:"1:946275933372:web:1a7423f7eca71b541944b9"});
 const auth=firebase.auth(),db=firebase.firestore();
 const sts=()=>firebase.firestore.FieldValue.serverTimestamp();
-async function dQ(col,...args){let q=db.collection(col);for(const a of args){if(a.t==='w')q=q.where(a.f,a.op,a.v);else if(a.t==='o')q=q.orderBy(a.f,a.d||'asc');else if(a.t==='l')q=q.limit(a.n);}return q.get();}
+async function dQ(col,...args){let q=db.collection(col);for(const a of args){if(a.t==='w')q=q.where(a.f,a.op,a.v);else if(a.t==='o')q=q.orderBy(a.f,a.d||'asc');else if(a.t==='l')q=q.limit(a.n);}return q.get({source:'server'}).catch(()=>q.get());}
 const W=(f,op,v)=>({t:'w',f,op,v}),O=(f,d)=>({t:'o',f,d}),L=n=>({t:'l',n});
 const dDoc=(c,i)=>db.collection(c).doc(i);
-const dGet=r=>r.get(),dSet=(r,d)=>r.set(d),dUpd=(r,d)=>r.update(d),dDel=r=>r.delete(),dAdd=(c,d)=>db.collection(c).add(d);
+const dGet=r=>r.get({source:'server'}).catch(()=>r.get()),dSet=(r,d)=>r.set(d),dUpd=(r,d)=>r.update(d),dDel=r=>r.delete(),dAdd=(c,d)=>db.collection(c).add(d);
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
 let CU=null,CUD=null,ADM=false,CS=null,ESI=null;
@@ -751,7 +751,7 @@ function buildCard(s){
 async function delSong(id,title){if(!ADM)return;const ok=await confirm2(`DELETE "${title}"?\nThis cannot be undone.`);if(!ok)return;try{await dDel(dDoc('songs',id));document.getElementById('sc-'+id)?.remove();toast('DELETED','#ff4444');}catch(e){toast('ERROR: '+e.message,'#ff4444');}}
 async function editSong(id){
   setLoad('LOADING...');
-  const snap=await dGet(dDoc('songs',id));
+  const snap=await db.collection('songs').doc(id).get({source:'server'}).catch(()=>dGet(dDoc('songs',id)));
   if(!snap.exists){hideLoad();toast('NOT FOUND','#ff4444');return;}
   const d=snap.data();
   if(!ADM&&CU?.uid!==d.authorId){hideLoad();toast('NOT YOUR LEVEL','#ff4444');return;}
@@ -1157,7 +1157,8 @@ document.getElementById('cr-cv').addEventListener('touchend',e=>{
 
 // ── PLAY SONG ─────────────────────────────────────────────────────────────────
 async function playSong(id){
-  setLoad('LOADING SONG...');const s=await dGet(dDoc('songs',id));
+  setLoad('LOADING SONG...');
+  const s=await db.collection('songs').doc(id).get({source:'server'}).catch(()=>dGet(dDoc('songs',id)));
   if(!s.exists){hideLoad();toast('NOT FOUND','#ff4444');return;}
   CS={id,...s.data()};hideLoad();showPage('game-page');setTimeout(()=>initPlay(),100);
   dUpd(dDoc('songs',id),{plays:(CS.plays||0)+1}).catch(()=>{});
