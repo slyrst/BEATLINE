@@ -843,9 +843,10 @@ function resAudio(fn){if(!fn)return'';fn=fn.trim();if(/^https?:\/\//i.test(fn))r
 
 // ── AUTH ──────────────────────────────────────────────────────────────────────
 // ── GUEST MODE ────────────────────────────────────────────────────────────────
-let isGuest=false,guestName='GUEST';
+let isGuest=false,guestName='GUEST',_guestPending=false;
 
 async function doGuest(){
+  _guestPending=true;
   let name=(document.getElementById('guest-name-input')?.value||'').trim().toUpperCase()||'GUEST';
   if(!name)name='GUEST';
 
@@ -905,10 +906,9 @@ auth.onAuthStateChanged(async user=>{
     if(roleSec)roleSec.style.display=ADM?'block':'none';
     hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();
   }else{
-    // only go to auth page if not already in guest mode AND not currently playing
     const activePage=document.querySelector('.page.active')?.id;
     const inGame=activePage==='game-page';
-    if(!isGuest&&!inGame){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
+    if(!isGuest&&!inGame&&!_guestPending){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
     else hideLoad();
   }
 });
@@ -1735,8 +1735,10 @@ async function spectatePlayer(uid,songId){
     _spectatingUid=uid;
     hideLoad();showPage('game-page');
     setTimeout(()=>{
-      autoMode=true; // watch mode — notes auto
-      initPlay();
+      autoMode=true;
+      // Skip overlay — go straight to playing
+      beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:(n.songMs!==undefined?n.songMs:n.time),lane:n.lane,hMs:n.hMs!==undefined?n.hMs:(n.holdMs!==undefined?n.holdMs:(n.hold||0))})).sort((a,b)=>a.sMs-b.sMs);
+      startPlay();
       startSpectateListener(uid);
     },100);
   }catch(e){hideLoad();toast('ERROR: '+e.message,'#ff4444');}
@@ -2343,8 +2345,9 @@ function stopAll(){
   const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
   running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}
   laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
-  broadcastPlaying(null,null); // clear now-playing
+  broadcastPlaying(null,null);
   stopSpectate();
+  document.getElementById('watch-banner')?.remove();
 }
 function showOv(html){document.getElementById('ov').innerHTML=html;document.getElementById('ov').style.display='flex';}
 function hideOv(){document.getElementById('ov').style.display='none';}
@@ -2731,7 +2734,15 @@ function startPlay(){
   _paused=false;
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
-  const pbtn=document.getElementById('pausebtn');if(pbtn){pbtn.style.display='block';pbtn.textContent='⏸';pbtn.style.color='#555';}
+  const pbtn=document.getElementById('pausebtn');
+  if(pbtn){pbtn.style.display=_spectatingUid?'none':'block';pbtn.textContent='⏸';pbtn.style.color='#555';}
+  if(_spectatingUid){
+    // Show WATCHING banner
+    const wb=document.createElement('div');wb.id='watch-banner';
+    wb.style.cssText='position:absolute;top:50px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:4px;color:var(--cyan);background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);padding:3px 12px;z-index:12;pointer-events:none;';
+    wb.textContent='SPECTATING';
+    document.getElementById('gc')?.appendChild(wb);
+  }
   const spd=CS.speedEffect||1;
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
   const n=CS.effectEvents?.length||0;
