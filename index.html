@@ -641,7 +641,7 @@ async function showLB(songId,title){
   showPage('lb-page');
   try{
     // No orderBy — avoids needing a composite index. Sort client-side.
-    const snap=await dQ('scores',W('songId','==',songId),L(100));
+    const snap=await dQ('scores',W('songId','==',songId));
     // sort by score desc manually
     const docs=[...snap.docs].sort((a,b)=>(b.data().score||0)-(a.data().score||0));
     renderLB({empty:docs.length===0,docs});
