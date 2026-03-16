@@ -706,15 +706,6 @@ canvas#cv{display:block;width:440px;height:620px;}
   </div>
 </div>
 
-<!-- GLOBAL BOTTOM BAR — current player -->
-<div id="menu-bottom-bar" style="display:none;">
-  <div id="menu-bottom-player">
-    PLAYING AS <span id="bottom-username">—</span>
-    <span id="bottom-guest-badge" style="display:none;font-size:8px;background:#00ff8822;border:1px solid #00ff8844;color:var(--green);padding:1px 6px;letter-spacing:2px;">GUEST</span>
-    <span id="bottom-admin-badge" style="display:none;font-size:8px;background:#00f0ff22;border:1px solid #00f0ff44;color:var(--cyan);padding:1px 6px;letter-spacing:2px;">ADMIN</span>
-  </div>
-  <button class="xbtn sm pk" style="padding:4px 12px;font-size:9px;" onclick="openProfile(CU?.uid||null)">MY PROFILE</button>
-</div>
 <!-- FRIENDS PAGE -->
 <div class="page" id="friends-page">
   <div class="page-header">
@@ -765,7 +756,16 @@ canvas#cv{display:block;width:440px;height:620px;}
 </div>
 
 </div><!-- #app -->
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+
+<!-- GLOBAL BOTTOM BAR — must be outside #app to not affect flex layout -->
+<div id="menu-bottom-bar" style="display:none;">
+  <div id="menu-bottom-player">
+    PLAYING AS <span id="bottom-username">—</span>
+    <span id="bottom-guest-badge" style="display:none;font-size:8px;background:#00ff8822;border:1px solid #00ff8844;color:var(--green);padding:1px 6px;letter-spacing:2px;">GUEST</span>
+    <span id="bottom-admin-badge" style="display:none;font-size:8px;background:#00f0ff22;border:1px solid #00f0ff44;color:var(--cyan);padding:1px 6px;letter-spacing:2px;">ADMIN</span>
+  </div>
+  <button class="xbtn sm pk" style="padding:4px 12px;font-size:9px;" onclick="openProfile(CU?.uid||null)">MY PROFILE</button>
+</div> src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 firebase.initializeApp({apiKey:"AIzaSyDUb5czI32n8GiWYy6_CZCGx-MmmHsbm6A",authDomain:"keough-f3d6b.firebaseapp.com",projectId:"keough-f3d6b",storageBucket:"keough-f3d6b.firebasestorage.app",messagingSenderId:"946275933372",appId:"1:946275933372:web:1a7423f7eca71b541944b9"});
 const auth=firebase.auth(),db=firebase.firestore();
