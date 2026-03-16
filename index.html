@@ -593,6 +593,8 @@ canvas#cv{display:block;width:440px;height:620px;}
         <button class="xbtn sm" id="ns-2.5" onclick="setNoteSpeed(2.5)" style="letter-spacing:1px;">2.5×</button>
         <button class="xbtn sm" id="ns-3" onclick="setNoteSpeed(3)" style="letter-spacing:1px;">3×</button>
         <button class="xbtn sm" id="ns-4" onclick="setNoteSpeed(4)" style="letter-spacing:1px;">4×</button>
+        <button class="xbtn sm" id="ns-6" onclick="setNoteSpeed(6)" style="letter-spacing:1px;">6×</button>
+        <button class="xbtn sm" id="ns-8" onclick="setNoteSpeed(8)" style="letter-spacing:1px;">8×</button>
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:8px;">ONLY NOTE FALL SPEED · SONG TEMPO UNCHANGED</div>
     </div>
@@ -3053,7 +3055,7 @@ function setNoteSpeed(v){
   try{localStorage.setItem('bl_notespeed',v);}catch(e){}
   document.getElementById('note-speed-display').textContent=v+'×';
   // update button highlights
-  [1,1.5,2,2.5,3,4].forEach(s=>{
+  [1,1.5,2,2.5,3,4,6,8].forEach(s=>{
     const btn=document.getElementById('ns-'+s);
     if(!btn)return;
     btn.className=s===v?'xbtn sm cy':'xbtn sm';
