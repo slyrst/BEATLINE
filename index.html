@@ -861,8 +861,10 @@ auth.onAuthStateChanged(async user=>{
     if(roleSec)roleSec.style.display=ADM?'block':'none';
     hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();
   }else{
-    // only go to auth page if not already in guest mode
-    if(!isGuest){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
+    // only go to auth page if not already in guest mode AND not currently playing
+    const activePage=document.querySelector('.page.active')?.id;
+    const inGame=activePage==='game-page';
+    if(!isGuest&&!inGame){CU=null;CUD=null;ADM=false;hideLoad();showPage('auth-page');document.getElementById('menu-bottom-bar').style.display='none';}
     else hideLoad();
   }
 });
@@ -2890,7 +2892,24 @@ document.addEventListener('keyup',e=>{
   if(pid==='create-page'&&crRec){const i=KEYS.indexOf(e.key.toLowerCase());if(i!==-1&&crAct[i]){const hMs=Math.max(0,performance.now()-crHW[i]-30);crNotes.push({sMs:crHW[i]-crWall,lane:i,hMs});crAct[i]=false;if(hMs>80)crCvBurst(i,true,Math.min(hMs*0.44,130));}}
   if(pid==='game-page'){const i=KEYS.indexOf(e.key.toLowerCase());if(i!==-1){_laneUp(i);}}
 });
-loadKeys();loadEffectsSetting();
+// ── MOBILE BACK BUTTON ────────────────────────────────────────────────────────
+// Push a state so the back button doesn't exit the app
+history.pushState({bl:true},'');
+window.addEventListener('popstate',e=>{
+  e.preventDefault();
+  const active=document.querySelector('.page.active')?.id;
+  if(active==='game-page'){
+    if(mode==='play'&&running&&!_paused)togglePause();
+    else if(_paused){/* do nothing — let pause overlay handle it */}
+    else{stopAll();goBack();}
+  } else if(_pageHistory.length>0){
+    goPageBack();
+  } else {
+    // nothing to go back to — stay
+  }
+  // Always re-push so back button keeps working
+  history.pushState({bl:true},'');
+});
 
 // ── AUTO MODE ─────────────────────────────────────────────────────────────────
 let autoMode=false;
