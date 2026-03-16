@@ -1050,10 +1050,30 @@ async function openProfile(uid, backPage){
         ${isSelf?`<button class="xbtn sm rd" onclick="event.stopPropagation();removeFriend('${f.id}')" style="padding:3px 8px;font-size:9px;">✕</button>`:''}
       </div>`;}).join(''):'<div style="font-size:10px;color:#2a2a44;letter-spacing:2px;padding:10px 0;">no friends yet</div>';
 
+    // Friend button: on others' profiles show add/pending/already friends
+    let friendBtn='';
+    if(!isSelf&&CU&&uid){
+      const myFriends=CUD?.friends||[];
+      if(myFriends.includes(uid)){
+        friendBtn=`<div class="profile-section" style="margin-top:12px;">
+          <button class="xbtn sm" style="width:100%;text-align:center;color:#555;border-color:#252540;cursor:default;">✓ FRIENDS</button>
+        </div>`;
+      } else {
+        // Check if request already sent
+        const existingReq=await dQ('friendRequests',W('from','==',CU.uid),W('to','==',uid));
+        const alreadySent=!existingReq.empty;
+        friendBtn=`<div class="profile-section" style="margin-top:12px;">
+          <button class="xbtn pk sm" style="width:100%;text-align:center;" onclick="sendFriendRequestDirect('${uid}','${esc(username)}')" ${alreadySent?'disabled style="width:100%;text-align:center;opacity:.5;cursor:default;"':''}>
+            ${alreadySent?'REQUEST SENT':'+ ADD FRIEND'}
+          </button>
+        </div>`;
+      }
+    }
+
     const addFriendSection=isSelf?`
       <div class="profile-section" style="margin-top:12px;">
         <button class="xbtn pk sm" style="width:100%;text-align:center;" onclick="showPage('friends-page');loadFriendsPage()">[ MANAGE FRIENDS & CHAT ]</button>
-      </div>`:'';
+      </div>`:friendBtn;
 
     const bioSection=isSelf?`
       <div style="margin-top:8px;" id="bio-wrap">
@@ -1174,6 +1194,18 @@ async function saveUsername(newName){
   }catch(e){toast('ERROR: '+e.message,'#ff4444');}
 }
 // ── FRIEND REQUESTS ───────────────────────────────────────────────────────────
+async function sendFriendRequestDirect(toId, toName){
+  if(!CU){toast('LOGIN FIRST','#ff4444');return;}
+  try{
+    const existing=await dQ('friendRequests',W('from','==',CU.uid),W('to','==',toId));
+    if(!existing.empty){toast('REQUEST ALREADY SENT','#ffaa00');return;}
+    if((CUD?.friends||[]).includes(toId)){toast('ALREADY FRIENDS','#ffaa00');return;}
+    await dAdd('friendRequests',{from:CU.uid,fromName:CUD?.username||'?',to:toId,toName,createdAt:sts(),status:'pending'});
+    toast('REQUEST SENT TO '+toName,'#00ff88');
+    openProfile(toId); // refresh to show "REQUEST SENT"
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+window.sendFriendRequestDirect=sendFriendRequestDirect;
 async function sendFriendRequest(){
   if(!CU){toast('LOGIN FIRST','#ff4444');return;}
   const name=document.getElementById('fr-search').value.trim().toUpperCase();
