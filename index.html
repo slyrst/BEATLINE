@@ -428,6 +428,10 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="cr-bg-preview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;border:1px solid var(--border);position:relative;">
         <button onclick="document.getElementById('cr-bg').value='';onBgInput();document.getElementById('cr-bg-preview').style.display='none';" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;color:#fff;cursor:pointer;font-size:10px;padding:2px 6px;">✕</button>
       </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+        <div style="font-size:10px;letter-spacing:3px;color:#444;">ALLOW FIRE EFFECT</div>
+        <div id="cr-fire-toggle" onclick="toggleFireOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">YES — FIRE ON</div>
+      </div>
     </div>
     <div class="section-title">AUDIO</div>
     <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;">
@@ -722,6 +726,12 @@ function initCreatePage(existing=null){
   document.getElementById('cr-bpm').value=existing?.bpm||'';
   // reset file picker
   document.getElementById('cr-bg').value=existing?.bgImage||'';
+  crAllowFire=existing?.allowFire!==false; // default true
+  const fBtn=document.getElementById('cr-fire-toggle');
+  if(fBtn){
+    if(crAllowFire){fBtn.textContent='YES — FIRE ON';fBtn.style.borderColor='#00ff8844';fBtn.style.color='var(--green)';fBtn.style.background='#00ff8811';}
+    else{fBtn.textContent='NO — FIRE OFF';fBtn.style.borderColor='#ff444433';fBtn.style.color='var(--red)';fBtn.style.background='#ff44441a';}
+  }
   const bgp=document.getElementById('cr-bg-preview');
   if(existing?.bgImage){bgp.style.backgroundImage=`url('${existing.bgImage}')`;bgp.style.display='block';}
   else{bgp.style.display='none';}
@@ -752,6 +762,13 @@ function previewBg(){
   const p=document.getElementById('cr-bg-preview');
   if(!v){p.style.display='none';return;}
   p.style.backgroundImage=`url('${v}')`;p.style.display='block';
+}
+let crAllowFire=true;
+function toggleFireOpt(){
+  crAllowFire=!crAllowFire;
+  const btn=document.getElementById('cr-fire-toggle');
+  if(crAllowFire){btn.textContent='YES — FIRE ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+  else{btn.textContent='NO — FIRE OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
 }
 
 // ── FILE AUDIO ────────────────────────────────────────────────────────────────
@@ -976,7 +993,7 @@ async function crPublish(){
   document.getElementById('cr-pub-btn').disabled=true;document.getElementById('cr-pub-btn').textContent='[ PUBLISHING... ]';
   try{
     const bgImage=document.getElementById('cr-bg').value.trim();
-    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
+    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',allowFire:crAllowFire,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
     if(ESI){await dUpd(dDoc('songs',ESI),data);toast('LEVEL UPDATED!','#00ff88');}
     else{data.createdAt=sts();await dAdd('songs',data);toast('LEVEL PUBLISHED!','#00ff88');}
     ESI=null;crNotes=[];stopBgCanvas();showPage('songs-page');
@@ -1107,7 +1124,7 @@ function initPlay(){
 
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
-  score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;
+  score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   document.getElementById('streak-popup').style.opacity='0';
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
@@ -1147,6 +1164,7 @@ function hitPlay(lane,down){
       if(best.hMs>80){best.holding=true;laneHolding[lane]=true;pulseTimer[lane]=0;}
       else{best.hit=true;burstP(lane,best.cy);}
       combo++;if(combo>maxC)maxC=combo;score+=Math.floor(pts*(1+combo*.04));judgeShow(lbl,col);
+      _cpsHits++;
     }
   }else{
     for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');}}}
@@ -1250,28 +1268,34 @@ function loadBgImg(url){
   bgImgUrl=url;bgImg=new Image();bgImg.crossOrigin='anonymous';
   bgImg.src=url;bgImg.onerror=()=>{bgImg=null;};
 }
-let fireVol=0; // smoothed volume for fire fade
+let fireVol=0,fireCPS=0,_cpsHits=0,_cpsTimer=0; // smoothed volume + CPS for fire
 
-function spawnFire(vol){
+function spawnFire(vol,fromTop){
   const W=GW(),H=GH();
   const count=Math.floor((vol-0.45)*25);
   for(let i=0;i<count;i++){
     const x=Math.random()*W;
     const speed=2+Math.random()*vol*8;
     const hue=Math.random()<0.6?12+Math.random()*14:3+Math.random()*10;
-    fireParticles.push({x,y:H+10,vx:(Math.random()-0.5)*2,vy:-speed,a:0.8+Math.random()*0.2,r:5+Math.random()*vol*9,hue});
+    if(fromTop){
+      // top fire falls downward
+      fireParticles.push({x,y:-10,vx:(Math.random()-0.5)*2,vy:speed,a:0.8+Math.random()*0.2,r:5+Math.random()*vol*9,hue,down:true});
+    } else {
+      fireParticles.push({x,y:H+10,vx:(Math.random()-0.5)*2,vy:-speed,a:0.8+Math.random()*0.2,r:5+Math.random()*vol*9,hue,down:false});
+    }
   }
 }
 function drawFire(){
-  // fade existing particles faster when music is quiet
-  const fade=fireVol<0.2?0.06:0.022;
+  const fade=fireVol<0.2&&fireCPS<3?0.06:0.022;
   for(let p of fireParticles){
     const g=ctx2.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
     g.addColorStop(0,`hsla(${p.hue},100%,75%,${p.a})`);
     g.addColorStop(0.5,`hsla(${p.hue+15},100%,45%,${p.a*0.6})`);
     g.addColorStop(1,`hsla(${p.hue+30},100%,20%,0)`);
     ctx2.fillStyle=g;ctx2.beginPath();ctx2.arc(p.x,p.y,p.r,0,Math.PI*2);ctx2.fill();
-    p.x+=p.vx;p.y+=p.vy;p.vy-=0.04;p.a-=fade;p.r*=0.975;
+    p.x+=p.vx;
+    if(p.down){p.y+=Math.abs(p.vy);p.vy+=0.04;}else{p.y+=p.vy;p.vy-=0.04;}
+    p.a-=fade;p.r*=0.975;
   }
   fireParticles=fireParticles.filter(p=>p.a>0&&p.r>0.5);
 }
@@ -1317,11 +1341,17 @@ function drawPlay2(){
     ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;ctx2.lineWidth=n.holding?2:1.5;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
   }
   drawParts2();
-  // fire effect — smoothed volume so it fades when music gets quiet
-  const rawVol=getVolume();
-  fireVol=fireVol*0.85+rawVol*0.15; // lerp toward real volume
-  if(fireVol>0.45)spawnFire(fireVol);
-  drawFire();
+  if(CS?.allowFire!==false){
+    // volume-based bottom fire
+    const rawVol=getVolume();
+    fireVol=fireVol*0.85+rawVol*0.15;
+    if(fireVol>0.45)spawnFire(fireVol,false);
+    // CPS-based top fire — count hits per second
+    _cpsTimer+=1/60;
+    if(_cpsTimer>=1){fireCPS=_cpsHits;_cpsHits=0;_cpsTimer=0;}
+    if(fireCPS>=6)spawnFire(Math.min(0.5+fireCPS*0.04,1),true);
+    drawFire();
+  }
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
 }
 function drawRec2(){
@@ -1529,7 +1559,7 @@ function _laneUp(lane){
   });
 })();
 
-window.onBgInput=onBgInput;window.previewBg=previewBg;
+window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;
 window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
