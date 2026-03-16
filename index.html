@@ -184,7 +184,15 @@ canvas#cv{display:block;width:440px;height:620px;}
 .khi.k1{border-top-color:#ff00aa44;color:var(--pink);}
 .khi.k2{border-top-color:#00ff8844;color:var(--green);}
 .khi.k3{border-top-color:#ffaa0044;color:var(--amber);}
-/* FRIENDS & CHAT */
+/* ROLES */
+.role-badge{font-size:8px;letter-spacing:2px;padding:2px 7px;border:1px solid;border-radius:2px;font-weight:bold;}
+.role-admin{color:#00f0ff;border-color:#00f0ff44;background:#00f0ff11;}
+.role-mod{color:#ff00aa;border-color:#ff00aa44;background:#ff00aa11;}
+.role-creator{background:linear-gradient(90deg,#ff00aa,#ffaa00,#00ff88,#00f0ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;border:1px solid #ffffff22;padding:2px 7px;font-size:8px;letter-spacing:2px;}
+.role-vip{color:#ffaa00;border-color:#ffaa0044;background:#ffaa0011;}
+/* PROFILE BG */
+.profile-header-card{position:relative;overflow:hidden;}
+.profile-header-bg{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0.18;pointer-events:none;}
 .friend-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid #0d0d1a;}
 .friend-row:last-child{border-bottom:none;}
 .friend-avatar{width:36px;height:36px;min-width:36px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:var(--cyan);background:#001a1f;flex-shrink:0;overflow:hidden;}
@@ -558,8 +566,27 @@ canvas#cv{display:block;width:440px;height:620px;}
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">FIRE · SHAKE · FLASH · COLOR EFFECTS</div>
     </div>
-    <!-- ADMIN ONLY -->
-    <div class="settings-section" id="admin-section" style="display:none;border-color:#ff444433;">
+    <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
+      <div class="settings-section-title" style="color:var(--pink);">ADMIN — MANAGE ROLES</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <label class="xlabel">USERNAME</label>
+          <input class="xinput" id="role-user" placeholder="USERNAME" autocomplete="off" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <div>
+          <label class="xlabel">ROLE</label>
+          <select class="xinput" id="role-select">
+            <option value="">NONE (remove role)</option>
+            <option value="creator">🌈 SONG CREATOR</option>
+            <option value="vip">⭐ VIP</option>
+            <option value="mod">🛡 MOD</option>
+            <option value="admin">👑 ADMIN</option>
+          </select>
+        </div>
+        <div class="auth-err" id="role-err" style="text-align:left;min-height:14px;"></div>
+        <button class="xbtn pk sm" onclick="adminSetRole()" style="width:100%;text-align:center;">[ SET ROLE ]</button>
+      </div>
+    </div>
       <div class="settings-section-title" style="color:var(--red);">ADMIN — ACCOUNT RECOVERY</div>
       <div style="font-size:9px;color:#444;letter-spacing:2px;margin-bottom:12px;">TRANSFER ALL DATA FROM AN OLD ACCOUNT TO A NEW ONE</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
@@ -753,7 +780,14 @@ const dGet=r=>r.get({source:'server'}).catch(()=>r.get()),dSet=(r,d)=>r.set(d),d
 let CU=null,CUD=null,ADM=false,CS=null,ESI=null;
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');if(id==='songs-page')loadSongs();}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='songs-page')loadSongs();
+  // hide bottom bar on game page
+  const bar=document.getElementById('menu-bottom-bar');
+  if(bar)bar.style.display=(id==='game-page'||id==='auth-page')?'none':((CU||isGuest)?'flex':'none');
+}
 function toast(msg,col='#aaa'){const t=document.getElementById('toast');t.textContent=msg;t.style.color=col;t.style.opacity=1;clearTimeout(window._tt);window._tt=setTimeout(()=>t.style.opacity=0,2800);}
 function confirm2(msg){return new Promise(res=>{const m=document.getElementById('confirm-modal');document.getElementById('confirm-msg').textContent=msg;m.classList.add('show');const y=document.getElementById('confirm-yes'),n=document.getElementById('confirm-no');const done=v=>{m.classList.remove('show');y.onclick=null;n.onclick=null;res(v);};y.onclick=()=>done(true);n.onclick=()=>done(false);});}
 function fmtMs(ms){const s=Math.floor(ms/1000);return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
@@ -809,6 +843,8 @@ auth.onAuthStateChanged(async user=>{
     // show admin section in settings
     const adminSec=document.getElementById('admin-section');
     if(adminSec)adminSec.style.display=ADM?'block':'none';
+    const roleSec=document.getElementById('admin-role-section');
+    if(roleSec)roleSec.style.display=ADM?'block':'none';
     hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();
   }else{
     // only go to auth page if not already in guest mode
@@ -860,6 +896,62 @@ async function doForgotPassword(){
   }
 }
 window.doForgotPassword=doForgotPassword;
+async function adminSetRole(){
+  if(!ADM)return;
+  const username=document.getElementById('role-user').value.trim().toUpperCase();
+  const role=document.getElementById('role-select').value;
+  const err=document.getElementById('role-err');
+  err.textContent='';err.style.color='var(--red)';
+  if(!username){err.textContent='ENTER A USERNAME';return;}
+  try{
+    const snap=await dQ('users',W('username','==',username));
+    if(snap.empty){err.textContent='USER NOT FOUND';return;}
+    const uid=snap.docs[0].id;
+    const updateData=role?{role,isAdmin:role==='admin'}:{role:firebase.firestore.FieldValue.delete(),isAdmin:false};
+    await dUpd(dDoc('users',uid),updateData);
+    err.style.color='var(--green)';
+    err.textContent=role?`ROLE "${role.toUpperCase()}" SET FOR ${username}`:`ROLE REMOVED FROM ${username}`;
+    document.getElementById('role-user').value='';
+  }catch(e){err.textContent='ERROR: '+e.message;}
+}
+window.adminSetRole=adminSetRole;
+
+async function handleProfileBgUpload(event){
+  const file=event.target.files?.[0];if(!file||!CU)return;
+  const reader=new FileReader();
+  reader.onload=async(e)=>{
+    const img=new Image();
+    img.onload=async()=>{
+      const W=600,H=200;
+      const canvas=document.createElement('canvas');canvas.width=W;canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      // cover crop
+      const scale=Math.max(W/img.width,H/img.height);
+      const sw=W/scale,sh=H/scale,sx=(img.width-sw)/2,sy=(img.height-sh)/2;
+      ctx.drawImage(img,sx,sy,sw,sh,0,0,W,H);
+      const dataUrl=canvas.toDataURL('image/jpeg',0.75);
+      try{
+        await dUpd(dDoc('users',CU.uid),{profileBg:dataUrl});
+        if(CUD)CUD.profileBg=dataUrl;
+        toast('PROFILE BG UPDATED','#00ff88');
+        openProfile(CU.uid);
+      }catch(err){toast('UPLOAD FAILED: '+err.message,'#ff4444');}
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value='';
+}
+async function clearProfileBg(){
+  if(!CU)return;
+  try{
+    await dUpd(dDoc('users',CU.uid),{profileBg:''});
+    if(CUD)CUD.profileBg='';
+    toast('BG REMOVED','#ffaa00');
+    openProfile(CU.uid);
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+window.handleProfileBgUpload=handleProfileBgUpload;window.clearProfileBg=clearProfileBg;
 async function adminRecoverAccount(){
   if(!ADM){toast('ADMIN ONLY','#ff4444');return;}
   const oldUser=document.getElementById('recover-old-user').value.trim().toUpperCase();
@@ -1044,7 +1136,25 @@ async function openProfile(uid, backPage){
     const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'};
     const initials=username.slice(0,2).toUpperCase();
 
-    // Avatar HTML
+    const bg=ud.profileBg||'';
+    const bgDiv=bg?`<div class="profile-header-bg" style="background-image:url('${esc(bg)}');"></div>`:'';
+
+    // Role badge
+    const roleMap={
+      admin:'<span class="role-badge role-admin">ADMIN</span>',
+      mod:'<span class="role-badge role-mod">MOD</span>',
+      vip:'<span class="role-badge role-vip">VIP</span>',
+      creator:'<span class="role-creator">SONG CREATOR</span>',
+    };
+    const roleBadge=roleMap[ud.role||'']||'';
+
+    const bgUploadBtn=isSelf?`
+      <div style="margin-top:6px;">
+        <input type="file" id="profile-bg-input" accept="image/*" style="display:none;" onchange="handleProfileBgUpload(event)">
+        <button class="xbtn sm" style="padding:2px 8px;font-size:8px;" onclick="document.getElementById('profile-bg-input').click()">🖼 PROFILE BG</button>
+        ${bg?`<button class="xbtn sm rd" style="padding:2px 8px;font-size:8px;margin-left:4px;" onclick="clearProfileBg()">✕ REMOVE BG</button>`:''}
+      </div>`:'';
+
     const avatarHtml=avatar
       ?`<img src="${esc(avatar)}" style="width:64px;height:64px;object-fit:cover;border:2px solid var(--cyan);display:block;">`
       :`<div class="profile-avatar">${initials}</div>`;
@@ -1119,13 +1229,16 @@ async function openProfile(uid, backPage){
 
     inner.innerHTML=`
       <div class="profile-header-card">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;">
+        ${bgDiv}
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;">
           ${avatarHtml}
           ${uploadBtn}
+          ${bgUploadBtn}
         </div>
-        <div class="profile-info">
+        <div class="profile-info" style="position:relative;z-index:1;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div class="profile-name">${esc(username)}${onlineDot(isOnline(ud))}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
+            <div class="profile-name">${esc(username)}${onlineDot(isOnline(ud))}</div>
+            ${roleBadge}
             ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;letter-spacing:2px;" onclick="startEditUsername()">✏ RENAME</button>`:''}
           </div>
           ${bioSection}
@@ -1332,7 +1445,7 @@ async function loadFriendsPage(){
         const av=fd.avatar?`<img src="${esc(fd.avatar)}" style="width:36px;height:36px;object-fit:cover;">`:`<div class="friend-avatar">${(fd.username||'?').slice(0,2).toUpperCase()}</div>`;
         rows+=`<div class="friend-row">
           ${av}
-          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}</div>
+          <div class="friend-name" style="cursor:pointer;" onclick="openProfile('${fid}','friends-page')">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}</div>
           <button class="xbtn sm" onclick="openChat('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:var(--cyan);border-color:#00f0ff33;">💬</button>
           <button class="xbtn sm rd" onclick="removeFriend('${fid}')" style="padding:3px 8px;font-size:9px;">✕</button>
         </div>`;
