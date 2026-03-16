@@ -1107,7 +1107,7 @@ function initPlay(){
 
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
-  score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];
+  score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;
   document.getElementById('streak-popup').style.opacity='0';
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
@@ -1250,24 +1250,28 @@ function loadBgImg(url){
   bgImgUrl=url;bgImg=new Image();bgImg.crossOrigin='anonymous';
   bgImg.src=url;bgImg.onerror=()=>{bgImg=null;};
 }
+let fireVol=0; // smoothed volume for fire fade
+
 function spawnFire(vol){
   const W=GW(),H=GH();
-  const count=Math.floor((vol-0.45)*30); // only when really loud
+  const count=Math.floor((vol-0.45)*25);
   for(let i=0;i<count;i++){
     const x=Math.random()*W;
-    const speed=3+Math.random()*vol*10;
-    const hue=Math.random()<0.6?15+Math.random()*15:5+Math.random()*10;
-    fireParticles.push({x,y:H,vx:(Math.random()-0.5)*2,vy:-speed,a:0.7+Math.random()*0.3,r:4+Math.random()*vol*10,hue});
+    const speed=2+Math.random()*vol*8;
+    const hue=Math.random()<0.6?12+Math.random()*14:3+Math.random()*10;
+    fireParticles.push({x,y:H+10,vx:(Math.random()-0.5)*2,vy:-speed,a:0.8+Math.random()*0.2,r:5+Math.random()*vol*9,hue});
   }
 }
 function drawFire(){
+  // fade existing particles faster when music is quiet
+  const fade=fireVol<0.2?0.06:0.022;
   for(let p of fireParticles){
     const g=ctx2.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r);
     g.addColorStop(0,`hsla(${p.hue},100%,75%,${p.a})`);
     g.addColorStop(0.5,`hsla(${p.hue+15},100%,45%,${p.a*0.6})`);
     g.addColorStop(1,`hsla(${p.hue+30},100%,20%,0)`);
     ctx2.fillStyle=g;ctx2.beginPath();ctx2.arc(p.x,p.y,p.r,0,Math.PI*2);ctx2.fill();
-    p.x+=p.vx;p.y+=p.vy;p.vy-=0.05;p.a-=0.022;p.r*=0.975;
+    p.x+=p.vx;p.y+=p.vy;p.vy-=0.04;p.a-=fade;p.r*=0.975;
   }
   fireParticles=fireParticles.filter(p=>p.a>0&&p.r>0.5);
 }
@@ -1275,13 +1279,13 @@ function drawFire(){
 // ── DRAW ──────────────────────────────────────────────────────────────────────
 function drawBase(){
   ctx2.fillStyle='#08080f';ctx2.fillRect(0,0,GW(),GH());
-  // bg image
-  if(bgImg&&bgImg.complete&&bgImg.naturalWidth){
-    ctx2.globalAlpha=0.25;
+  // bg image — draw at 55% opacity so it's clearly visible
+  if(bgImg&&bgImg.naturalWidth>0){
+    ctx2.globalAlpha=0.55;
     ctx2.drawImage(bgImg,0,0,GW(),GH());
     ctx2.globalAlpha=1;
-    // dark overlay so notes stay visible
-    ctx2.fillStyle='rgba(5,5,15,0.55)';ctx2.fillRect(0,0,GW(),GH());
+    // dark overlay so notes stay readable
+    ctx2.fillStyle='rgba(4,4,14,0.5)';ctx2.fillRect(0,0,GW(),GH());
   }
   for(let y=-(fn*.5%40);y<GH();y+=40){ctx2.fillStyle='rgba(255,255,255,.012)';ctx2.fillRect(0,y,GW(),1);}
   for(let i=1;i<GLANES;i++){ctx2.strokeStyle='#12122a';ctx2.lineWidth=1;ctx2.beginPath();ctx2.moveTo(i*GLW(),0);ctx2.lineTo(i*GLW(),GH());ctx2.stroke();}
@@ -1313,9 +1317,10 @@ function drawPlay2(){
     ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;ctx2.lineWidth=n.holding?2:1.5;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
   }
   drawParts2();
-  // fire effect
-  const vol=getVolume();
-  if(vol>0.45)spawnFire(vol);
+  // fire effect — smoothed volume so it fades when music gets quiet
+  const rawVol=getVolume();
+  fireVol=fireVol*0.85+rawVol*0.15; // lerp toward real volume
+  if(fireVol>0.45)spawnFire(fireVol);
   drawFire();
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
 }
