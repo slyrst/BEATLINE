@@ -428,32 +428,15 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="cr-bg-preview" style="display:none;width:100%;height:80px;background-size:cover;background-position:center;border:1px solid var(--border);position:relative;">
         <button onclick="document.getElementById('cr-bg').value='';onBgInput();document.getElementById('cr-bg-preview').style.display='none';" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);border:none;color:#fff;cursor:pointer;font-size:10px;padding:2px 6px;">✕</button>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
-        <div style="font-size:10px;letter-spacing:3px;color:#444;">ALLOW FIRE EFFECT</div>
-        <div id="cr-fire-toggle" onclick="toggleFireOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">YES — FIRE ON</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;">
-        <label class="xlabel" style="margin:0;white-space:nowrap;">SOLO FIRE START (sec)</label>
-        <input class="xinput" id="cr-fire-start" placeholder="e.g. 45" type="number" min="0" style="width:100px;">
-        <div style="font-size:9px;color:#2a2a44;letter-spacing:2px;flex:1;">top fire starts at this timestamp</div>
-      </div>
-    </div>
-    <div class="section-title">EFFECTS (optional)</div>
-    <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-      <div style="font-size:9px;color:#2a2a44;letter-spacing:2px;margin-bottom:4px;">THESE APPLY DURING GAMEPLAY</div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:10px;letter-spacing:3px;color:#444;">SPEED BOOST</div>
-        <select class="xinput" id="cr-speed" style="width:140px;">
-          <option value="1">NORMAL (1x)</option>
-          <option value="1.25">FAST (1.25x)</option>
-          <option value="1.5">FASTER (1.5x)</option>
-          <option value="0.75">SLOW (0.75x)</option>
-        </select>
+        <div style="font-size:10px;letter-spacing:3px;color:#444;">FIRE EFFECT (volume-based)</div>
+        <div id="cr-fire-toggle" onclick="toggleFireOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">YES — ON</div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:10px;letter-spacing:3px;color:#444;">SCREEN DIM</div>
         <div id="cr-dim-toggle" onclick="toggleDimOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #1a1a30;color:#444;cursor:pointer;">OFF</div>
       </div>
+      <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;margin-top:2px;">SPEED BOOST + SOLO FIRE TIMING → SET IN EFFECT EDIT MODE (preview)</div>
     </div>
     <div class="section-title">AUDIO</div>
     <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;">
@@ -545,16 +528,42 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="rdot"></div>
       <div id="jt"></div>
       <div id="snotice"></div>
-      <!-- WATCH MODE TIMELINE -->
-      <div id="watch-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:25;background:rgba(0,0,0,0.7);padding:8px 12px;">
-        <div style="display:flex;align-items:center;gap:8px;">
+      <!-- EFFECT EDIT / WATCH TIMELINE -->
+      <div id="watch-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:25;background:rgba(5,5,18,0.95);border-top:1px solid #252540;padding:10px 12px 8px;">
+        <!-- timeline with fire marker -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <span id="watch-cur" style="font-size:10px;color:#aaa;letter-spacing:1px;min-width:36px;">0:00</span>
-          <div id="watch-track" style="flex:1;height:6px;background:#1a1a30;cursor:pointer;position:relative;border-radius:3px;">
-            <div id="watch-fill" style="height:100%;background:var(--cyan);width:0%;border-radius:3px;transition:width .1s linear;pointer-events:none;"></div>
-            <div id="watch-thumb" style="position:absolute;top:50%;width:12px;height:12px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;"></div>
+          <div style="flex:1;position:relative;">
+            <div id="watch-track" style="height:6px;background:#1a1a30;cursor:pointer;border-radius:3px;position:relative;">
+              <div id="watch-fill" style="height:100%;background:var(--cyan);width:0%;border-radius:3px;pointer-events:none;"></div>
+              <!-- fire start marker -->
+              <div id="fire-marker" style="position:absolute;top:-5px;width:3px;height:16px;background:var(--amber);border-radius:2px;left:0%;cursor:grab;display:none;" title="SOLO FIRE START"></div>
+              <div id="watch-thumb" style="position:absolute;top:50%;width:11px;height:11px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;"></div>
+            </div>
+            <div id="fire-marker-label" style="display:none;position:absolute;top:10px;font-size:8px;color:var(--amber);letter-spacing:1px;white-space:nowrap;"></div>
           </div>
           <span id="watch-dur" style="font-size:10px;color:#555;letter-spacing:1px;min-width:36px;text-align:right;">0:00</span>
-          <button onclick="exitWatch()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">✕</button>
+        </div>
+        <!-- controls row -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <div style="font-size:9px;color:#444;letter-spacing:2px;">EFFECT EDIT</div>
+          <div style="flex:1;"></div>
+          <!-- speed -->
+          <div style="font-size:9px;color:#333;letter-spacing:2px;">SPEED</div>
+          <select id="watch-speed" onchange="applyWatchSpeed()" style="background:#0d0d1a;border:1px solid #252540;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 6px;cursor:pointer;">
+            <option value="0.75">0.75×</option>
+            <option value="1" selected>1×</option>
+            <option value="1.25">1.25×</option>
+            <option value="1.5">1.5×</option>
+          </select>
+          <!-- fire start button -->
+          <button onclick="setFireStartHere()" style="background:#ffaa0011;border:1px solid #ffaa0044;color:var(--amber);font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">🔥 SET FIRE HERE</button>
+          <!-- clear fire -->
+          <button onclick="clearFireStart()" style="background:none;border:1px solid #333;color:#444;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">CLEAR</button>
+          <!-- save button -->
+          <button onclick="saveEffects()" style="background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:5px 12px;cursor:pointer;">[ SAVE EFFECTS ]</button>
+          <!-- exit -->
+          <button onclick="exitWatch()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">✕ EXIT</button>
         </div>
       </div>
       <button id="stopbtn" onclick="endRecord()">[ STOP &amp; SAVE ]</button>
@@ -1143,13 +1152,14 @@ function hudUpdate(now){
 function stopAll(){running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);}
 function showOv(html){document.getElementById('ov').innerHTML=html;document.getElementById('ov').style.display='flex';}
 function hideOv(){document.getElementById('ov').style.display='none';}
-// ── WATCH MODE ───────────────────────────────────────────────────────────────
-let watchMode=false,watchRaf=0;
+// ── WATCH / EFFECT EDIT MODE ─────────────────────────────────────────────────
+let watchMode=false,watchRaf=0,watchFireStart=0;
 
 function startWatch(){
   stopAll();
   if(!CS||!CS.beatmap||!CS.audioUrl){toast('NO SONG DATA','#ff4444');return;}
   watchMode=true;
+  watchFireStart=CS.fireStart||0;
   beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:n.time,lane:n.lane,hMs:n.hMs||0})).sort((a,b)=>a.sMs-b.sMs);
   fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
@@ -1158,36 +1168,113 @@ function startWatch(){
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
   document.getElementById('watch-bar').style.display='block';
   document.getElementById('ov').style.display='none';
-  document.getElementById('mb').textContent='WATCH';document.getElementById('mb').className='play';
+  document.getElementById('mb').textContent='EDIT';document.getElementById('mb').className='play';
   document.getElementById('stopbtn').style.display='none';
   document.getElementById('streak-popup').style.opacity='0';
+  // set speed selector to current
+  const spSel=document.getElementById('watch-speed');
+  if(spSel)spSel.value=String(CS.speedEffect||1);
+  // show fire marker if set
+  updateFireMarkerUI();
   aud=new Audio(CS.audioUrl);aud.preload='auto';aud.crossOrigin='anonymous';
+  aud.playbackRate=CS.speedEffect||1;
   aud.onerror=()=>{watchMode=false;document.getElementById('watch-bar').style.display='none';showOv(`<div class="ov-title">AUDIO ERROR</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
-  // timeline seek
+  // timeline seek click
   const track=document.getElementById('watch-track');
-  track.onclick=function(e){
-    if(!aud||!aud.duration)return;
-    const r=track.getBoundingClientRect();
-    const pct=(e.clientX-r.left)/r.width;
-    aud.currentTime=Math.max(0,Math.min(aud.duration,pct*aud.duration));
-    bpIdx=0;notes=[];
-    // fast-forward bpIdx to current time
-    const now=aud.currentTime*1000;
-    while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<now-200)bpIdx++;
-  };
+  track.onclick=function(e){seekWatch(e.clientX,track);};
+  // fire marker drag
+  const marker=document.getElementById('fire-marker');
+  if(marker){
+    let dragging=false;
+    marker.addEventListener('mousedown',e=>{dragging=true;e.stopPropagation();});
+    document.addEventListener('mousemove',e=>{if(!dragging||!aud||!aud.duration)return;const r=track.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));watchFireStart=pct*aud.duration;updateFireMarkerUI();});
+    document.addEventListener('mouseup',()=>{dragging=false;});
+    // touch drag
+    marker.addEventListener('touchstart',e=>{dragging=true;e.stopPropagation();},{passive:true});
+    document.addEventListener('touchmove',e=>{if(!dragging||!aud||!aud.duration)return;const r=track.getBoundingClientRect();const pct=Math.max(0,Math.min(1,(e.touches[0].clientX-r.left)/r.width));watchFireStart=pct*aud.duration;updateFireMarkerUI();},{passive:true});
+    document.addEventListener('touchend',()=>{dragging=false;},{passive:true});
+  }
   initAnalyser(aud);
   playAudGame().then(()=>{
     running=true;mode='play';
-    autoMode=true; // watch = full auto
     watchRaf=requestAnimationFrame(watchLoop);
   });
-  aud.onended=()=>{watchMode=false;document.getElementById('watch-bar').style.display='none';initPlay();};
+  aud.onended=()=>{if(watchMode){watchMode=false;autoMode=false;document.getElementById('watch-bar').style.display='none';initPlay();}};
+}
+
+function seekWatch(clientX,track){
+  if(!aud||!aud.duration)return;
+  const r=track.getBoundingClientRect();
+  const pct=Math.max(0,Math.min(1,(clientX-r.left)/r.width));
+  aud.currentTime=pct*aud.duration;
+  // rebuild notes and bpIdx from new position
+  const nowMs=aud.currentTime*1000;
+  notes=[];
+  bpIdx=0;
+  // skip past already-gone notes
+  while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-200)bpIdx++;
+}
+
+function updateFireMarkerUI(){
+  const marker=document.getElementById('fire-marker');
+  const label=document.getElementById('fire-marker-label');
+  if(!marker||!label)return;
+  if(!aud||!aud.duration||watchFireStart<=0){marker.style.display='none';label.style.display='none';return;}
+  const pct=(watchFireStart/aud.duration)*100;
+  marker.style.display='block';marker.style.left=pct+'%';label.style.display='block';label.style.left=pct+'%';
+  label.textContent='🔥 '+fmtT(watchFireStart*1000);
+}
+
+function setFireStartHere(){if(aud){watchFireStart=aud.currentTime;updateFireMarkerUI();}}
+function clearFireStart(){watchFireStart=0;updateFireMarkerUI();}
+
+function applyWatchSpeed(){
+  const v=parseFloat(document.getElementById('watch-speed').value)||1;
+  if(aud)aud.playbackRate=v;
+}
+
+async function saveEffects(){
+  if(!CS?.id){toast('PREVIEW ONLY — PUBLISH FIRST','#ff4444');return;}
+  const spd=parseFloat(document.getElementById('watch-speed').value)||1;
+  try{
+    await dUpd(dDoc('songs',CS.id),{fireStart:watchFireStart,speedEffect:spd,updatedAt:sts()});
+    CS.fireStart=watchFireStart;CS.speedEffect=spd;
+    toast('EFFECTS SAVED!','#00ff88');
+  }catch(e){toast('SAVE FAILED: '+e.message,'#ff4444');}
 }
 
 function watchLoop(){
   if(!running||!watchMode)return;
-  pUpdate2(); // auto-hits notes
-  drawPlay2();
+  fn++;
+  const now=sNow();
+  // auto spawn notes
+  while(bpIdx<beatmap.length&&now>=beatmap[bpIdx].sMs-GAPP_MS()){
+    const b=beatmap[bpIdx++];
+    notes.push({lane:b.lane,sMs:b.sMs,hMs:b.hMs||0,hit:false,missed:false,holding:false,hp:0,cy:0});
+  }
+  // auto-hit notes perfectly
+  for(let n of notes){
+    n.cy=GHIT_Y()-(n.sMs-now)*GPPM;
+    if(!n.hit&&!n.missed&&!n.holding&&Math.abs(now-n.sMs)<16){
+      if(n.hMs>80){n.holding=true;laneHolding[n.lane]=true;pulseTimer[n.lane]=0;}
+      else{n.hit=true;burstP(n.lane,n.cy);}
+      combo++;if(combo>maxC)maxC=combo;score+=300;gstats.p++;judgeShow('PERFECT','#00f0ff');
+    }
+    if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){n.missed=true;laneHolding[n.lane]=false;}
+    if(n.holding){n.hp=Math.min(1,(now-n.sMs)/Math.max(n.hMs,1));if(n.hp>=1){n.hit=true;n.holding=false;laneHolding[n.lane]=false;}}
+  }
+  notes=notes.filter(n=>!(n.hit&&!n.holding)&&!(n.missed&&n.cy>GH()+60));
+  tickP();tickPulses();fl=fl.map(v=>Math.max(0,v-1));
+  jAlpha=Math.max(0,jAlpha-.022);document.getElementById('jt').style.opacity=jAlpha;
+  // fire
+  if(CS?.allowFire!==false){
+    const rawVol=getVolume();
+    fireVol=fireVol*0.85+rawVol*0.15;
+    if(fireVol>0.45)spawnFire(fireVol,false);
+    if(aud&&watchFireStart>0&&aud.currentTime>=watchFireStart)spawnFire(Math.min(0.7,0.5+fireVol),true);
+    drawFire();
+  }
+  drawPlay2_nofire(); // draw without double fire call
   // update timeline UI
   if(aud&&aud.duration){
     const pct=aud.currentTime/aud.duration;
@@ -1195,6 +1282,7 @@ function watchLoop(){
     document.getElementById('watch-thumb').style.left=(pct*100)+'%';
     document.getElementById('watch-cur').textContent=fmtT(aud.currentTime*1000);
     document.getElementById('watch-dur').textContent=fmtT(aud.duration*1000);
+    updateFireMarkerUI();
   }
   watchRaf=requestAnimationFrame(watchLoop);
 }
@@ -1230,7 +1318,7 @@ function initPlay(){
     <div class="ov-hint">TAP · HOLD FOR LONG NOTES · ESC = BACK</div>
     <div class="ov-btns">
       <button class="xbtn cy" onclick="startPlay()">[ PLAY ]</button>
-      <button class="xbtn pk" onclick="startWatch()">[ WATCH ]</button>
+      <button class="xbtn pk" onclick="startWatch()">[ EFFECT EDIT ]</button>
       <button class="xbtn am" id="auto-toggle-btn" onclick="toggleAuto()">[ AUTO: OFF ]</button>
       ${ADM&&!fc?`<button class="xbtn" onclick="startAdminRec()">[ RE-RECORD (ADMIN) ]</button>`:''}
       ${fc?`<button class="xbtn am sm" onclick="goBack()">[ BACK TO EDITOR ]</button>`:`<button class="xbtn rd sm" onclick="goBack()">[ BACK ]</button>`}
@@ -1479,10 +1567,32 @@ function drawPlay2(){
   }
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
 }
+// Watch mode draws without its own fire logic (watchLoop handles fire separately)
+function drawPlay2_nofire(){
+  drawBase();
+  for(let i=0;i<GLANES;i++){const[r,g,b]=rgbC(COLS[i]);if(laneHolding[i]){ctx2.fillStyle=`rgba(${r},${g},${b},.07)`;ctx2.fillRect(i*GLW(),0,GLW(),GH());}else if(fl[i]>0){ctx2.fillStyle=`rgba(${r},${g},${b},${(fl[i]/14)*.1})`;ctx2.fillRect(i*GLW(),0,GLW(),GH());}}
+  ctx2.fillStyle='#0e0e22';ctx2.fillRect(0,GHIT_Y()-4,GW(),62);
+  ctx2.strokeStyle='#1a1a38';ctx2.lineWidth=1;ctx2.beginPath();ctx2.moveTo(0,GHIT_Y()-4);ctx2.lineTo(GW(),GHIT_Y()-4);ctx2.stroke();
+  for(let rp of ripples){const[r,g,b]=rgbC(rp.c);ctx2.strokeStyle=`rgba(${r},${g},${b},${rp.a})`;ctx2.lineWidth=1.5;ctx2.beginPath();ctx2.arc(rp.x,rp.y,rp.r,0,Math.PI*2);ctx2.stroke();rp.r+=3;rp.a-=.07;}
+  ripples=ripples.filter(rp=>rp.a>0);
+  drawPulses2();drawTargets2();
+  for(let n of notes){
+    if(n.hit&&!n.holding)continue;
+    const cx=n.lane*GLW()+GLW()/2,ny=n.cy;const[r,g,b]=rgbC(COLS[n.lane]);
+    if(n.missed){ctx2.fillStyle=`rgba(${r},${g},${b},.08)`;ctx2.beginPath();ctx2.arc(cx,ny,GNR,0,Math.PI*2);ctx2.fill();continue;}
+    if(n.hMs>80){const hpx=n.hMs*GPPM;let bt,bh;if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);if(n.holding){ctx2.fillStyle=`rgba(${r},${g},${b},.95)`;ctx2.fillRect(cx-GNR*.38,GHIT_Y()+20-hpx*(1-n.hp)-3,GNR*.76,4);}}
+    const grd=ctx2.createRadialGradient(cx,ny,0,cx,ny,GNR+8);grd.addColorStop(0,`rgba(${r},${g},${b},.55)`);grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ctx2.fillStyle=grd;ctx2.beginPath();ctx2.arc(cx,ny,GNR+8,0,Math.PI*2);ctx2.fill();
+    const nr=n.holding?GNR*(1+Math.sin(fn*.18)*.08):GNR;
+    ctx2.fillStyle=`rgba(${r},${g},${b},.92)`;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.fill();
+    ctx2.fillStyle='rgba(255,255,255,.15)';ctx2.beginPath();ctx2.arc(cx-GNR*.25,ny-GNR*.25,GNR*.38,0,Math.PI*2);ctx2.fill();
+    ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;ctx2.lineWidth=n.holding?2:1.5;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
+  }
+  drawParts2();drawFire();
+  if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
+}
 function drawRec2(){
   drawBase();
-  ctx2.fillStyle='#0e0e22';ctx2.fillRect(0,GHIT_Y()-4,GW(),62);drawPulses2();drawTargets2();
-  const now=performance.now()-rWall2;
   for(let n of rNotes2){const age=(now-n.sMs)/1800;if(age<0||age>1)continue;const[r,g,b]=rgbC(COLS[n.lane]),cx=n.lane*GLW()+GLW()/2,gy=GHIT_Y()-(now-n.sMs)*GPPM;if(n.hMs>80){const hpx=n.hMs*GPPM;ctx2.fillStyle=`rgba(${r},${g},${b},${(1-age)*.18})`;ctx2.fillRect(cx-GNR*.38,gy-hpx,GNR*.76,hpx);}ctx2.fillStyle=`rgba(${r},${g},${b},${(1-age)*.55})`;ctx2.beginPath();ctx2.arc(cx,gy,GNR*(1-age*.4),0,Math.PI*2);ctx2.fill();}
   drawParts2();
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#ff4444';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
@@ -1685,7 +1795,7 @@ function _laneUp(lane){
 })();
 
 window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
-window.startWatch=startWatch;window.exitWatch=exitWatch;
+window.startWatch=startWatch;window.exitWatch=exitWatch;window.setFireStartHere=setFireStartHere;window.clearFireStart=clearFireStart;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
