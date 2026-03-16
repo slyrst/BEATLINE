@@ -953,7 +953,10 @@ async function openProfile(uid, backPage){
           ${uploadBtn}
         </div>
         <div class="profile-info">
-          <div class="profile-name">${esc(username)}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <div class="profile-name">${esc(username)}${ud.isAdmin?'<span style="font-size:9px;color:var(--cyan);letter-spacing:3px;margin-left:8px;">ADMIN</span>':''}</div>
+            ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;letter-spacing:2px;" onclick="startEditUsername()">✏ RENAME</button>`:''}
+          </div>
           ${bioSection}
           <div class="profile-stats-row" style="margin-top:10px;">
             <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">SCORE</div></div>
@@ -1021,6 +1024,28 @@ async function saveBio(){
     await dUpd(dDoc('users',CU.uid),{bio});
     if(CUD)CUD.bio=bio;
     toast('BIO SAVED','#00ff88');
+    openProfile(CU.uid);
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+
+function startEditUsername(){
+  const cur=CUD?.username||'';
+  const name=window.prompt('NEW USERNAME (max 20 chars):',cur);
+  if(!name||name.trim()===cur)return;
+  saveUsername(name.trim().toUpperCase().slice(0,20));
+}
+async function saveUsername(newName){
+  if(!CU||!newName){return;}
+  if(newName.length<3){toast('TOO SHORT (min 3)','#ff4444');return;}
+  try{
+    // Check if taken
+    const snap=await dQ('users',W('username','==',newName));
+    if(!snap.empty&&snap.docs[0].id!==CU.uid){toast('USERNAME TAKEN','#ff4444');return;}
+    await dUpd(dDoc('users',CU.uid),{username:newName});
+    if(CUD)CUD.username=newName;
+    document.getElementById('menu-username').textContent=newName;
+    document.getElementById('bottom-username').textContent=newName;
+    toast('USERNAME UPDATED: '+newName,'#00ff88');
     openProfile(CU.uid);
   }catch(e){toast('ERROR: '+e.message,'#ff4444');}
 }
@@ -2508,7 +2533,7 @@ window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
 window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
 window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
-window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.removeFriend=removeFriend;
+window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.startEditUsername=startEditUsername;window.removeFriend=removeFriend;
 window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;
 window.openChat=openChat;window.closeChat=closeChat;window.sendChatMsg=sendChatMsg;
 window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
