@@ -432,6 +432,28 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div style="font-size:10px;letter-spacing:3px;color:#444;">ALLOW FIRE EFFECT</div>
         <div id="cr-fire-toggle" onclick="toggleFireOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">YES — FIRE ON</div>
       </div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <label class="xlabel" style="margin:0;white-space:nowrap;">SOLO FIRE START (sec)</label>
+        <input class="xinput" id="cr-fire-start" placeholder="e.g. 45" type="number" min="0" style="width:100px;">
+        <div style="font-size:9px;color:#2a2a44;letter-spacing:2px;flex:1;">top fire starts at this timestamp</div>
+      </div>
+    </div>
+    <div class="section-title">EFFECTS (optional)</div>
+    <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:9px;color:#2a2a44;letter-spacing:2px;margin-bottom:4px;">THESE APPLY DURING GAMEPLAY</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:10px;letter-spacing:3px;color:#444;">SPEED BOOST</div>
+        <select class="xinput" id="cr-speed" style="width:140px;">
+          <option value="1">NORMAL (1x)</option>
+          <option value="1.25">FAST (1.25x)</option>
+          <option value="1.5">FASTER (1.5x)</option>
+          <option value="0.75">SLOW (0.75x)</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:10px;letter-spacing:3px;color:#444;">SCREEN DIM</div>
+        <div id="cr-dim-toggle" onclick="toggleDimOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #1a1a30;color:#444;cursor:pointer;">OFF</div>
+      </div>
     </div>
     <div class="section-title">AUDIO</div>
     <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;">
@@ -505,9 +527,12 @@ canvas#cv{display:block;width:440px;height:620px;}
   <div id="game-wrap">
     <div id="gc">
       <canvas id="cv" width="440" height="620"></canvas>
+      <!-- dim overlay for dim effect -->
+      <div id="dim-overlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.55);pointer-events:none;z-index:9;"></div>
       <div id="ui">
         <div><div id="sc">000000</div><div id="cb">COMBO  0</div><div id="mb">BEATLINE</div></div>
         <div id="streak-hud">
+          <div id="cps-hud" style="font-size:9px;color:#333;letter-spacing:2px;text-align:right;margin-bottom:2px;"></div>
           <div id="acc-hud"></div>
           <div id="td"></div>
         </div>
@@ -520,6 +545,18 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="rdot"></div>
       <div id="jt"></div>
       <div id="snotice"></div>
+      <!-- WATCH MODE TIMELINE -->
+      <div id="watch-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:25;background:rgba(0,0,0,0.7);padding:8px 12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="watch-cur" style="font-size:10px;color:#aaa;letter-spacing:1px;min-width:36px;">0:00</span>
+          <div id="watch-track" style="flex:1;height:6px;background:#1a1a30;cursor:pointer;position:relative;border-radius:3px;">
+            <div id="watch-fill" style="height:100%;background:var(--cyan);width:0%;border-radius:3px;transition:width .1s linear;pointer-events:none;"></div>
+            <div id="watch-thumb" style="position:absolute;top:50%;width:12px;height:12px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;"></div>
+          </div>
+          <span id="watch-dur" style="font-size:10px;color:#555;letter-spacing:1px;min-width:36px;text-align:right;">0:00</span>
+          <button onclick="exitWatch()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">✕</button>
+        </div>
+      </div>
       <button id="stopbtn" onclick="endRecord()">[ STOP &amp; SAVE ]</button>
       <div id="ov"></div>
     </div>
@@ -726,12 +763,19 @@ function initCreatePage(existing=null){
   document.getElementById('cr-bpm').value=existing?.bpm||'';
   // reset file picker
   document.getElementById('cr-bg').value=existing?.bgImage||'';
-  crAllowFire=existing?.allowFire!==false; // default true
+  crAllowFire=existing?.allowFire!==false;
+  crFireStart=existing?.fireStart||0;
+  crAllowDim=existing?.dimEffect||false;
+  crSpeed=existing?.speedEffect||1;
+  document.getElementById('cr-fire-start').value=crFireStart||'';
+  document.getElementById('cr-speed').value=String(crSpeed);
   const fBtn=document.getElementById('cr-fire-toggle');
   if(fBtn){
     if(crAllowFire){fBtn.textContent='YES — FIRE ON';fBtn.style.borderColor='#00ff8844';fBtn.style.color='var(--green)';fBtn.style.background='#00ff8811';}
     else{fBtn.textContent='NO — FIRE OFF';fBtn.style.borderColor='#ff444433';fBtn.style.color='var(--red)';fBtn.style.background='#ff44441a';}
   }
+  const dBtn=document.getElementById('cr-dim-toggle');
+  if(dBtn){if(crAllowDim){dBtn.textContent='ON';dBtn.style.borderColor='var(--amber)';dBtn.style.color='var(--amber)';}else{dBtn.textContent='OFF';dBtn.style.borderColor='#1a1a30';dBtn.style.color='#444';}}
   const bgp=document.getElementById('cr-bg-preview');
   if(existing?.bgImage){bgp.style.backgroundImage=`url('${existing.bgImage}')`;bgp.style.display='block';}
   else{bgp.style.display='none';}
@@ -763,12 +807,18 @@ function previewBg(){
   if(!v){p.style.display='none';return;}
   p.style.backgroundImage=`url('${v}')`;p.style.display='block';
 }
-let crAllowFire=true;
+let crAllowFire=true,crFireStart=0,crAllowDim=false,crSpeed=1;
 function toggleFireOpt(){
   crAllowFire=!crAllowFire;
   const btn=document.getElementById('cr-fire-toggle');
   if(crAllowFire){btn.textContent='YES — FIRE ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
   else{btn.textContent='NO — FIRE OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+}
+function toggleDimOpt(){
+  crAllowDim=!crAllowDim;
+  const btn=document.getElementById('cr-dim-toggle');
+  if(crAllowDim){btn.textContent='ON';btn.style.borderColor='var(--amber)';btn.style.color='var(--amber)';}
+  else{btn.textContent='OFF';btn.style.borderColor='#1a1a30';btn.style.color='#444';}
 }
 
 // ── FILE AUDIO ────────────────────────────────────────────────────────────────
@@ -993,7 +1043,9 @@ async function crPublish(){
   document.getElementById('cr-pub-btn').disabled=true;document.getElementById('cr-pub-btn').textContent='[ PUBLISHING... ]';
   try{
     const bgImage=document.getElementById('cr-bg').value.trim();
-    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',allowFire:crAllowFire,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
+    const fireStart=parseFloat(document.getElementById('cr-fire-start').value)||0;
+    const speedEffect=parseFloat(document.getElementById('cr-speed').value)||1;
+    const data={title,artist,difficulty:crDiff,bpm:bpm?parseInt(bpm):null,beatmap:crNotes,audioUrl,bgImage:bgImage||'',allowFire:crAllowFire,fireStart,dimEffect:crAllowDim,speedEffect,authorId:CU.uid,authorName:CUD?.username||'?',plays:0,updatedAt:sts()};
     if(ESI){await dUpd(dDoc('songs',ESI),data);toast('LEVEL UPDATED!','#00ff88');}
     else{data.createdAt=sts();await dAdd('songs',data);toast('LEVEL PUBLISHED!','#00ff88');}
     ESI=null;crNotes=[];stopBgCanvas();showPage('songs-page');
@@ -1083,11 +1135,78 @@ function hudUpdate(now){
   const tot=gstats.p+gstats.g+gstats.ok+gstats.m,ac=tot?Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100):100;
   document.getElementById('acc-hud').textContent=tot?`${ac}%`:'';
   document.getElementById('td').textContent=fmtT(now);
+  // CPS hud
+  const cpsEl=document.getElementById('cps-hud');
+  if(cpsEl)cpsEl.textContent=fireCPS>0?`${fireCPS} CPS`:'';
 }
 
 function stopAll(){running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);}
 function showOv(html){document.getElementById('ov').innerHTML=html;document.getElementById('ov').style.display='flex';}
 function hideOv(){document.getElementById('ov').style.display='none';}
+// ── WATCH MODE ───────────────────────────────────────────────────────────────
+let watchMode=false,watchRaf=0;
+
+function startWatch(){
+  stopAll();
+  if(!CS||!CS.beatmap||!CS.audioUrl){toast('NO SONG DATA','#ff4444');return;}
+  watchMode=true;
+  beatmap=CS.beatmap.map(n=>({sMs:n.sMs!==undefined?n.sMs:n.time,lane:n.lane,hMs:n.hMs||0})).sort((a,b)=>a.sMs-b.sMs);
+  fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
+  notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
+  fn=0;jAlpha=0;bpIdx=0;score=0;combo=0;maxC=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;
+  loadBgImg(CS.bgImage||'');
+  document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
+  document.getElementById('watch-bar').style.display='block';
+  document.getElementById('ov').style.display='none';
+  document.getElementById('mb').textContent='WATCH';document.getElementById('mb').className='play';
+  document.getElementById('stopbtn').style.display='none';
+  document.getElementById('streak-popup').style.opacity='0';
+  aud=new Audio(CS.audioUrl);aud.preload='auto';aud.crossOrigin='anonymous';
+  aud.onerror=()=>{watchMode=false;document.getElementById('watch-bar').style.display='none';showOv(`<div class="ov-title">AUDIO ERROR</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
+  // timeline seek
+  const track=document.getElementById('watch-track');
+  track.onclick=function(e){
+    if(!aud||!aud.duration)return;
+    const r=track.getBoundingClientRect();
+    const pct=(e.clientX-r.left)/r.width;
+    aud.currentTime=Math.max(0,Math.min(aud.duration,pct*aud.duration));
+    bpIdx=0;notes=[];
+    // fast-forward bpIdx to current time
+    const now=aud.currentTime*1000;
+    while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<now-200)bpIdx++;
+  };
+  initAnalyser(aud);
+  playAudGame().then(()=>{
+    running=true;mode='play';
+    autoMode=true; // watch = full auto
+    watchRaf=requestAnimationFrame(watchLoop);
+  });
+  aud.onended=()=>{watchMode=false;document.getElementById('watch-bar').style.display='none';initPlay();};
+}
+
+function watchLoop(){
+  if(!running||!watchMode)return;
+  pUpdate2(); // auto-hits notes
+  drawPlay2();
+  // update timeline UI
+  if(aud&&aud.duration){
+    const pct=aud.currentTime/aud.duration;
+    document.getElementById('watch-fill').style.width=(pct*100)+'%';
+    document.getElementById('watch-thumb').style.left=(pct*100)+'%';
+    document.getElementById('watch-cur').textContent=fmtT(aud.currentTime*1000);
+    document.getElementById('watch-dur').textContent=fmtT(aud.duration*1000);
+  }
+  watchRaf=requestAnimationFrame(watchLoop);
+}
+
+function exitWatch(){
+  watchMode=false;autoMode=false;
+  cancelAnimationFrame(watchRaf);
+  stopAll();
+  document.getElementById('watch-bar').style.display='none';
+  document.getElementById('dim-overlay').style.display='none';
+  initPlay();
+}
 function toggleAuto(){
   autoMode=!autoMode;
   const btn=document.getElementById('auto-toggle-btn');
@@ -1111,6 +1230,7 @@ function initPlay(){
     <div class="ov-hint">TAP · HOLD FOR LONG NOTES · ESC = BACK</div>
     <div class="ov-btns">
       <button class="xbtn cy" onclick="startPlay()">[ PLAY ]</button>
+      <button class="xbtn pk" onclick="startWatch()">[ WATCH ]</button>
       <button class="xbtn am" id="auto-toggle-btn" onclick="toggleAuto()">[ AUTO: OFF ]</button>
       ${ADM&&!fc?`<button class="xbtn" onclick="startAdminRec()">[ RE-RECORD (ADMIN) ]</button>`:''}
       ${fc?`<button class="xbtn am sm" onclick="goBack()">[ BACK TO EDITOR ]</button>`:`<button class="xbtn rd sm" onclick="goBack()">[ BACK ]</button>`}
@@ -1129,7 +1249,11 @@ function startPlay(){
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
   loadBgImg(CS.bgImage||'');
+  // Apply effects
+  const spd=CS.speedEffect||1;
+  document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
   aud=new Audio(CS.audioUrl);aud.preload='auto';aud.crossOrigin='anonymous';
+  aud.playbackRate=spd;
   aud.onerror=()=>{running=false;showOv(`<div class="ov-title">AUDIO ERROR</div><div class="ov-sub" style="color:#ff4444">FILE NOT FOUND</div><button class="xbtn rd" onclick="goBack()">[ BACK ]</button>`);};
   playAudGame().then(()=>{initAnalyser(aud);running=true;raf2=requestAnimationFrame(pLoop2);});
 }
@@ -1342,14 +1466,15 @@ function drawPlay2(){
   }
   drawParts2();
   if(CS?.allowFire!==false){
-    // volume-based bottom fire
     const rawVol=getVolume();
     fireVol=fireVol*0.85+rawVol*0.15;
     if(fireVol>0.45)spawnFire(fireVol,false);
-    // CPS-based top fire — count hits per second
+    // CPS top fire — only after fireStart time
     _cpsTimer+=1/60;
     if(_cpsTimer>=1){fireCPS=_cpsHits;_cpsHits=0;_cpsTimer=0;}
-    if(fireCPS>=6)spawnFire(Math.min(0.5+fireCPS*0.04,1),true);
+    const nowSec=aud?aud.currentTime:0;
+    const fireStartSec=CS?.fireStart||0;
+    if(fireCPS>=6&&nowSec>=fireStartSec)spawnFire(Math.min(0.5+fireCPS*0.04,1),true);
     drawFire();
   }
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
@@ -1559,7 +1684,8 @@ function _laneUp(lane){
   });
 })();
 
-window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;
+window.onBgInput=onBgInput;window.previewBg=previewBg;window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
+window.startWatch=startWatch;window.exitWatch=exitWatch;
 window.doGuest=doGuest;window.showPage=showPage;window.switchAuthTab=switchAuthTab;window.doLogin=doLogin;window.doRegister=doRegister;window.doLogout=doLogout;
 window._laneDown=_laneDown;window._laneUp=_laneUp;
 window.showLeaderboardGlobal=showLeaderboardGlobal;window.showLB=showLB;window.playSong=playSong;
