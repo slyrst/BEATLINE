@@ -337,8 +337,6 @@ canvas#cv{display:block;width:440px;height:620px;}
   #game-wrap.landscape-on #kh{flex-direction:column!important;width:60px!important;height:420px!important;}
   #game-wrap.landscape-on .khi{height:auto!important;flex:1!important;writing-mode:vertical-lr!important;}
 }
-/* COMPACT SONG CARDS */
-.song-card{padding:8px 10px!important;gap:0!important;}
 /* NOTIFICATION POPUP */
 #notif-stack{position:fixed;bottom:60px;right:16px;display:flex;flex-direction:column-reverse;gap:8px;z-index:500;align-items:flex-end;pointer-events:none;}
 @media(max-width:600px){#notif-stack{bottom:auto;top:12px;right:8px;left:8px;align-items:stretch;flex-direction:column;}}
@@ -1622,18 +1620,31 @@ function buildCard(s){
   const nc=s.beatmap?s.beatmap.length:0;
   const canEdit=ADM||(CU&&s.authorId===CU.uid);
   const likes=s.likes||0;const liked=CU&&(s.likedBy||[]).includes(CU.uid);
-  div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
-      <div style="width:28px;height:28px;min-width:28px;background:var(--bg2);border:1px solid ${dc}44;display:flex;align-items:center;justify-content:center;font-size:13px;color:${dc};flex-shrink:0;">♪</div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:12px;font-weight:bold;letter-spacing:1px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.title||'UNTITLED')}</div>
-        <div style="font-size:9px;color:#555;letter-spacing:1px;">${esc(s.artist||'?')} · BY ${esc(s.authorName||'?')}</div>
+  div.innerHTML=`
+    <div class="song-card-top">
+      <div class="song-thumb" style="border-color:${dc}44;color:${dc};">♪</div>
+      <div class="song-info">
+        <div class="song-title">${esc(s.title||'UNTITLED')}</div>
+        <div class="song-artist">${esc(s.artist||'UNKNOWN ARTIST')}</div>
+        <div class="song-author">BY <b>${esc(s.authorName||'?')}</b></div>
       </div>
-      <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
-        <span class="song-tag diff-${s.difficulty||'easy'}" style="font-size:7px;">${(s.difficulty||'E').charAt(0).toUpperCase()}</span>
-        <button onclick="event.stopPropagation();likeSong('${s.id}',this)" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px;opacity:${liked?1:0.4};" title="${likes} likes">❤</button>
-        <span style="font-size:8px;color:#444;">${likes}</span>
-        <button class="xbtn cy sm" onclick="playSong('${s.id}')" style="padding:4px 10px;font-size:9px;">▶</button>
-        <button class="xbtn sm" onclick="showSongMenu('${s.id}','${esc(s.title||'')}',${canEdit},${ADM||false})" style="padding:4px 8px;font-size:9px;color:#555;">⋯</button>
+    </div>
+    <div class="song-card-bottom">
+      <div class="song-meta">
+        <span class="song-tag diff-${s.difficulty||'easy'}">${(s.difficulty||'EASY').toUpperCase()}</span>
+        ${s.bpm?`<span class="song-tag" style="border-color:#222;color:#3a3a5a;">${s.bpm}BPM</span>`:''}
+        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${nc}N</span>
+        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${s.plays||0}▶</span>
+        <span style="display:inline-flex;align-items:center;gap:2px;font-size:8px;color:${liked?'#ff4444':'#444'};cursor:pointer;" onclick="event.stopPropagation();likeSong('${s.id}',this)">
+          <span style="font-size:11px;opacity:${liked?1:0.5};">❤</span><span id="like-count-${s.id}">${likes}</span>
+        </span>
+      </div>
+      <div class="song-actions-btns">
+        <button class="xbtn cy sm" onclick="playSong('${s.id}')">▶ PLAY</button>
+        <button class="xbtn sm" onclick="showLB('${s.id}','${esc(s.title||'')}')">LB</button>
+        <button class="xbtn sm" onclick="showSongComments('${s.id}','${esc(s.title||'')}')" style="color:#ffaa00;border-color:#ffaa0033;padding:7px 10px;font-size:9px;">💬</button>
+        ${canEdit?`<button class="xbtn am sm" onclick="editSong('${s.id}')">EDIT</button>`:''}
+        ${ADM?`<button class="xbtn rd sm" onclick="delSong('${s.id}','${esc(s.title||'')}')">✕</button>`:''}
       </div>
     </div>`;
   return div;
@@ -4778,10 +4789,12 @@ function drawThumb(){
 }
 
 document.addEventListener('keydown',e=>{
+  if(!e.key)return;
   const i=KEYS.indexOf(e.key.toLowerCase());
   if(i!==-1&&i<4){_thumbActive[i]=true;drawThumb();}
 },{passive:true});
 document.addEventListener('keyup',e=>{
+  if(!e.key)return;
   const i=KEYS.indexOf(e.key.toLowerCase());
   if(i!==-1&&i<4){_thumbActive[i]=false;drawThumb();}
 },{passive:true});
