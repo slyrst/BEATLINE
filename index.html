@@ -329,6 +329,16 @@ canvas#cv{display:block;width:440px;height:620px;}
 .confirm-box{background:var(--bg3);border:1px solid var(--border);padding:28px 32px;max-width:340px;width:90%;display:flex;flex-direction:column;gap:14px;align-items:center;}
 .confirm-msg{font-size:12px;color:var(--text2);letter-spacing:2px;text-align:center;line-height:1.9;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
+/* LANDSCAPE MODE */
+@media(orientation:landscape) and (max-height:500px){
+  #game-wrap.landscape-on{flex-direction:row!important;width:auto!important;}
+  #game-wrap.landscape-on #gc{width:320px!important;height:420px!important;}
+  #game-wrap.landscape-on canvas#cv{width:320px!important;height:420px!important;}
+  #game-wrap.landscape-on #kh{flex-direction:column!important;width:60px!important;height:420px!important;}
+  #game-wrap.landscape-on .khi{height:auto!important;flex:1!important;writing-mode:vertical-lr!important;}
+}
+/* COMPACT SONG CARDS */
+.song-card{padding:8px 10px!important;gap:0!important;}
 /* NOTIFICATION POPUP */
 #notif-stack{position:fixed;bottom:60px;right:16px;display:flex;flex-direction:column-reverse;gap:8px;z-index:500;align-items:flex-end;pointer-events:none;}
 @media(max-width:600px){#notif-stack{bottom:auto;top:12px;right:8px;left:8px;align-items:stretch;flex-direction:column;}}
@@ -448,12 +458,26 @@ canvas#cv{display:block;width:440px;height:620px;}
 
 <!-- SONGS -->
 <div class="page" id="songs-page">
-  <div class="page-header">
-    <div>
+  <div class="page-header" style="flex-direction:column;gap:8px;align-items:stretch;">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
       <div class="page-header-title">SELECT SONG</div>
-      <div style="font-size:9px;color:#1a1a2e;letter-spacing:3px;margin-top:3px;">REQUEST A SONG → <a href="/cdn-cgi/l/email-protection#374452415e5b55425b4243445077505a565e5b1954585a" style="color:#1a1a2e;"><span class="__cf_email__" data-cfemail="b1c2d4c7d8ddd3c4ddc4c5c2d6f1d6dcd0d8dd9fd2dedc">[email&#160;protected]</span></a></div>
+      <button class="xbtn sm" onclick="showPage('menu-page')">[ BACK ]</button>
     </div>
-    <button class="xbtn sm" onclick="showPage('menu-page')">[ BACK ]</button>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <input class="xinput" id="song-search" placeholder="SEARCH..." oninput="filterSongs()" style="flex:1;font-size:11px;padding:7px 10px;">
+      <select class="xinput" id="song-filter-diff" onchange="filterSongs()" style="width:90px;font-size:10px;padding:7px 8px;">
+        <option value="">ALL</option>
+        <option value="easy">EASY</option>
+        <option value="medium">MED</option>
+        <option value="hard">HARD</option>
+        <option value="expert">EXP</option>
+      </select>
+      <select class="xinput" id="song-sort" onchange="filterSongs()" style="width:100px;font-size:10px;padding:7px 8px;">
+        <option value="newest">NEWEST</option>
+        <option value="plays">MOST PLAYED</option>
+        <option value="likes">TOP RATED</option>
+      </select>
+    </div>
   </div>
   <div class="songs-list" id="songs-list"><div class="empty-state">LOADING...</div></div>
 </div>
@@ -526,19 +550,61 @@ canvas#cv{display:block;width:440px;height:620px;}
         <span id="cr-status">READY TO RECORD</span>
         <span class="rec-nc" id="cr-nc"></span>
       </div>
-      <span class="rec-time" id="cr-time">00:00</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button id="cr-undo-btn" onclick="crUndo()" title="Undo (Ctrl+Z)" style="background:none;border:1px solid #333;color:#555;font-family:'Courier New',monospace;font-size:10px;padding:3px 8px;cursor:pointer;display:none;">↩</button>
+        <button id="cr-redo-btn" onclick="crRedo()" title="Redo (Ctrl+Y)" style="background:none;border:1px solid #333;color:#555;font-family:'Courier New',monospace;font-size:10px;padding:3px 8px;cursor:pointer;display:none;">↪</button>
+        <span class="rec-time" id="cr-time">00:00</span>
+      </div>
     </div>
     <div id="cr-canvas-wrap"><canvas id="cr-cv"></canvas></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="xbtn gn" id="cr-rec-btn" onclick="crStartRec()">[ START RECORDING ]</button>
-      <button class="xbtn rd" id="cr-stop-btn" onclick="crStopClick()" style="display:none;">[ STOP RECORDING ]</button>
-      <button class="xbtn am sm" id="cr-prev-btn" onclick="crPreview()" style="display:none;">[ PREVIEW ]</button>
-      <button class="xbtn sm" id="cr-clr-btn" onclick="crClearNotes()" style="display:none;">[ CLEAR NOTES ]</button>
+    <!-- Note density graph -->
+    <div id="cr-density-wrap" style="display:none;background:#0a0a18;border:1px solid var(--border);border-top:none;padding:6px 8px;">
+      <div style="font-size:8px;color:#333;letter-spacing:2px;margin-bottom:4px;">NOTE DENSITY</div>
+      <canvas id="cr-density-cv" width="596" height="36" style="width:100%;display:block;"></canvas>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="xbtn gn" id="cr-rec-btn" onclick="crStartRec()">[ ● RECORD ]</button>
+      <button class="xbtn rd" id="cr-stop-btn" onclick="crStopClick()" style="display:none;">[ ■ STOP ]</button>
+      <button class="xbtn am sm" id="cr-prev-btn" onclick="crPreview()" style="display:none;">[ ▶ PREVIEW ]</button>
+      <button class="xbtn pk sm" id="cr-eff-btn" onclick="crOpenEffectEdit()" style="display:none;">[ ✦ EFFECTS ]</button>
+      <button class="xbtn sm" id="cr-copy-btn" onclick="crCopyNotes()" style="display:none;" title="Copy selected notes">COPY</button>
+      <button class="xbtn sm" id="cr-paste-btn" onclick="crPasteNotes()" style="display:none;" title="Paste notes">PASTE</button>
+      <button class="xbtn sm" id="cr-clr-btn" onclick="crClearNotes()" style="display:none;">CLEAR</button>
     </div>
     <div class="kr" style="margin-top:4px;">
       <div class="kb c0">D</div><div class="kb c1">F</div><div class="kb c2">J</div><div class="kb c3">K</div>
     </div>
-    <div style="font-size:10px;color:#1e1e38;letter-spacing:2px;text-align:center;">TAP KEYS · HOLD FOR LONG NOTES · TAP CANVAS ON MOBILE</div>
+    <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;text-align:center;">TAP KEYS · HOLD FOR LONG NOTES · CTRL+Z UNDO · CTRL+Y REDO</div>
+    <!-- INLINE EFFECT EDITOR (hidden until activated) -->
+    <div id="cr-effect-panel" style="display:none;background:var(--bg2);border:1px solid #252540;border-radius:2px;padding:10px 12px;flex-direction:column;gap:8px;">
+      <div style="font-size:9px;letter-spacing:3px;color:var(--pink);margin-bottom:4px;">✦ EFFECT EDITOR</div>
+      <div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+        <span id="cr-eff-cur" style="font-size:10px;color:#aaa;letter-spacing:1px;min-width:36px;">0:00</span>
+        <div style="flex:1;position:relative;">
+          <div id="cr-eff-track" style="height:8px;background:#1a1a30;cursor:pointer;border-radius:4px;position:relative;overflow:visible;" onclick="crEffSeek(event)">
+            <div id="cr-eff-fill" style="height:100%;background:var(--cyan);width:0%;border-radius:4px;pointer-events:none;"></div>
+            <div id="cr-eff-thumb" style="position:absolute;top:50%;width:12px;height:12px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;z-index:2;"></div>
+          </div>
+        </div>
+        <button id="cr-eff-pause" onclick="crEffTogglePause()" style="background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:11px;padding:3px 10px;cursor:pointer;">⏸</button>
+        <button onclick="crSaveEffects()" style="background:#ff00aa11;border:1px solid #ff00aa44;color:var(--pink);font-family:'Courier New',monospace;font-size:10px;padding:4px 12px;cursor:pointer;font-weight:bold;">SAVE</button>
+        <button onclick="crCloseEffectEdit()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;padding:4px 9px;cursor:pointer;">✕</button>
+      </div>
+      <div style="display:flex;gap:0;max-height:180px;">
+        <div style="flex:1;overflow-y:auto;border-right:1px solid #1a1a30;padding-right:8px;">
+          <div id="cr-eff-pending" style="display:none;font-size:9px;letter-spacing:2px;margin-bottom:6px;padding:3px 8px;border:1px solid;"></div>
+          <div id="cr-eff-params" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+          <div id="cr-eff-list" style="font-size:9px;"></div>
+        </div>
+        <div style="width:180px;overflow-y:auto;padding-left:8px;">
+          <div style="font-size:8px;color:#333;letter-spacing:2px;margin-bottom:4px;">LIBRARY</div>
+          <div id="cr-eff-lib" style="display:flex;flex-direction:column;gap:2px;"></div>
+          <div style="margin-top:6px;border-top:1px solid #1a1a30;padding-top:6px;">
+            <button onclick="openCustomEffectEditor()" style="background:#ff44ff11;border:1px solid #ff44ff44;color:#ff44ff;font-family:'Courier New',monospace;font-size:8px;padding:4px 6px;cursor:pointer;width:100%;">★ MAKE YOUR OWN</button>
+          </div>
+        </div>
+      </div>
+    </div>
     <div style="height:1px;background:var(--border);margin:4px 0;"></div>
     <button class="xbtn cy lg" id="cr-pub-btn" onclick="crPublish()" style="width:100%;text-align:center;">[ PUBLISH LEVEL ]</button>
     <div class="auth-err" id="cr-err" style="text-align:center;"></div>
@@ -672,6 +738,41 @@ canvas#cv{display:block;width:440px;height:620px;}
         <button class="xbtn am sm" onclick="openOffsetCalibration()" style="font-size:9px;">AUTO CALIBRATE</button>
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;">NEGATIVE = HIT EARLIER · POSITIVE = HIT LATER<br>USE IF NOTES FEEL OFF WITH HEADPHONES OR MONITOR LAG</div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">MOBILE</div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">📳 HAPTIC FEEDBACK<br><span style="font-size:8px;color:#555;">VIBRATE ON NOTE HIT</span></div>
+        <div id="haptic-btn" onclick="toggleHaptic()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">📱 LANDSCAPE MODE<br><span style="font-size:8px;color:#555;">WIDER LAYOUT WHEN ROTATED</span></div>
+        <div id="landscape-btn" onclick="toggleLandscape()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">QUALITY OF LIFE</div>
+      <div style="font-size:9px;color:#252540;letter-spacing:2px;margin-bottom:10px;">ALL OFF BY DEFAULT</div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🔢 COMBO NUMBERS<br><span style="font-size:8px;color:#555;">SHOW NUMBER ABOVE NOTES ON HIT</span></div>
+        <div id="combo-pop-btn" onclick="toggleComboPop()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">📋 JUDGMENT LOG<br><span style="font-size:8px;color:#555;">LAST 10 HITS SHOWN ON SIDE</span></div>
+        <div id="judgeLog-btn" onclick="toggleJudgeLog()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">📉 ACCURACY METER<br><span style="font-size:8px;color:#555;">LIVE ACCURACY BAR ON SCREEN</span></div>
+        <div id="accMeter-btn" onclick="toggleAccMeter()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">⬇ AUTO-SCROLL SONGS<br><span style="font-size:8px;color:#555;">SCROLL SONG LIST HORIZONTALLY</span></div>
+        <div id="hscroll-btn" onclick="toggleHScroll()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
     </div>
     <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
       <div class="settings-section-title" style="color:var(--pink);">ADMIN — MANAGE ROLES</div>
@@ -1515,30 +1616,24 @@ async function loadSongs(){
 }
 function buildCard(s){
   const div=document.createElement('div');div.className='song-card';div.id='sc-'+s.id;
+  div.setAttribute('data-diff',s.difficulty||'');div.setAttribute('data-title',(s.title||'').toLowerCase());
+  div.setAttribute('data-plays',s.plays||0);div.setAttribute('data-likes',s.likes||0);
   const dc={easy:'#00ff88',medium:'#ffaa00',hard:'#ff4444',expert:'#ff00aa'}[s.difficulty]||'#aaa';
   const nc=s.beatmap?s.beatmap.length:0;
   const canEdit=ADM||(CU&&s.authorId===CU.uid);
-  div.innerHTML=`
-    <div class="song-card-top">
-      <div class="song-thumb" style="border-color:${dc}44;color:${dc};">♪</div>
-      <div class="song-info">
-        <div class="song-title">${esc(s.title||'UNTITLED')}</div>
-        <div class="song-artist">${esc(s.artist||'UNKNOWN ARTIST')}</div>
-        <div class="song-author">BY <b>${esc(s.authorName||'?')}</b></div>
+  const likes=s.likes||0;const liked=CU&&(s.likedBy||[]).includes(CU.uid);
+  div.innerHTML=`<div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
+      <div style="width:28px;height:28px;min-width:28px;background:var(--bg2);border:1px solid ${dc}44;display:flex;align-items:center;justify-content:center;font-size:13px;color:${dc};flex-shrink:0;">♪</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12px;font-weight:bold;letter-spacing:1px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.title||'UNTITLED')}</div>
+        <div style="font-size:9px;color:#555;letter-spacing:1px;">${esc(s.artist||'?')} · BY ${esc(s.authorName||'?')}</div>
       </div>
-    </div>
-    <div class="song-card-bottom">
-      <div class="song-meta">
-        <span class="song-tag diff-${s.difficulty||'easy'}">${(s.difficulty||'EASY').toUpperCase()}</span>
-        ${s.bpm?`<span class="song-tag" style="border-color:#222;color:#3a3a5a;">${s.bpm}BPM</span>`:''}
-        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${nc}N</span>
-        <span class="song-tag" style="border-color:#1a1a30;color:#252540;">${s.plays||0}▶</span>
-      </div>
-      <div class="song-actions-btns">
-        <button class="xbtn cy sm" onclick="playSong('${s.id}')">▶ PLAY</button>
-        <button class="xbtn sm" onclick="showLB('${s.id}','${esc(s.title||'')}')">LB</button>
-        ${canEdit?`<button class="xbtn am sm" onclick="editSong('${s.id}')">EDIT</button>`:''}
-        ${ADM?`<button class="xbtn rd sm" onclick="delSong('${s.id}','${esc(s.title||'')}')">✕</button>`:''}
+      <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
+        <span class="song-tag diff-${s.difficulty||'easy'}" style="font-size:7px;">${(s.difficulty||'E').charAt(0).toUpperCase()}</span>
+        <button onclick="event.stopPropagation();likeSong('${s.id}',this)" style="background:none;border:none;cursor:pointer;font-size:12px;padding:2px;opacity:${liked?1:0.4};" title="${likes} likes">❤</button>
+        <span style="font-size:8px;color:#444;">${likes}</span>
+        <button class="xbtn cy sm" onclick="playSong('${s.id}')" style="padding:4px 10px;font-size:9px;">▶</button>
+        <button class="xbtn sm" onclick="showSongMenu('${s.id}','${esc(s.title||'')}',${canEdit},${ADM||false})" style="padding:4px 8px;font-size:9px;color:#555;">⋯</button>
       </div>
     </div>`;
   return div;
@@ -1844,6 +1939,7 @@ async function openProfile(uid, backPage){
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
             <div class="profile-name" style="color:${accentColor};">${esc(username)}${onlineDot(isOnline(ud))}</div>
             ${roleBadge}
+            ${(()=>{const xp=ud.xp||0;const lv=xp>0?levelFromXP(xp):1;return `<span style="font-size:8px;background:#aa44ff22;border:1px solid #aa44ff44;color:#aa44ff;padding:1px 6px;letter-spacing:2px;border-radius:2px;">LV${lv}</span>`;})()}
             ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;letter-spacing:2px;" onclick="startEditUsername()">✏ RENAME</button>`:''}
           </div>
           ${streakBadge}
@@ -5514,6 +5610,510 @@ endPlay2=async function(){
         setTimeout(()=>rg.style.textShadow='',1500);
       },600);
     }
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// ── SONGS PAGE: search/filter/sort/like/comments ──────────────
+// ══════════════════════════════════════════════════════════════
+let _allSongs=[];
+
+const _origLoadSongs=loadSongs;
+loadSongs=async function(){
+  const list=document.getElementById('songs-list');
+  list.innerHTML='<div class="empty-state">LOADING...</div>';
+  try{
+    const snap=await dQ('songs',O('createdAt','desc'));
+    if(snap.empty){list.innerHTML='<div class="empty-state">NO SONGS YET<br>CREATE ONE WITH [ CREATE LEVEL ]</div>';return;}
+    _allSongs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderSongList(_allSongs);
+  }catch(e){list.innerHTML=`<div class="empty-state">ERROR: ${e.message}</div>`;}
+};
+
+function renderSongList(songs){
+  const list=document.getElementById('songs-list');
+  list.innerHTML='';
+  songs.forEach(s=>list.appendChild(buildCard(s)));
+}
+
+function filterSongs(){
+  const q=(document.getElementById('song-search')?.value||'').toLowerCase().trim();
+  const diff=document.getElementById('song-filter-diff')?.value||'';
+  const sort=document.getElementById('song-sort')?.value||'newest';
+  let filtered=_allSongs.filter(s=>{
+    if(diff&&s.difficulty!==diff)return false;
+    if(q&&!(s.title||'').toLowerCase().includes(q)&&!(s.artist||'').toLowerCase().includes(q)&&!(s.authorName||'').toLowerCase().includes(q))return false;
+    return true;
+  });
+  if(sort==='plays')filtered.sort((a,b)=>(b.plays||0)-(a.plays||0));
+  else if(sort==='likes')filtered.sort((a,b)=>(b.likes||0)-(a.likes||0));
+  renderSongList(filtered);
+}
+window.filterSongs=filterSongs;
+
+async function likeSong(id,btn){
+  if(!CU||isGuest){toast('LOGIN TO LIKE','#ff4444');return;}
+  try{
+    const ref=dDoc('songs',id);
+    const snap=await dGet(ref);
+    if(!snap.exists)return;
+    const data=snap.data();
+    const liked=(data.likedBy||[]).includes(CU.uid);
+    const newLikedBy=liked?(data.likedBy||[]).filter(u=>u!==CU.uid):[...(data.likedBy||[]),CU.uid];
+    await dUpd(ref,{likedBy:newLikedBy,likes:newLikedBy.length});
+    // Update local cache
+    const song=_allSongs.find(s=>s.id===id);
+    if(song){song.likedBy=newLikedBy;song.likes=newLikedBy.length;}
+    if(btn){
+      btn.style.opacity=liked?'0.4':'1';
+      const span=btn.nextElementSibling;
+      if(span)span.textContent=newLikedBy.length;
+    }
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+window.likeSong=likeSong;
+
+function showSongMenu(id,title,canEdit,isAdmin){
+  const song=_allSongs.find(s=>s.id===id)||{id,title};
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:400;display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML=`<div style="background:var(--bg3);border-top:1px solid var(--border);width:100%;max-width:500px;padding:16px;display:flex;flex-direction:column;gap:8px;margin-bottom:60px;">
+    <div style="font-size:11px;letter-spacing:2px;color:#aaa;margin-bottom:6px;">${esc(title)}</div>
+    <button class="xbtn cy" onclick="playSong('${id}');this.closest('[style*=fixed]').remove()" style="width:100%;">▶ PLAY</button>
+    <button class="xbtn sm" onclick="showLB('${id}','${esc(title)}');this.closest('[style*=fixed]').remove()" style="width:100%;">LEADERBOARD</button>
+    <button class="xbtn sm" onclick="showSongComments('${id}','${esc(title)}');this.closest('[style*=fixed]').remove()" style="width:100%;color:#ffaa00;border-color:#ffaa0044;">💬 COMMENTS</button>
+    ${canEdit?`<button class="xbtn am sm" onclick="editSong('${id}');this.closest('[style*=fixed]').remove()" style="width:100%;">EDIT LEVEL</button>`:''}
+    ${isAdmin?`<button class="xbtn rd sm" onclick="delSong('${id}','${esc(title)}');this.closest('[style*=fixed]').remove()" style="width:100%;">DELETE</button>`:''}
+    <button class="xbtn sm" onclick="this.closest('[style*=fixed]').remove()" style="width:100%;color:#555;">CANCEL</button>
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+window.showSongMenu=showSongMenu;
+
+async function showSongComments(songId,title){
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:400;display:flex;align-items:flex-end;justify-content:center;';
+  modal.innerHTML=`<div style="background:var(--bg3);border-top:1px solid var(--border);width:100%;max-width:500px;height:60vh;display:flex;flex-direction:column;margin-bottom:60px;">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+      <div style="font-size:11px;letter-spacing:3px;color:var(--amber);">💬 ${esc(title)}</div>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="background:none;border:none;color:#ff8888;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div id="comment-list" style="flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:8px;"></div>
+    ${CU&&!isGuest?`<div style="padding:8px 12px;border-top:1px solid var(--border);display:flex;gap:6px;">
+      <input class="xinput" id="comment-input" placeholder="Write a comment..." maxlength="200" style="flex:1;font-size:11px;" onkeydown="if(event.key==='Enter')submitComment('${songId}')">
+      <button class="xbtn am sm" onclick="submitComment('${songId}')">POST</button>
+    </div>`:'<div style="padding:8px 16px;font-size:9px;color:#333;letter-spacing:2px;">LOGIN TO COMMENT</div>'}
+  </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+  // Load comments
+  try{
+    const snap=await dQ('comments',W('songId','==',songId),O('createdAt','desc'),L(50));
+    const list=document.getElementById('comment-list');
+    if(!list)return;
+    if(snap.empty){list.innerHTML='<div style="font-size:10px;color:#333;letter-spacing:2px;padding:10px 0;">NO COMMENTS YET — BE THE FIRST!</div>';return;}
+    list.innerHTML=snap.docs.map(d=>{
+      const cm=d.data();
+      return`<div style="padding:8px 0;border-bottom:1px solid #0d0d1a;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <span style="font-size:10px;letter-spacing:1px;color:var(--cyan);">${esc(cm.username||'?')}</span>
+          <span style="font-size:8px;color:#333;">${timeAgo(cm.createdAt)}</span>
+        </div>
+        <div style="font-size:11px;color:#aaa;">${esc(cm.text||'')}</div>
+      </div>`;
+    }).join('');
+  }catch(e){}
+}
+window.showSongComments=showSongComments;
+
+async function submitComment(songId){
+  const inp=document.getElementById('comment-input');
+  const text=(inp?.value||'').trim();
+  if(!text||!CU)return;
+  inp.value='';
+  try{
+    await dAdd('comments',{songId,userId:CU.uid,username:CUD?.username||'?',text,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+    // Reload comments
+    showSongComments(songId,'');
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+window.submitComment=submitComment;
+
+// ── QoL SETTINGS ──────────────────────────────────────────────────────
+function _qolLoad(key){try{const v=localStorage.getItem(key);return v==='1';}catch(e){return false;}}
+function _qolSave(key,val){try{localStorage.setItem(key,val?'1':'0');}catch(e){}}
+function _togBtn(id,val){
+  const b=document.getElementById(id);if(!b)return;
+  if(val){b.textContent='ON';b.style.borderColor='#00ff8844';b.style.color='var(--green)';b.style.background='#00ff8811';}
+  else{b.textContent='OFF';b.style.borderColor='#ff444433';b.style.color='var(--red)';b.style.background='#ff44441a';}
+}
+
+let _haptic=false,_landscape=false,_comboPop=false,_judgeLog=false,_accMeter=false,_hscroll=false;
+
+function loadQoLSettings(){
+  _haptic   =_qolLoad('bl_haptic');
+  _landscape=_qolLoad('bl_landscape');
+  _comboPop =_qolLoad('bl_combopop');
+  _judgeLog =_qolLoad('bl_judgelog');
+  _accMeter =_qolLoad('bl_accmeter');
+  _hscroll  =_qolLoad('bl_hscroll');
+  _togBtn('haptic-btn',_haptic);_togBtn('landscape-btn',_landscape);
+  _togBtn('combo-pop-btn',_comboPop);_togBtn('judgeLog-btn',_judgeLog);
+  _togBtn('accMeter-btn',_accMeter);_togBtn('hscroll-btn',_hscroll);
+  applyLandscape();
+}
+function toggleHaptic(){_haptic=!_haptic;_qolSave('bl_haptic',_haptic);_togBtn('haptic-btn',_haptic);}
+function toggleLandscape(){_landscape=!_landscape;_qolSave('bl_landscape',_landscape);_togBtn('landscape-btn',_landscape);applyLandscape();}
+function toggleComboPop(){_comboPop=!_comboPop;_qolSave('bl_combopop',_comboPop);_togBtn('combo-pop-btn',_comboPop);}
+function toggleJudgeLog(){_judgeLog=!_judgeLog;_qolSave('bl_judgelog',_judgeLog);_togBtn('judgeLog-btn',_judgeLog);}
+function toggleAccMeter(){_accMeter=!_accMeter;_qolSave('bl_accmeter',_accMeter);_togBtn('accMeter-btn',_accMeter);}
+function toggleHScroll(){_hscroll=!_hscroll;_qolSave('bl_hscroll',_hscroll);_togBtn('hscroll-btn',_hscroll);}
+window.toggleHaptic=toggleHaptic;window.toggleLandscape=toggleLandscape;
+window.toggleComboPop=toggleComboPop;window.toggleJudgeLog=toggleJudgeLog;
+window.toggleAccMeter=toggleAccMeter;window.toggleHScroll=toggleHScroll;
+
+function applyLandscape(){
+  const wrap=document.getElementById('game-wrap');
+  if(!wrap)return;
+  if(_landscape)wrap.classList.add('landscape-on');
+  else wrap.classList.remove('landscape-on');
+  scaleGame();
+}
+
+// Haptic feedback on hit
+function hapticTick(){if(_haptic&&navigator.vibrate)navigator.vibrate(8);}
+
+// Judgment log
+let _judgeLogArr=[];
+function updateJudgeLog(lbl,col){
+  if(!_judgeLog)return;
+  _judgeLogArr.unshift({lbl,col});
+  if(_judgeLogArr.length>10)_judgeLogArr.pop();
+  let el=document.getElementById('judge-log-hud');
+  if(!el){
+    el=document.createElement('div');el.id='judge-log-hud';
+    el.style.cssText='position:absolute;left:8px;top:50px;font-size:8px;letter-spacing:2px;pointer-events:none;z-index:12;';
+    document.getElementById('gc')?.appendChild(el);
+  }
+  el.innerHTML=_judgeLogArr.map(j=>`<div style="color:${j.col};opacity:0.7;">${j.lbl}</div>`).join('');
+}
+
+// Accuracy meter
+function drawAccMeter(){
+  if(!_accMeter)return;
+  const tot=gstats.p+gstats.g+gstats.ok+gstats.m;
+  const ac=tot?Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100):100;
+  const W=GW(),H=GH();
+  const barW=80,barH=5,bx=(W-barW)/2,by=H-30;
+  ctx2.fillStyle='#1a1a30';ctx2.fillRect(bx,by,barW,barH);
+  const col=ac>=95?'#00f0ff':ac>=85?'#00ff88':ac>=70?'#ffaa00':'#ff4444';
+  ctx2.fillStyle=col;ctx2.fillRect(bx,by,barW*(ac/100),barH);
+  ctx2.fillStyle=col;ctx2.font='8px "Courier New"';ctx2.textAlign='center';ctx2.fillText(ac+'%',W/2,by-3);
+}
+
+// Combo pop above hit position
+let _comboPopItems=[];
+function spawnComboPop(lane,comboNum){
+  if(!_comboPop)return;
+  const cx=lane*GLW()+GLW()/2;
+  _comboPopItems.push({x:cx,y:GHIT_Y()-30,text:String(comboNum),a:1,vy:-1.2,color:COLS[lane]});
+}
+function drawComboPops(){
+  for(let p of _comboPopItems){
+    const[r,g,b]=rgbC(p.color);
+    ctx2.fillStyle=`rgba(${r},${g},${b},${p.a})`;
+    ctx2.font=`bold 11px "Courier New"`;ctx2.textAlign='center';ctx2.textBaseline='middle';
+    ctx2.fillText(p.text,p.x,p.y);
+    p.y+=p.vy;p.vy*=0.95;p.a-=0.04;
+  }
+  _comboPopItems=_comboPopItems.filter(p=>p.a>0);
+}
+
+// Patch judgeShow for haptic + log + combo pop
+const _origJudgeShow2=judgeShow;
+judgeShow=function(t,col){
+  _origJudgeShow2(t,col);
+  hapticTick();
+  updateJudgeLog(t,col);
+  if(t!=='MISS'&&combo>0){
+    let bestLane=0,bestFl=0;
+    for(let i=0;i<4;i++){if(fl[i]>bestFl){bestFl=fl[i];bestLane=i;}}
+    spawnComboPop(bestLane,combo);
+  }
+};
+
+// Patch drawPlay2 for acc meter + combo pops
+const _origDrawPlay2c=drawPlay2;
+drawPlay2=function(){
+  _origDrawPlay2c();
+  drawAccMeter();
+  drawComboPops();
+};
+
+loadQoLSettings();
+
+// ── UNIFIED CREATE EDITOR ─────────────────────────────────────────────
+// Undo/redo stacks
+let _crUndoStack=[],_crRedoStack=[];
+
+function crSaveState(){
+  _crUndoStack.push(JSON.stringify(crNotes));
+  if(_crUndoStack.length>50)_crUndoStack.shift();
+  _crRedoStack=[];
+  crUpdateUndoUI();
+}
+function crUndo(){
+  if(!_crUndoStack.length)return;
+  _crRedoStack.push(JSON.stringify(crNotes));
+  crNotes=JSON.parse(_crUndoStack.pop());
+  crAfterEdit();toast('↩ UNDO','#ffaa00');
+}
+function crRedo(){
+  if(!_crRedoStack.length)return;
+  _crUndoStack.push(JSON.stringify(crNotes));
+  crNotes=JSON.parse(_crRedoStack.pop());
+  crAfterEdit();toast('↪ REDO','#00f0ff');
+}
+function crAfterEdit(){
+  document.getElementById('cr-nc').textContent=crNotes.length?crNotes.length+' NOTES':'';
+  document.getElementById('cr-prev-btn').style.display=crNotes.length?'inline':'none';
+  document.getElementById('cr-clr-btn').style.display=crNotes.length?'inline':'none';
+  document.getElementById('cr-eff-btn').style.display=crNotes.length?'inline':'none';
+  document.getElementById('cr-copy-btn').style.display=crNotes.length?'inline':'none';
+  document.getElementById('cr-paste-btn').style.display=_crClipboard.length?'inline':'none';
+  crUpdateUndoUI();
+  crDrawDensity();
+}
+function crUpdateUndoUI(){
+  const u=document.getElementById('cr-undo-btn');const r=document.getElementById('cr-redo-btn');
+  if(u){u.style.display=_crUndoStack.length?'inline':'none';u.style.color=_crUndoStack.length?'#aaa':'#333';}
+  if(r){r.style.display=_crRedoStack.length?'inline':'none';r.style.color=_crRedoStack.length?'#aaa':'#333';}
+}
+window.crUndo=crUndo;window.crRedo=crRedo;
+
+// Keyboard shortcut for undo/redo in create page
+document.addEventListener('keydown',e=>{
+  if(document.querySelector('.page.active')?.id!=='create-page')return;
+  if(e.ctrlKey&&e.key==='z'){e.preventDefault();crUndo();}
+  if(e.ctrlKey&&e.key==='y'){e.preventDefault();crRedo();}
+});
+
+// Copy/paste
+let _crClipboard=[];
+function crCopyNotes(){
+  if(!crNotes.length)return;
+  _crClipboard=JSON.parse(JSON.stringify(crNotes));
+  toast('COPIED '+_crClipboard.length+' NOTES','#00ff88');
+  document.getElementById('cr-paste-btn').style.display='inline';
+}
+function crPasteNotes(){
+  if(!_crClipboard.length)return;
+  crSaveState();
+  // Find end of current notes and paste after
+  const maxT=crNotes.length?Math.max(...crNotes.map(n=>n.sMs+(n.hMs||0))):0;
+  const minT=Math.min(..._crClipboard.map(n=>n.sMs));
+  const offset=maxT+500-minT; // paste 500ms after last note
+  const pasted=_crClipboard.map(n=>({...n,sMs:n.sMs+offset}));
+  crNotes=[...crNotes,...pasted].sort((a,b)=>a.sMs-b.sMs);
+  crAfterEdit();toast('PASTED '+pasted.length+' NOTES','#00ff88');
+}
+window.crCopyNotes=crCopyNotes;window.crPasteNotes=crPasteNotes;
+
+// Patch crStopRec to save state for undo
+const _origCrStopRec=crStopRec;
+crStopRec=function(){
+  _origCrStopRec();
+  crSaveState();
+  crAfterEdit();
+  crDrawDensity();
+};
+
+// Note density graph
+function crDrawDensity(){
+  const wrap=document.getElementById('cr-density-wrap');
+  const cv2=document.getElementById('cr-density-cv');
+  if(!cv2||!crNotes.length){if(wrap)wrap.style.display='none';return;}
+  if(wrap)wrap.style.display='block';
+  // Resize canvas to container
+  cv2.width=cv2.offsetWidth||596;
+  const W=cv2.width,H=cv2.height||36;
+  const ctx=cv2.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0a0a18';ctx.fillRect(0,0,W,H);
+  if(!crNotes.length)return;
+  const maxT=Math.max(...crNotes.map(n=>n.sMs+(n.hMs||0)))+1000;
+  const bins=Math.min(W,120);
+  const binSize=maxT/bins;
+  const counts=new Array(bins).fill(0);
+  crNotes.forEach(n=>{const b=Math.min(bins-1,Math.floor(n.sMs/binSize));counts[b]++;});
+  const maxCount=Math.max(...counts,1);
+  // Draw bars
+  const bw=W/bins;
+  counts.forEach((count,i)=>{
+    if(!count)return;
+    const h=Math.round((count/maxCount)*(H-4))+2;
+    const intensity=count/maxCount;
+    const r=Math.round(intensity*255),g=Math.round((1-intensity)*150+50),b2=Math.round(255*(1-intensity*0.5));
+    ctx.fillStyle=`rgba(${r},${g},${b2},0.8)`;
+    ctx.fillRect(i*bw,H-h,Math.max(1,bw-1),h);
+  });
+  // Playhead line (if recording)
+  if(crRec&&crAud&&crAud.duration){
+    const px=(crAud.currentTime/crAud.duration)*W;
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillRect(px,0,2,H);
+  }
+}
+
+// Inline Effect Editor on Create Page
+let _crEffAud=null,_crEffRunning=false,_crEffRaf=0,_crEffPaused=false;
+let _crEffEvents=[]; // working copy of effects for this song
+
+function crOpenEffectEdit(){
+  const src=crGetAudioSrc();if(!src){toast('LOAD AUDIO FIRST','#ff4444');return;}
+  const panel=document.getElementById('cr-effect-panel');
+  if(!panel)return;
+  panel.style.display='flex';
+  // Build library
+  const libEl=document.getElementById('cr-eff-lib');
+  if(libEl){
+    const cats={};
+    for(const e of EFF_LIB_UNIQUE){if(!cats[e.cat])cats[e.cat]=[];cats[e.cat].push(e);}
+    let html='';
+    for(const[cat,items] of Object.entries(cats)){
+      html+=`<div style="font-size:7px;color:#333;letter-spacing:2px;margin:5px 0 2px;">${cat}</div>`;
+      for(const item of items){
+        html+=`<button class="eff-btn" data-ctype="${item.id}" onclick="crEffStartRange('${item.id}')"
+          style="--ec:${item.col};width:100%;text-align:left;font-size:8px;padding:2px 5px;">${item.label}</button>`;
+      }
+    }
+    libEl.innerHTML=html;
+  }
+  // Load existing effects
+  _crEffEvents=CS?.effectEvents?JSON.parse(JSON.stringify(CS.effectEvents)):(ESI?[]:[]);
+  // Start audio
+  crStartEffAudio(src);
+  crEffUpdateUI();
+}
+window.crOpenEffectEdit=crOpenEffectEdit;
+
+function crStartEffAudio(src){
+  if(_crEffAud){_crEffAud.pause();_crEffAud=null;}
+  _crEffAud=new Audio(src);_crEffAud.preload='auto';_crEffPaused=false;
+  _crEffAud.play().then(()=>{
+    _crEffRunning=true;
+    _crEffRaf=requestAnimationFrame(crEffLoop);
+  }).catch(()=>{});
+  _crEffAud.onended=()=>{_crEffPaused=true;if(_crEffAud)_crEffAud.currentTime=0;const b=document.getElementById('cr-eff-pause');if(b){b.textContent='▶';b.style.color='var(--cyan)';}};
+}
+
+function crEffLoop(){
+  if(!_crEffRunning||_crEffPaused){return;}
+  const aud2=_crEffAud;
+  if(aud2&&aud2.duration){
+    const pct=aud2.currentTime/aud2.duration;
+    document.getElementById('cr-eff-fill').style.width=(pct*100)+'%';
+    document.getElementById('cr-eff-thumb').style.left=(pct*100)+'%';
+    document.getElementById('cr-eff-cur').textContent=fmtT(aud2.currentTime*1000);
+  }
+  _crEffRaf=requestAnimationFrame(crEffLoop);
+}
+
+function crEffTogglePause(){
+  _crEffPaused=!_crEffPaused;
+  const btn=document.getElementById('cr-eff-pause');
+  if(_crEffPaused){if(_crEffAud)_crEffAud.pause();if(btn){btn.textContent='▶';btn.style.color='var(--cyan)';}}
+  else{if(_crEffAud)_crEffAud.play().then(()=>{_crEffRaf=requestAnimationFrame(crEffLoop);});if(btn){btn.textContent='⏸';btn.style.color='#555';}}
+}
+window.crEffTogglePause=crEffTogglePause;
+
+function crEffSeek(e){
+  const track=document.getElementById('cr-eff-track');if(!track||!_crEffAud||!_crEffAud.duration)return;
+  const r=track.getBoundingClientRect();
+  const pct=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width));
+  _crEffAud.currentTime=pct*_crEffAud.duration;
+  if(_crEffPaused&&_crEffAud)_crEffAud.pause();
+}
+window.crEffSeek=crEffSeek;
+
+let _crEffPendingType=null,_crEffPendingStart=null;
+function crEffStartRange(type){
+  document.querySelectorAll('.eff-btn[data-ctype]').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(`.eff-btn[data-ctype="${type}"]`);if(btn)btn.classList.add('active');
+  if(_crEffPendingType===type&&_crEffPendingStart!==null){
+    const end=_crEffAud?_crEffAud.currentTime:_crEffPendingStart+1;
+    if(end>_crEffPendingStart){
+      _crEffEvents.push({type,s:_crEffPendingStart,e:end});
+      _crEffEvents.sort((a,b)=>a.s-b.s);
+    }
+    _crEffPendingType=null;_crEffPendingStart=null;
+    document.getElementById('cr-eff-pending').style.display='none';
+    document.querySelectorAll('.eff-btn[data-ctype]').forEach(b=>b.classList.remove('active'));
+  } else {
+    _crEffPendingType=type;_crEffPendingStart=_crEffAud?_crEffAud.currentTime:0;
+    const m=EFFECT_META[type]||{col:'#aaa',label:type};
+    const lbl=document.getElementById('cr-eff-pending');
+    if(lbl){lbl.style.display='block';lbl.style.color=m.col;lbl.style.borderColor=m.col+'55';
+      lbl.textContent=m.label+' @ '+fmtT(_crEffPendingStart*1000)+' → seek end → click again';}
+  }
+  crEffUpdateUI();
+}
+window.crEffStartRange=crEffStartRange;
+
+function crEffUpdateUI(){
+  const list=document.getElementById('cr-eff-list');if(!list)return;
+  if(!_crEffEvents.length){list.innerHTML='<div style="font-size:9px;color:#333;padding:4px 0;">no effects yet</div>';return;}
+  list.innerHTML=_crEffEvents.map((ev,i)=>{
+    const m=EFFECT_META[ev.type]||{label:ev.type,col:'#aaa'};
+    return`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+      <span style="color:${m.col};font-size:8px;min-width:70px;">${m.label}</span>
+      <span style="color:#555;font-size:8px;">${fmtT(ev.s*1000)}→${fmtT(ev.e*1000)}</span>
+      <button onclick="crEffRemove(${i})" style="background:none;border:1px solid #ff444433;color:#ff6666;font-size:7px;padding:1px 4px;cursor:pointer;">✕</button>
+    </div>`;}).join('');
+}
+window.crEffUpdateUI=crEffUpdateUI;
+
+function crEffRemove(i){_crEffEvents.splice(i,1);crEffUpdateUI();}
+window.crEffRemove=crEffRemove;
+
+async function crSaveEffects(){
+  if(!ESI&&!CS?.id){
+    // Not published yet — store in CS for when they publish
+    if(!CS)CS={};
+    CS.effectEvents=_crEffEvents;
+    toast('EFFECTS SAVED LOCALLY — PUBLISH TO MAKE PERMANENT','#ffaa00');
+    return;
+  }
+  const id=ESI||CS?.id;
+  try{
+    await db.collection('songeffects').doc(id).set({
+      effectEvents:_crEffEvents,
+      fireRanges:_crEffEvents.filter(e=>e.type==='fire'),
+      songId:id,updatedAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    if(CS)CS.effectEvents=_crEffEvents;
+    toast('EFFECTS SAVED ✓','#00ff88');
+  }catch(e){toast('ERROR: '+e.message,'#ff4444');}
+}
+window.crSaveEffects=crSaveEffects;
+
+function crCloseEffectEdit(){
+  _crEffRunning=false;cancelAnimationFrame(_crEffRaf);
+  if(_crEffAud){_crEffAud.pause();_crEffAud=null;}
+  document.getElementById('cr-effect-panel').style.display='none';
+}
+window.crCloseEffectEdit=crCloseEffectEdit;
+
+// ── Also update crNotes display after initCreatePage ──────────────────
+const _origInitCreatePage=initCreatePage;
+initCreatePage=function(existing){
+  _crUndoStack=[];_crRedoStack=[];_crClipboard=[];
+  _origInitCreatePage(existing);
+  crUpdateUndoUI();
+  if(crNotes.length){
+    document.getElementById('cr-eff-btn').style.display='inline';
+    document.getElementById('cr-copy-btn').style.display='inline';
+    crDrawDensity();
   }
 };
 </script>
