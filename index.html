@@ -3410,13 +3410,20 @@ function seekWatch(clientX,track){
   const r=track.getBoundingClientRect();
   const pct=Math.max(0,Math.min(1,(clientX-r.left)/r.width));
   aud.currentTime=pct*aud.duration;
-  // resync clock so sNow() is correct immediately after seek
+  // resync clock
   _cBase=performance.now();_cOff=aud.currentTime*1000;
   // clear notes and rebuild bpIdx from new position
   notes=[];parts=[];ripples=[];laneHolding=[false,false,false,false];holdPulses=[];
   const nowMs=aud.currentTime*1000;
   bpIdx=0;
   while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;
+  // if paused, keep audio paused after seek
+  if(_watchPaused){aud.pause();}
+  // update timeline UI immediately
+  const pctFilled=pct*100;
+  document.getElementById('watch-fill').style.width=pctFilled+'%';
+  document.getElementById('watch-thumb').style.left=pctFilled+'%';
+  document.getElementById('watch-cur').textContent=fmtT(aud.currentTime*1000);
 }
 
 // ── EFFECT EVENTS SYSTEM ─────────────────────────────────────────────────────
@@ -3605,12 +3612,29 @@ function toggleWatchPause(){
   _watchPaused=!_watchPaused;
   const btn=document.getElementById('watch-pause-btn');
   if(_watchPaused){
-    if(aud)aud.pause();
-    cancelAnimationFrame(watchRaf);
+    // PAUSE
+    cancelAnimationFrame(watchRaf);watchRaf=0;
+    running=false;
+    if(aud){aud.pause();}
     if(btn){btn.textContent='▶';btn.style.color='var(--cyan)';}
   } else {
-    if(aud)aud.play().then(()=>{_cBase=performance.now();_cOff=aud.currentTime*1000;});
-    watchRaf=requestAnimationFrame(watchLoop);
+    // RESUME
+    if(aud){
+      aud.play().then(()=>{
+        _cBase=performance.now();
+        _cOff=aud.currentTime*1000;
+        running=true;
+        watchRaf=requestAnimationFrame(watchLoop);
+      }).catch(()=>{
+        running=true;
+        _cBase=performance.now();
+        _cOff=aud?aud.currentTime*1000:0;
+        watchRaf=requestAnimationFrame(watchLoop);
+      });
+    } else {
+      running=true;
+      watchRaf=requestAnimationFrame(watchLoop);
+    }
     if(btn){btn.textContent='⏸';btn.style.color='#555';}
   }
 }
@@ -3619,16 +3643,15 @@ window.toggleWatchPause=toggleWatchPause;
 // Also prevent auto-exit when song ends in watch mode — prompt to save instead
 function watchEndHandler(){
   if(!watchMode)return;
-  const btn=document.getElementById('watch-pause-btn');
-  if(btn){btn.textContent='▶';btn.style.color='#555';}
-  // Restart from beginning in paused state so editor can still save
-  if(aud){aud.currentTime=0;aud.pause();}
+  cancelAnimationFrame(watchRaf);watchRaf=0;
+  running=false;
   _watchPaused=true;
-  // update scrubber to end
+  if(aud){aud.currentTime=0;aud.pause();}
+  const btn=document.getElementById('watch-pause-btn');
+  if(btn){btn.textContent='▶';btn.style.color='var(--cyan)';}
   document.getElementById('watch-fill').style.width='100%';
   document.getElementById('watch-thumb').style.left='100%';
   document.getElementById('watch-cur').textContent=fmtT(aud?aud.duration*1000:0);
-  // toast reminder
   toast('SONG ENDED — SAVE YOUR EFFECTS OR EXIT','#00f0ff');
 }
 
@@ -3800,7 +3823,7 @@ async function saveEffects(){
 
 let _watchUiTick=0;
 function watchLoop(){
-  if(!running||!watchMode)return;
+  if(!running||!watchMode||_watchPaused)return;
   fn++;
   const now=sNow(); // use same clock as play mode
   while(bpIdx<beatmap.length&&now>=beatmap[bpIdx].sMs-GAPP_MS()){
