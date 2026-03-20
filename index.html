@@ -1173,9 +1173,13 @@ function broadcastPlaying(songId,songTitle){
 // Broadcast live game state (score/combo/judge) to spectators
 let _lastStatsBroadcast=0;
 function broadcastGameState(judgeLabel,judgeColor){
+  if(!CU||_spectatingUid)return; // only HOST broadcasts, not spectator
+  dUpd(dDoc('users',CU.uid),{liveScore:{score,combo,hp,grade:judgeLabel||'',gradeColor:judgeColor||'',paused:_paused,t:Date.now()}}).catch(()=>{});
+}
+// Also broadcast pause separately so spectator pauses immediately
+function broadcastPause(paused){
   if(!CU||_spectatingUid)return;
-  const data={liveScore:{score,combo,grade:judgeLabel||'',gradeColor:judgeColor||'',hp,t:Date.now()}};
-  dUpd(dDoc('users',CU.uid),data).catch(()=>{});
+  dUpd(dDoc('users',CU.uid),{liveScore:{score,combo,hp,grade:'',gradeColor:'',paused,t:Date.now()}}).catch(()=>{});
 }
 
 // Spectator listens to host's live score
@@ -1187,16 +1191,45 @@ function startSpectateStatListener(uid){
     const ls=snap.data()?.liveScore;
     if(!ls||ls.t===_lastSeenStatT)return;
     _lastSeenStatT=ls.t;
-    // Mirror host score/combo on spectator screen
-    score=ls.score||0;
-    combo=ls.combo||0;
+
+    // Mirror score & HP
+    score=ls.score||0;combo=ls.combo||0;
     if(ls.hp!==undefined){hp=ls.hp;updateHpHud();}
     document.getElementById('sc').textContent=String(score).padStart(6,'0');
     document.getElementById('cb').textContent=`COMBO  ${combo}`;
-    if(ls.grade&&ls.gradeColor){
-      judgeShow(ls.grade,ls.gradeColor);
-      if(combo>0&&combo!==_lastCombo){showStreakPopup(combo);_lastCombo=combo;}
-      if(combo===0){_lastCombo=0;document.getElementById('streak-popup').style.opacity='0';}
+
+    // Mirror judge text (don't call judgeShow to avoid re-broadcast loop)
+    if(ls.grade){
+      const jt=document.getElementById('jt');
+      if(jt){jt.textContent=ls.grade;jt.style.color=ls.gradeColor||'#fff';jt.style.opacity=1;jAlpha=1;}
+    }
+
+    // Mirror streak popup
+    if(combo>0&&combo!==_lastCombo){showStreakPopup(combo);_lastCombo=combo;}
+    if(combo===0&&_lastCombo>0){_lastCombo=0;document.getElementById('streak-popup').style.opacity='0';}
+
+    // Mirror pause state
+    if(ls.paused!==undefined&&ls.paused!==_paused){
+      if(ls.paused){
+        // Host paused — show spectator pause overlay
+        if(!_paused){
+          _paused=true;running=false;cancelAnimationFrame(raf2);
+          if(aud)aud.pause();
+          const pov=document.createElement('div');pov.id='pause-overlay';
+          pov.style.cssText='position:absolute;inset:0;background:rgba(5,5,13,.75);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:19;gap:10px;';
+          pov.innerHTML=`<div style="font-size:24px;letter-spacing:8px;color:#fff;">PAUSED</div>
+            <div style="font-size:10px;color:#444;letter-spacing:3px;">HOST PAUSED THE GAME</div>`;
+          document.getElementById('gc')?.appendChild(pov);
+        }
+      } else {
+        // Host resumed — resume spectator
+        if(_paused){
+          _paused=false;
+          const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
+          if(aud)aud.play().then(()=>{_cBase=performance.now();_cOff=aud.currentTime*1000;});
+          running=true;raf2=requestAnimationFrame(pLoop2);
+        }
+      }
     }
   });
 }
@@ -2497,6 +2530,7 @@ function togglePause(){
     // PAUSE
     _paused=true;running=false;cancelAnimationFrame(raf2);
     if(aud)aud.pause();
+    broadcastPause(true);
     const pbtn=document.getElementById('pausebtn');
     if(pbtn){pbtn.textContent='▶';pbtn.style.color='var(--cyan)';}
 
@@ -2550,6 +2584,7 @@ function resumeWithCountdown(){
           const p=document.getElementById('pause-overlay');if(p)p.remove();
           const pbtn=document.getElementById('pausebtn');
           if(pbtn){pbtn.textContent='⏸';pbtn.style.color='#555';}
+          broadcastPause(false);
           // Resume audio and resync clock — wait for audio to actually start
           if(aud){
             aud.play().then(()=>{
@@ -2970,7 +3005,7 @@ function startPlay(){
   const pbtn=document.getElementById('pausebtn');
   if(pbtn)pbtn.style.display=_spectatingUid?'none':'block';
   const hpHud=document.getElementById('hp-hud');
-  if(hpHud)hpHud.style.display=_spectatingUid?'none':'block';
+  if(hpHud){hpHud.style.display='block';}
   if(pbtn&&!_spectatingUid){pbtn.textContent='⏸';pbtn.style.color='#555';}
   if(_spectatingUid){
     const wb=document.createElement('div');wb.id='watch-banner';
