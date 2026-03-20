@@ -425,6 +425,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     </div>
     <div class="menu-btns">
       <button class="xbtn cy lg" onclick="showPage('songs-page')">[ PLAY ]</button>
+      <button class="xbtn" onclick="openLobbyMenu()" style="border-color:#ff44ff44;color:#ff44ff;">[ ⚔ MULTIPLAYER ]</button>
       <button class="xbtn gn" onclick="showPage('create-page');initCreatePage()">[ CREATE LEVEL ]</button>
       <button class="xbtn pk" onclick="showPage('friends-page');loadFriendsPage()">[ FRIENDS <span id="friend-notif-dot" style="display:none;width:7px;height:7px;background:var(--pink);border-radius:50%;display:none;vertical-align:middle;margin-left:4px;"></span>]</button>
       <button class="xbtn" onclick="showPage('shop-page');loadShop()" style="border-color:#00aaff44;color:#00aaff;">[ 💎 SHOP ]</button>
@@ -583,7 +584,12 @@ canvas#cv{display:block;width:440px;height:620px;}
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">FIRE · SHAKE · FLASH · COLOR EFFECTS</div>
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
-      <div class="keybind-row" style="margin-bottom:6px;">
+      <div class="keybind-row">
+        <div class="keybind-label">❤ HEALTH BAR</div>
+        <div id="hp-toggle-btn" onclick="toggleHpSetting()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">WHEN OFF — SCORES NOT SAVED</div>
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
         <div class="keybind-label">NOTE SPEED</div>
         <div style="font-size:16px;font-weight:bold;letter-spacing:2px;color:var(--cyan);min-width:40px;text-align:center;" id="note-speed-display">2×</div>
       </div>
@@ -784,6 +790,49 @@ canvas#cv{display:block;width:440px;height:620px;}
   <div style="width:100%;max-width:500px;padding:16px;display:flex;flex-direction:column;gap:12px;margin:0 auto;" id="shop-inner">
   </div>
 </div>
+<!-- LOBBY -->
+<div class="page" id="lobby-page">
+  <div class="page-header">
+    <div class="page-header-title" id="lobby-title">⚔ MULTIPLAYER</div>
+    <button class="xbtn sm rd" onclick="leaveLobby()">[ LEAVE ]</button>
+  </div>
+  <div style="display:flex;gap:0;height:calc(100% - 56px);max-width:600px;margin:0 auto;width:100%;flex-direction:column;">
+    <!-- players row -->
+    <div id="lobby-players" style="display:flex;gap:12px;padding:16px 16px 8px;border-bottom:1px solid var(--border);flex-wrap:wrap;"></div>
+    <!-- song select (host only) -->
+    <div id="lobby-song-area" style="padding:10px 16px;border-bottom:1px solid var(--border);"></div>
+    <!-- start / status -->
+    <div id="lobby-actions" style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-wrap:wrap;"></div>
+    <!-- chat -->
+    <div id="lobby-chat-msgs" style="flex:1;overflow-y:auto;padding:10px 16px;display:flex;flex-direction:column;gap:6px;"></div>
+    <div style="padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:8px;">
+      <input id="lobby-chat-input" class="xinput" placeholder="TYPE A MESSAGE..." style="flex:1;font-size:11px;" maxlength="200" onkeydown="if(event.key==='Enter')sendLobbyChat()">
+      <button class="xbtn sm cy" onclick="sendLobbyChat()" style="padding:6px 14px;">SEND</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOBBY LIST -->
+<div class="page" id="lobby-list-page">
+  <div class="page-header">
+    <div class="page-header-title">⚔ MULTIPLAYER</div>
+    <button class="xbtn sm" onclick="showPage('menu-page')">[ BACK ]</button>
+  </div>
+  <div style="padding:16px;max-width:500px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:10px;">
+    <button class="xbtn cy" onclick="createLobby()" style="width:100%;text-align:center;padding:14px;">[ + CREATE LOBBY ]</button>
+    <div style="font-size:9px;color:#333;letter-spacing:3px;margin-top:8px;margin-bottom:4px;">OPEN LOBBIES</div>
+    <div id="lobby-list-inner"></div>
+  </div>
+</div>
+
+<!-- LOBBY SONG SELECT -->
+<div class="page" id="lobby-song-select-page">
+  <div class="page-header">
+    <div class="page-header-title">SELECT SONG</div>
+    <button class="xbtn sm" onclick="showPage('lobby-page')">[ BACK ]</button>
+  </div>
+  <div id="lobby-song-list" style="padding:12px;max-width:500px;margin:0 auto;width:100%;"></div>
+</div>
 
 </div><!-- #app -->
 
@@ -829,7 +878,267 @@ function broadcastActivity(pageId){
   dUpd(dDoc('users',CU.uid),{activity:label,activityAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
 }
 
-// ── PAGE HISTORY ─────────────────────────────────────────────────────────────
+// ── HP TOGGLE ─────────────────────────────────────────────────────────────────
+let hpEnabled=true;
+function toggleHpSetting(){
+  hpEnabled=!hpEnabled;
+  try{localStorage.setItem('bl_hp',hpEnabled?'1':'0');}catch(e){}
+  const btn=document.getElementById('hp-toggle-btn');
+  if(btn){btn.textContent=hpEnabled?'ON':'OFF';btn.style.borderColor=hpEnabled?'#00ff8844':'#ff444433';btn.style.color=hpEnabled?'var(--green)':'var(--red)';btn.style.background=hpEnabled?'#00ff8811':'#ff44441a';}
+  const hud=document.getElementById('hp-hud');if(hud)hud.style.display=hpEnabled?'block':'none';
+}
+function loadHpSetting(){
+  try{const v=localStorage.getItem('bl_hp');if(v==='0')hpEnabled=false;}catch(e){}
+  const btn=document.getElementById('hp-toggle-btn');
+  if(btn){btn.textContent=hpEnabled?'ON':'OFF';btn.style.borderColor=hpEnabled?'#00ff8844':'#ff444433';btn.style.color=hpEnabled?'var(--green)':'var(--red)';btn.style.background=hpEnabled?'#00ff8811':'#ff44441a';}
+}
+window.toggleHpSetting=toggleHpSetting;
+
+// ── MULTIPLAYER LOBBY ─────────────────────────────────────────────────────────
+let _lobbyId=null,_lobbyUnsub=null,_lobbyChatUnsub=null,_lobbyData=null;
+let _mpOpponentScore=0,_mpOpponentCombo=0,_mpOpponentUid=null;
+
+function openLobbyMenu(){
+  if(!CU&&!isGuest){toast('LOGIN TO USE MULTIPLAYER','#ff4444');return;}
+  showPage('lobby-list-page');
+  loadLobbyList();
+}
+
+async function loadLobbyList(){
+  const el=document.getElementById('lobby-list-inner');
+  if(!el)return;
+  el.innerHTML='<div class="empty-state">LOADING...</div>';
+  try{
+    const snap=await db.collection('lobbies').where('status','==','waiting').orderBy('createdAt','desc').limit(20).get();
+    if(snap.empty){el.innerHTML='<div style="font-size:10px;color:#333;letter-spacing:2px;padding:16px 0;">NO OPEN LOBBIES — CREATE ONE</div>';return;}
+    el.innerHTML=snap.docs.map(d=>{
+      const l=d.data();
+      const count=Object.keys(l.players||{}).length;
+      return`<div style="background:var(--bg3);border:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;letter-spacing:2px;">${esc(l.hostName||'?')}'S LOBBY</div>
+          <div style="font-size:9px;color:#444;letter-spacing:2px;margin-top:3px;">${count}/4 PLAYERS · ${l.songTitle?esc(l.songTitle):'NO SONG SELECTED'}</div>
+        </div>
+        <button class="xbtn sm cy" onclick="joinLobby('${d.id}')" style="padding:5px 14px;font-size:9px;">JOIN</button>
+      </div>`;
+    }).join('');
+  }catch(e){el.innerHTML=`<div class="empty-state">ERROR: ${esc(e.message)}</div>`;}
+}
+window.loadLobbyList=loadLobbyList;
+
+async function createLobby(){
+  if(!CU){toast('LOGIN REQUIRED','#ff4444');return;}
+  const name=CUD?.username||'PLAYER';
+  const lobbyRef=db.collection('lobbies').doc();
+  const lobbyData={
+    hostUid:CU.uid,hostName:name,
+    players:{[CU.uid]:{uid:CU.uid,name,avatar:CUD?.avatar||'',ready:false,score:0,combo:0}},
+    status:'waiting',songId:null,songTitle:null,
+    createdAt:firebase.firestore.FieldValue.serverTimestamp()
+  };
+  await lobbyRef.set(lobbyData);
+  _lobbyId=lobbyRef.id;
+  showPage('lobby-page');
+  subscribeLobby(_lobbyId);
+  toast('LOBBY CREATED — SHARE CODE: '+_lobbyId.slice(0,6).toUpperCase(),'#00f0ff');
+}
+window.createLobby=createLobby;
+
+async function joinLobby(lobbyId){
+  if(!CU){toast('LOGIN REQUIRED','#ff4444');return;}
+  const name=CUD?.username||'PLAYER';
+  _lobbyId=lobbyId;
+  try{
+    await db.collection('lobbies').doc(lobbyId).update({
+      [`players.${CU.uid}`]:{uid:CU.uid,name,avatar:CUD?.avatar||'',ready:false,score:0,combo:0}
+    });
+    showPage('lobby-page');
+    subscribeLobby(lobbyId);
+  }catch(e){toast('JOIN FAILED: '+e.message,'#ff4444');}
+}
+window.joinLobby=joinLobby;
+
+function subscribeLobby(lobbyId){
+  if(_lobbyUnsub)_lobbyUnsub();
+  _lobbyUnsub=db.collection('lobbies').doc(lobbyId).onSnapshot(snap=>{
+    if(!snap.exists){leaveLobby();toast('LOBBY CLOSED','#ff4444');return;}
+    _lobbyData=snap.data();
+    renderLobby(_lobbyData,lobbyId);
+    // Host started game?
+    if(_lobbyData.status==='playing'&&_lobbyData.songId){
+      startMpGame(_lobbyData.songId);
+    }
+  });
+  // Chat
+  if(_lobbyChatUnsub)_lobbyChatUnsub();
+  _lobbyChatUnsub=db.collection('lobbies').doc(lobbyId).collection('chat').orderBy('t','asc').limit(50).onSnapshot(snap=>{
+    const box=document.getElementById('lobby-chat-msgs');if(!box)return;
+    box.innerHTML='';
+    snap.docs.forEach(d=>{
+      const m=d.data();const mine=m.uid===CU?.uid;
+      const div=document.createElement('div');
+      div.style.cssText=`display:flex;gap:6px;flex-direction:${mine?'row-reverse':'row'};align-items:flex-end;`;
+      div.innerHTML=`<div style="font-size:9px;max-width:70%;background:${mine?'#00f0ff18':'#1a1a30'};border:1px solid ${mine?'#00f0ff33':'var(--border)'};padding:5px 10px;">
+        ${!mine?`<div style="font-size:8px;color:#444;letter-spacing:1px;margin-bottom:2px;">${esc(m.name||'?')}</div>`:''}
+        <div style="font-size:11px;">${esc(m.text||'')}</div>
+      </div>`;
+      box.appendChild(div);
+    });
+    box.scrollTop=box.scrollHeight;
+  });
+}
+
+function renderLobby(data,lobbyId){
+  if(!data)return;
+  const isHost=CU&&data.hostUid===CU.uid;
+  // Players
+  const playersEl=document.getElementById('lobby-players');
+  if(playersEl){
+    const players=Object.values(data.players||{});
+    playersEl.innerHTML=players.map(p=>{
+      const av=p.avatar?`<img src="${esc(p.avatar)}" style="width:40px;height:40px;object-fit:cover;border:2px solid ${p.uid===data.hostUid?'var(--cyan)':'var(--border)'};">`:`<div style="width:40px;height:40px;background:#1a1a30;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;">${(p.name||'?').slice(0,2).toUpperCase()}</div>`;
+      return`<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:60px;">
+        ${av}
+        <div style="font-size:9px;color:${p.uid===data.hostUid?'var(--cyan)':'#aaa'};letter-spacing:1px;text-align:center;max-width:64px;overflow:hidden;text-overflow:ellipsis;">${esc(p.name||'?')}</div>
+        ${p.uid===data.hostUid?'<div style="font-size:7px;color:var(--cyan);letter-spacing:2px;">HOST</div>':''}
+      </div>`;
+    }).join('');
+  }
+  // Song area
+  const songEl=document.getElementById('lobby-song-area');
+  if(songEl){
+    songEl.innerHTML=data.songId
+      ?`<div style="font-size:10px;color:#aaa;letter-spacing:2px;">🎵 ${esc(data.songTitle||'?')}</div>`
+      :`<div style="font-size:10px;color:#333;letter-spacing:2px;">NO SONG SELECTED</div>`;
+    if(isHost){songEl.innerHTML+=`<button class="xbtn sm" style="margin-top:6px;padding:3px 12px;font-size:9px;" onclick="showLobbySelectSong()">[ SELECT SONG ]</button>`;}
+  }
+  // Actions
+  const actEl=document.getElementById('lobby-actions');
+  if(actEl){
+    const players=Object.values(data.players||{});
+    if(isHost&&data.songId){
+      actEl.innerHTML=`<button class="xbtn cy" onclick="startMpLobby()" style="padding:8px 24px;">[ START GAME ]</button>
+        <div style="font-size:9px;color:#444;letter-spacing:2px;">${players.length} PLAYER${players.length!==1?'S':''}</div>`;
+    } else {
+      actEl.innerHTML=`<div style="font-size:9px;color:#444;letter-spacing:2px;">LOBBY CODE: <span style="color:var(--cyan);">${lobbyId.slice(0,6).toUpperCase()}</span></div>
+        <div style="font-size:9px;color:#333;letter-spacing:2px;">${players.length}/4 · WAITING FOR HOST...</div>`;
+    }
+  }
+  document.getElementById('lobby-title').textContent=`⚔ ${esc(data.hostName||'?')}'S LOBBY`;
+}
+
+async function showLobbySelectSong(){
+  showPage('lobby-song-select-page');
+  const el=document.getElementById('lobby-song-list');
+  if(!el)return;
+  el.innerHTML='<div class="empty-state">LOADING...</div>';
+  try{
+    const snap=await db.collection('songs').orderBy('createdAt','desc').limit(50).get();
+    el.innerHTML=snap.docs.map(d=>{
+      const s=d.data();
+      return`<div style="background:var(--bg3);border:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:6px;cursor:pointer;" onclick="selectLobbySong('${d.id}','${esc(s.title||'').replace(/'/g,"\\'").replace(/"/g,'\\"')}')">
+        <div style="flex:1;">
+          <div style="font-size:11px;letter-spacing:1px;">${esc(s.title||'?')}</div>
+          <div style="font-size:9px;color:#444;">${esc(s.artist||'')} · ${s.difficulty||'?'}</div>
+        </div>
+        <button class="xbtn sm cy" style="font-size:9px;padding:4px 10px;">SELECT</button>
+      </div>`;
+    }).join('');
+  }catch(e){el.innerHTML=`<div class="empty-state">ERROR</div>`;}
+}
+window.showLobbySelectSong=showLobbySelectSong;
+
+async function selectLobbySong(songId,songTitle){
+  if(!_lobbyId)return;
+  await db.collection('lobbies').doc(_lobbyId).update({songId,songTitle});
+  showPage('lobby-page');
+}
+window.selectLobbySong=selectLobbySong;
+
+async function startMpLobby(){
+  if(!_lobbyId||!_lobbyData?.songId)return;
+  await db.collection('lobbies').doc(_lobbyId).update({status:'playing'});
+}
+window.startMpLobby=startMpLobby;
+
+async function startMpGame(songId){
+  if(!_lobbyData||!songId)return;
+  // Prevent double-start
+  if(document.querySelector('.page.active')?.id==='game-page')return;
+  try{
+    const [songSnap,efxSnap]=await Promise.all([
+      db.collection('songs').doc(songId).get({source:'server'}).catch(()=>dGet(dDoc('songs',songId))),
+      db.collection('songeffects').doc(songId).get({source:'server'}).catch(()=>db.collection('songeffects').doc(songId).get())
+    ]);
+    if(!songSnap.exists)return;
+    CS={id:songId,...songSnap.data(),mpLobbyId:_lobbyId};
+    if(efxSnap.exists){const e=efxSnap.data();CS.effectEvents=e.effectEvents||[];CS.fireRanges=e.fireRanges||[];CS.speedEffect=e.speedEffect||1;}
+    // Find opponent
+    const players=Object.values(_lobbyData.players||{});
+    const opponent=players.find(p=>p.uid!==CU?.uid);
+    _mpOpponentUid=opponent?.uid||null;
+    showPage('game-page');
+    setTimeout(()=>initPlay(),100);
+    // Show opponent HUD
+    showMpHud();
+    // Subscribe to opponent score updates
+    if(_mpOpponentUid)subscribeMpOpponent(_mpOpponentUid);
+  }catch(e){toast('ERROR LOADING SONG','#ff4444');}
+}
+
+function showMpHud(){
+  let hud=document.getElementById('mp-hud');
+  if(!hud){
+    hud=document.createElement('div');hud.id='mp-hud';
+    hud.style.cssText='position:absolute;top:8px;right:8px;background:rgba(5,5,18,.85);border:1px solid #ff44ff44;padding:6px 10px;z-index:14;font-family:"Courier New",monospace;font-size:9px;letter-spacing:2px;min-width:100px;text-align:right;';
+    document.getElementById('gc')?.appendChild(hud);
+  }
+  hud.innerHTML=`<div style="color:#ff44ff;font-size:8px;margin-bottom:3px;">OPPONENT</div>
+    <div id="mp-opp-name" style="color:#aaa;font-size:8px;margin-bottom:2px;">${esc(_lobbyData?.players[_mpOpponentUid||'']?.name||'?')}</div>
+    <div id="mp-opp-score" style="color:#fff;font-size:14px;font-weight:bold;">000000</div>
+    <div id="mp-opp-combo" style="color:#ff44ff;font-size:8px;">COMBO 0</div>`;
+}
+
+let _mpOppUnsub=null;
+function subscribeMpOpponent(oppUid){
+  if(_mpOppUnsub)_mpOppUnsub();
+  _mpOppUnsub=db.collection('users').doc(oppUid).onSnapshot(snap=>{
+    if(!snap.exists)return;
+    const ls=snap.data()?.liveScore;
+    if(!ls)return;
+    _mpOpponentScore=ls.score||0;_mpOpponentCombo=ls.combo||0;
+    const sc=document.getElementById('mp-opp-score');if(sc)sc.textContent=String(_mpOpponentScore).padStart(6,'0');
+    const cb=document.getElementById('mp-opp-combo');if(cb)cb.textContent=`COMBO ${_mpOpponentCombo}`;
+  });
+}
+
+async function sendLobbyChat(){
+  const input=document.getElementById('lobby-chat-input');
+  const text=input?.value?.trim();
+  if(!text||!_lobbyId||!CU)return;
+  input.value='';
+  await db.collection('lobbies').doc(_lobbyId).collection('chat').add({
+    uid:CU.uid,name:CUD?.username||'?',text,t:firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+window.sendLobbyChat=sendLobbyChat;
+
+async function leaveLobby(){
+  if(!_lobbyId||!CU)return;
+  if(_lobbyUnsub)_lobbyUnsub();if(_lobbyChatUnsub)_lobbyChatUnsub();if(_mpOppUnsub)_mpOppUnsub();
+  const isHost=_lobbyData?.hostUid===CU.uid;
+  if(isHost){
+    await db.collection('lobbies').doc(_lobbyId).update({status:'closed'}).catch(()=>{});
+    await db.collection('lobbies').doc(_lobbyId).delete().catch(()=>{});
+  } else {
+    await db.collection('lobbies').doc(_lobbyId).update({[`players.${CU.uid}`]:firebase.firestore.FieldValue.delete()}).catch(()=>{});
+  }
+  _lobbyId=null;_lobbyData=null;
+  document.getElementById('mp-hud')?.remove();
+  showPage('menu-page');
+}
+window.leaveLobby=leaveLobby;
+window.openLobbyMenu=openLobbyMenu;
 const _pageHistory=[];
 function showPage(id,skipHistory=false){
   const cur=document.querySelector('.page.active');
@@ -1311,7 +1620,10 @@ async function openProfile(uid, backPage){
 
     // Favorite song
     const favSong=ud.favSong;
-    const favSongHtml=favSong?`<div style="font-size:9px;color:#444;letter-spacing:2px;margin-top:4px;">🎵 FAVE: <span style="color:${accentColor};">${esc(favSong)}</span></div>`:'';
+    const favSongHtml=`<div style="margin-top:6px;">
+      ${favSong?`<div style="font-size:10px;color:#444;letter-spacing:1px;">🎵 FAV SONG — <span style="color:${accentColor};">${esc(favSong)}</span></div>`:''}
+      ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;margin-top:4px;" onclick="editFavSong()">🎵 SET FAV SONG</button>`:''}
+    </div>`;
 
     // Role badge
     const roleMap={
@@ -1335,16 +1647,15 @@ async function openProfile(uid, backPage){
         <input type="file" id="avatar-file-input" accept="image/*,image/gif" style="display:none;" onchange="handleAvatarUpload(event)">
         <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="document.getElementById('avatar-file-input').click()">📷 AVATAR / GIF</button>
         <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="document.getElementById('profile-bg-input').click()">🖼 BG IMAGE</button>
-        ${bg?`<button class="xbtn sm rd" style="padding:3px 6px;font-size:8px;" onclick="clearProfileBg()">✕</button>`:''}
+        ${bg?`<button class="xbtn sm rd" style="padding:3px 6px;font-size:8px;" onclick="clearProfileBg()">✕ REMOVE BG</button>`:''}
       </div>
       <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;">
-        <label style="font-size:8px;color:#555;letter-spacing:2px;display:flex;align-items:center;gap:4px;cursor:pointer;">
-          🎨 ACCENT
+        <label style="font-size:8px;color:#555;letter-spacing:2px;display:flex;align-items:center;gap:4px;cursor:pointer;border:1px solid #333;padding:3px 6px;">
+          🎨 ACCENT COLOR
           <input type="color" value="${accentColor}" oninput="saveAccentColor(this.value)"
             style="width:22px;height:18px;border:none;background:none;cursor:pointer;padding:0;">
         </label>
-        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="pickBannerGradient()">🌈 BANNER</button>
-        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="editFavSong()">🎵 FAV</button>
+        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="pickBannerGradient()">🌈 BANNER GRADIENT</button>
       </div>`:'';
 
     const topScoreRows=topScores.length?topScores.map((sc,i)=>`
@@ -3606,7 +3917,7 @@ function pUpdate2(){
     n.cy=GHIT_Y()-(n.sMs-now)*GPPM();
     if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){
       n.missed=true;combo=0;gstats.m++;judgeShow('MISS','#ff4444');laneHolding[n.lane]=false;
-      if(!autoMode){
+      if(!autoMode&&hpEnabled){
         _consecutiveMiss++;_lastRegenStreak=0;
         if(_consecutiveMiss>=2){hp=Math.max(0,hp+HP_MISS);updateHpHud();}
         if(hp<=0&&!_lost){_lost=true;} // song continues, just flagged
@@ -3642,7 +3953,7 @@ function hitPlay(lane,down){
       checkStreakHpRegen(combo);
     }
   }else{
-    for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');if(!autoMode){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost)_lost=true;}}}}
+    for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');if(!autoMode&&hpEnabled){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost)_lost=true;}}}}
   }
 }
 async function endPlay2(){
@@ -3653,7 +3964,7 @@ async function endPlay2(){
   const isFC=gstats.m===0&&!autoMode&&!_lost;
   let savedNote='';
   // Never save scores when spectating or in auto mode or LOST
-  const canSave=CS?.id&&!CS.preview&&!autoMode&&!CS.spectating&&!_spectatingUid&&!_lost;
+  const canSave=CS?.id&&!CS.preview&&!autoMode&&!CS.spectating&&!_spectatingUid&&!_lost&&hpEnabled;
   if(canSave){
     try{
       if(CU&&!isGuest){
@@ -3694,6 +4005,30 @@ async function endPlay2(){
     return;
   }
   const lostBanner=_lost?`<div style="font-size:14px;letter-spacing:5px;color:var(--red);margin-bottom:10px;font-weight:bold;">💀 FAILED</div><div style="font-size:9px;color:#555;letter-spacing:2px;margin-bottom:10px;">SCORE NOT SAVED</div>`:'' ;
+  // Multiplayer end
+  if(CS?.mpLobbyId&&_mpOpponentUid){
+    const myScore=score;const oppScore=_mpOpponentScore;
+    const won=myScore>=oppScore;
+    document.getElementById('mp-hud')?.remove();
+    if(_mpOppUnsub){_mpOppUnsub();_mpOppUnsub=null;}
+    await db.collection('lobbies').doc(CS.mpLobbyId).update({
+      [`players.${CU?.uid}.score`]:myScore,
+      status:'done'
+    }).catch(()=>{});
+    const resultColor=won?'var(--green)':'var(--red)';
+    showOv(`
+      <div class="rl">— MATCH RESULT —</div>
+      <div style="font-size:20px;letter-spacing:6px;color:${resultColor};margin:10px 0;font-weight:bold;">${won?'🏆 YOU WIN':'💀 YOU LOSE'}</div>
+      <div class="sr"><span style="color:#aaa;">YOUR SCORE</span><span style="color:#fff;font-size:14px;">${myScore.toLocaleString()}</span></div>
+      <div class="sr"><span style="color:#aaa;">OPPONENT</span><span style="color:#ff44ff;font-size:14px;">${oppScore.toLocaleString()}</span></div>
+      <div class="sr" style="margin-top:8px;"><span>ACCURACY</span><span style="color:#fff">${ac}%</span></div>
+      <div class="sr"><span>MAX COMBO</span><span style="color:var(--amber)">${maxC}×</span></div>
+      <div class="ov-btns" style="margin-top:14px;">
+        <button class="xbtn cy" onclick="showPage('lobby-page')">[ BACK TO LOBBY ]</button>
+        <button class="xbtn rd sm" onclick="leaveLobby()">[ LEAVE ]</button>
+      </div>`);
+    return;
+  }
   const fc=CS?.fromCreate;
   const fcBanner=isFC?`<div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>`:'';
   const autoNote=autoMode?`<div style="font-size:10px;color:#555;letter-spacing:2px;margin-bottom:10px;">AUTO MODE — score not saved</div>`:'';
@@ -4144,7 +4479,7 @@ window.crPreview=crPreview;window.crClearNotes=crClearNotes;window.crPublish=crP
 window.confirmLeaveCreate=confirmLeaveCreate;window.endRecord=endRecord;window.initPlay=initPlay;
 window.startPlay=startPlay;window.startAdminRec=startAdminRec;window.goBack=goBack;
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadKeys();loadEffectsSetting();loadNoteSpeed();
+loadKeys();loadEffectsSetting();loadNoteSpeed();loadHpSetting();
 </script>
 </body>
 </html>
