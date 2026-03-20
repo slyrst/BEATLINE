@@ -2640,6 +2640,7 @@ function hudUpdate(now){
 }
 
 // ── PAUSE ─────────────────────────────────────────────────────────────────────
+let _paused=false,_countdownRaf=null;
 function buildPauseOverlay(pov){
   const potionItems=SHOP_ITEMS.filter(i=>getInvCount(i.id)>0);
   const potionHtml=potionItems.length?`
