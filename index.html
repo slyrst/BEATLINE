@@ -2031,36 +2031,7 @@ function startGlobalNotifListener(){
       });
   }
 
-  // 2. New chat messages — listen per friend chat (avoids collectionGroup index)
-  if(!_globalMsgUnsub){
-    const friends=CUD?.friends||[];
-    const unsubs=[];
-    for(const fid of friends.slice(0,10)){
-      const chatId=[CU.uid,fid].sort().join('_');
-      let _first=true;
-      const unsub=db.collection('chats').doc(chatId).collection('messages')
-        .orderBy('createdAt','desc').limit(1)
-        .onSnapshot(snap=>{
-          if(_first){_first=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
-          snap.docChanges().forEach(change=>{
-            if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
-              _seenNotifs.add(change.doc.id);
-              const m=change.doc.data();
-              if(m.from===CU.uid)return; // own message
-              if(_chatFriendId===m.from)return; // chat open
-              const preview=m.img?'📷 image':m.text||'';
-              showNotif('💬','NEW MESSAGE','notif-msg',
-                (m.fromName||'?')+': '+preview,
-                ()=>{if(m.from)openChat(m.from,m.fromName||'?');});
-            }
-          });
-        });
-      unsubs.push(unsub);
-    }
-    _globalMsgUnsub=()=>unsubs.forEach(u=>u());
-  }
-
-  // 2. New chat messages — listen per friend chat (avoids collectionGroup index)
+  // 2. New chat messages — listen per friend chat
   if(!_globalMsgUnsub){
     const friends=CUD?.friends||[];
     const unsubs=[];
