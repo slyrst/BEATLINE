@@ -1965,7 +1965,9 @@ async function loadFriendsPage(){
             ${fd.activity?`<div style="font-size:9px;color:#333;letter-spacing:1px;">${esc(fd.activity)}${fd.playingNow?.songTitle?' — '+esc(fd.playingNow.songTitle):''}</div>`:''}
           </div>
           ${isOnline(fd)&&fd.playingNow?.songId?`<button class="xbtn sm cy" onclick="spectatePlayer('${fid}','${fd.playingNow.songId}')" style="padding:3px 8px;font-size:9px;">👁</button>`:''}
+          <button class="xbtn sm" onclick="inviteToLobby('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:#ff44ff;border-color:#ff44ff33;">⚔</button>
           <button class="xbtn sm" onclick="openChat('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:var(--cyan);border-color:#00f0ff33;">💬</button>
+          
           <button class="xbtn sm rd" onclick="removeFriend('${fid}')" style="padding:3px 8px;font-size:9px;">✕</button>
         </div>`;
       }catch(e){}
@@ -2009,7 +2011,7 @@ function showNotif(icon,titleText,titleClass,text,onClick){
 
 function startGlobalNotifListener(){
   if(!CU)return;
-
+  startInviteListener();
   // 1. Friend requests
   if(!_globalReqUnsub){
     let _firstFRLoad=true;
@@ -4433,7 +4435,81 @@ function _laneUp(lane){
     el.addEventListener('mouseleave',()=>_laneUp(i));
   });
 })();
+async function inviteToLobby(toId, toName){
+  if(!CU){toast('LOGIN REQUIRED','#ff4444');return;}
+  if(!_lobbyId){
+    await createLobby();
+    await new Promise(r=>setTimeout(r,1000));
+  }
+  await db.collection('lobbyInvites').add({
+    from:CU.uid,
+    fromName:CUD?.username||'?',
+    to:toId,
+    lobbyId:_lobbyId,
+    createdAt:sts(),
+    status:'pending'
+  });
+  toast('INVITE SENT TO '+toName,'#ff44ff');
+}
+window.inviteToLobby=inviteToLobby;
 
+let _inviteUnsub=null;
+function startInviteListener(){
+  if(!CU||_inviteUnsub)return;
+  let _first=true;
+  _inviteUnsub=db.collection('lobbyInvites')
+    .where('to','==',CU.uid)
+    .where('status','==','pending')
+    .onSnapshot(snap=>{
+      if(_first){_first=false;snap.docs.forEach(d=>_seenNotifs.add(d.id));return;}
+      snap.docChanges().forEach(change=>{
+        if(change.type==='added'&&!_seenNotifs.has(change.doc.id)){
+          _seenNotifs.add(change.doc.id);
+          const inv=change.doc.data();
+          showInviteNotif(change.doc.id, inv);
+        }
+      });
+    });
+}
+window.startInviteListener=startInviteListener;
+
+function showInviteNotif(invId, inv){
+  const stack=document.getElementById('notif-stack');
+  if(!stack)return;
+  const card=document.createElement('div');
+  card.className='notif-card';
+  card.innerHTML=`
+    <div class="notif-icon">⚔</div>
+    <div class="notif-body">
+      <div class="notif-title" style="color:#ff44ff;">MULTIPLAYER INVITE</div>
+      <div class="notif-text">${esc(inv.fromName||'?')} seni lobiye davet etti</div>
+      <div style="display:flex;gap:6px;margin-top:6px;">
+        <button class="xbtn sm" onclick="acceptInvite('${invId}','${inv.lobbyId}')" 
+          style="padding:3px 10px;font-size:9px;color:#00ff88;border-color:#00ff8844;">✓ KABUL</button>
+        <button class="xbtn sm" onclick="declineInvite('${invId}')" 
+          style="padding:3px 10px;font-size:9px;color:#ff4444;border-color:#ff444433;">✕ RET</button>
+      </div>
+    </div>
+    <div class="notif-close" onclick="this.closest('.notif-card').remove()">✕</div>`;
+  stack.appendChild(card);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>card.classList.add('show')));
+  _notifBeep();
+  setTimeout(()=>{card.style.opacity='0';setTimeout(()=>card.remove(),300);},15000);
+}
+
+async function acceptInvite(invId, lobbyId){
+  document.querySelectorAll('.notif-card').forEach(c=>c.remove());
+  await db.collection('lobbyInvites').doc(invId).update({status:'accepted'});
+  await joinLobby(lobbyId);
+}
+window.acceptInvite=acceptInvite;
+
+async function declineInvite(invId){
+  await db.collection('lobbyInvites').doc(invId).update({status:'declined'});
+  document.querySelectorAll('.notif-card').forEach(c=>c.remove());
+  toast('INVITE DECLINED','#ffaa00');
+}
+window.declineInvite=declineInvite;
 window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
 window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
