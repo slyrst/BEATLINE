@@ -653,6 +653,7 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div><div id="sc">000000</div><div id="cb">COMBO  0</div><div id="mb">BEATLINE</div></div>
         <div id="streak-hud">
           <div id="cps-hud" style="font-size:9px;color:#333;letter-spacing:2px;text-align:right;margin-bottom:2px;"></div>
+          <div id="hp-hud" style="font-size:10px;color:#ff4444;letter-spacing:2px;text-align:right;margin-bottom:2px;">❤️ 1000</div>
           <div id="acc-hud"></div>
           <div id="td"></div>
         </div>
@@ -799,7 +800,10 @@ canvas#cv{display:block;width:440px;height:620px;}
     <span id="bottom-guest-badge" style="display:none;font-size:8px;background:#00ff8822;border:1px solid #00ff8844;color:var(--green);padding:1px 6px;letter-spacing:2px;">GUEST</span>
     <span id="bottom-admin-badge" style="display:none;font-size:8px;background:#00f0ff22;border:1px solid #00f0ff44;color:var(--cyan);padding:1px 6px;letter-spacing:2px;">ADMIN</span>
   </div>
-  <button class="xbtn sm pk" style="padding:4px 12px;font-size:9px;" onclick="openProfile(CU?.uid||null)">MY PROFILE</button>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div id="bottom-gems" style="font-size:11px;color:#00aaff;letter-spacing:2px;font-weight:bold;">💎 0</div>
+    <button class="xbtn sm pk" style="padding:4px 12px;font-size:9px;" onclick="openProfile(CU?.uid||null)">MY PROFILE</button>
+  </div>
 </div>
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
@@ -923,7 +927,7 @@ auth.onAuthStateChanged(async user=>{
     if(adminSec)adminSec.style.display=ADM?'block':'none';
     const roleSec=document.getElementById('admin-role-section');
     if(roleSec)roleSec.style.display=ADM?'block':'none';
-    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();
+    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();loadGems();
   }else{
     const activePage=document.querySelector('.page.active')?.id;
     const inGame=activePage==='game-page';
@@ -951,7 +955,7 @@ async function doRegister(){
   if(u.length<3){err.textContent='USERNAME TOO SHORT';return;}
   if(p.length<6){err.textContent='PASSWORD TOO SHORT';return;}
   const ex=await dQ('users',W('username','==',u));if(!ex.empty){err.textContent='USERNAME TAKEN';return;}
-  try{const c=await auth.createUserWithEmailAndPassword(em,p);await c.user.updateProfile({displayName:u});await dSet(dDoc('users',c.user.uid),{username:u,email:em,isAdmin:false,bio:'',friends:[],createdAt:sts(),totalScore:0,gamesPlayed:0});}
+  try{const c=await auth.createUserWithEmailAndPassword(em,p);await c.user.updateProfile({displayName:u});await dSet(dDoc('users',c.user.uid),{username:u,email:em,isAdmin:false,bio:'',friends:[],createdAt:sts(),totalScore:0,gamesPlayed:0,gems:0});}
   catch(e){err.textContent=e.code==='auth/email-already-in-use'?'EMAIL IN USE':e.code==='auth/invalid-email'?'INVALID EMAIL':'ERROR: '+e.code;}
 }
 async function doForgotPassword(){
@@ -1169,10 +1173,8 @@ function broadcastPlaying(songId,songTitle){
 // Broadcast live game state (score/combo/judge) to spectators
 let _lastStatsBroadcast=0;
 function broadcastGameState(judgeLabel,judgeColor){
-  if(!CU||_spectatingUid)return; // only host broadcasts
-  const now=Date.now();
-  // Always broadcast judge immediately, throttle score updates to ~500ms
-  const data={liveScore:{score,combo,grade:judgeLabel||'',gradeColor:judgeColor||'',t:now}};
+  if(!CU||_spectatingUid)return;
+  const data={liveScore:{score,combo,grade:judgeLabel||'',gradeColor:judgeColor||'',hp,t:Date.now()}};
   dUpd(dDoc('users',CU.uid),data).catch(()=>{});
 }
 
@@ -1188,6 +1190,7 @@ function startSpectateStatListener(uid){
     // Mirror host score/combo on spectator screen
     score=ls.score||0;
     combo=ls.combo||0;
+    if(ls.hp!==undefined){hp=ls.hp;updateHpHud();}
     document.getElementById('sc').textContent=String(score).padStart(6,'0');
     document.getElementById('cb').textContent=`COMBO  ${combo}`;
     if(ls.grade&&ls.gradeColor){
@@ -1372,6 +1375,7 @@ async function openProfile(uid, backPage){
           <div class="profile-stats-row" style="margin-top:10px;">
             <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">SCORE</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${ud.gamesPlayed||0}</div><div class="profile-stat-lbl">PLAYS</div></div>
+            <div class="profile-stat"><div class="profile-stat-val" style="color:#00aaff;">💎${(ud.gems||0).toLocaleString()}</div><div class="profile-stat-lbl">GEMS</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${topScores.length}</div><div class="profile-stat-lbl">RANKED</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${friends.length}</div><div class="profile-stat-lbl">FRIENDS</div></div>
           </div>
@@ -2405,6 +2409,41 @@ let notes=[],parts=[],ripples=[],fl=[0,0,0,0],score=0,combo=0,maxC=0,jAlpha=0;
 let gstats={p:0,g:0,ok:0,m:0},beatmap=[],bpIdx=0;
 let holdPulses=[],laneHolding=[false,false,false,false],pulseTimer=[0,0,0,0];
 let rWall2=0,rNotes2=[],rHW2=[0,0,0,0],rAct2=[false,false,false,false];
+// ── HP SYSTEM ─────────────────────────────────────────────────────────────────
+const HP_MAX=1000,HP_MISS=-100;
+let hp=HP_MAX,_lost=false;
+function updateHpHud(){
+  const el=document.getElementById('hp-hud');
+  if(!el)return;
+  const pct=Math.max(0,hp/HP_MAX);
+  const col=pct>0.5?'#00ff88':pct>0.25?'#ffaa00':'#ff4444';
+  el.style.color=col;
+  el.textContent='❤ '+Math.max(0,hp);
+}
+// ── GEMS ──────────────────────────────────────────────────────────────────────
+const GEM_REWARDS={easy:3,medium:6,hard:10,expert:18};
+let _localGems=0;
+function loadGems(){
+  if(CU&&CUD)_localGems=CUD.gems||0;
+  updateGemDisplay();
+}
+function updateGemDisplay(){
+  const el=document.getElementById('bottom-gems');
+  if(el)el.textContent='💎 '+(_localGems||0).toLocaleString();
+}
+async function awardGems(diff,lost){
+  if(!CU||isGuest||lost||autoMode)return; // no gems for lost/auto/guest
+  const reward=GEM_REWARDS[diff||'easy']||3;
+  _localGems+=reward;
+  updateGemDisplay();
+  try{
+    const snap=await dGet(dDoc('users',CU.uid));
+    const cur=snap.data()?.gems||0;
+    await dUpd(dDoc('users',CU.uid),{gems:cur+reward});
+    if(CUD)CUD.gems=cur+reward;
+    toast('+'+reward+' 💎','#00aaff');
+  }catch(e){}
+}
 
 function fmtT(ms){const s=Math.floor(ms/1000);return`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;}
 function judgeShow(t,c){const e=document.getElementById('jt');e.textContent=t;e.style.color=c;e.style.opacity=1;jAlpha=1;broadcastGameState(t,c);}
@@ -2923,17 +2962,20 @@ function initPlay(){
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
   score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
+  hp=HP_MAX;_lost=false;updateHpHud();
   document.getElementById('streak-popup').style.opacity='0';
   _paused=false;
-  setAuto(autoMode);hideOv();document.getElementById('mb').textContent=autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
+  setAuto(autoMode);hideOv();document.getElementById('mb').textContent=_spectatingUid?'WATCH':autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
   document.getElementById('rdot').style.opacity=0;document.getElementById('stopbtn').style.display='none';
   const pbtn=document.getElementById('pausebtn');
-  if(pbtn){pbtn.style.display=_spectatingUid?'none':'block';pbtn.textContent='⏸';pbtn.style.color='#555';}
+  if(pbtn)pbtn.style.display=_spectatingUid?'none':'block';
+  const hpHud=document.getElementById('hp-hud');
+  if(hpHud)hpHud.style.display=_spectatingUid?'none':'block';
+  if(pbtn&&!_spectatingUid){pbtn.textContent='⏸';pbtn.style.color='#555';}
   if(_spectatingUid){
-    // Show WATCHING banner
     const wb=document.createElement('div');wb.id='watch-banner';
-    wb.style.cssText='position:absolute;top:50px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:4px;color:var(--cyan);background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);padding:3px 12px;z-index:12;pointer-events:none;';
-    wb.textContent='SPECTATING';
+    wb.style.cssText='position:absolute;top:50px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:4px;color:var(--cyan);background:rgba(0,240,255,.08);border:1px solid rgba(0,240,255,.2);padding:3px 16px;z-index:12;cursor:pointer;';
+    wb.innerHTML='SPECTATING — <span style="color:var(--red);cursor:pointer;" onclick="stopSpectate();stopAll();goPageBack()">EXIT</span>';
     document.getElementById('gc')?.appendChild(wb);
   }
   const spd=CS.speedEffect||1;
@@ -2958,7 +3000,10 @@ function pUpdate2(){
   while(bpIdx<beatmap.length&&now>=beatmap[bpIdx].sMs-GAPP_MS()){const b=beatmap[bpIdx++];notes.push({lane:b.lane,sMs:b.sMs,hMs:b.hMs||0,hit:false,missed:false,holding:false,hp:0,cy:0});}
   for(let n of notes){
     n.cy=GHIT_Y()-(n.sMs-now)*GPPM();
-    if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){n.missed=true;combo=0;gstats.m++;judgeShow('MISS','#ff4444');laneHolding[n.lane]=false;}
+    if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){
+      n.missed=true;combo=0;gstats.m++;judgeShow('MISS','#ff4444');laneHolding[n.lane]=false;
+      if(!autoMode){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost){_lost=true;}}
+    }
     if(n.holding){n.hp=Math.min(1,(now-n.sMs)/Math.max(n.hMs,1));if(n.hp>=1){n.hit=true;n.holding=false;laneHolding[n.lane]=false;combo++;if(combo>maxC)maxC=combo;score+=Math.floor(200*(1+combo*.04));judgeShow('PERFECT','#00f0ff');burstP(n.lane,GHIT_Y());}}
   }
   notes=notes.filter(n=>!(n.hit&&!n.holding)&&!(n.missed&&n.cy>GH()+60));
@@ -2988,7 +3033,7 @@ function hitPlay(lane,down){
       _cpsHits++;
     }
   }else{
-    for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');}}}
+    for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');if(!autoMode){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost)_lost=true;}}}}
   }
 }
 async function endPlay2(){
@@ -2996,10 +3041,10 @@ async function endPlay2(){
   const tot=gstats.p+gstats.g+gstats.ok+gstats.m,ac=tot?Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100):0;
   const gr=ac>=95?'S':ac>=85?'A':ac>=70?'B':ac>=50?'C':'D';
   const gc={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[gr];
-  const isFC=gstats.m===0&&!autoMode;
+  const isFC=gstats.m===0&&!autoMode&&!_lost;
   let savedNote='';
-  // Never save scores when spectating or in auto mode
-  const canSave=CS?.id&&!CS.preview&&!autoMode&&!CS.spectating&&!_spectatingUid;
+  // Never save scores when spectating or in auto mode or LOST
+  const canSave=CS?.id&&!CS.preview&&!autoMode&&!CS.spectating&&!_spectatingUid&&!_lost;
   if(canSave){
     try{
       if(CU&&!isGuest){
@@ -3024,7 +3069,8 @@ async function endPlay2(){
       }
     }catch(e){console.warn('score save',e);}
   }
-  const fc=CS?.fromCreate;
+  // Award gems (even if lost, just less)
+  await awardGems(CS?.difficulty,_lost);
   // Spectating — just show a "finished watching" screen, no results
   if(_spectatingUid||CS?.spectating){
     stopSpectate();
@@ -3038,14 +3084,16 @@ async function endPlay2(){
       </div>`);
     return;
   }
+  const lostBanner=_lost?`<div style="font-size:14px;letter-spacing:5px;color:var(--red);margin-bottom:10px;font-weight:bold;">💀 FAILED</div><div style="font-size:9px;color:#555;letter-spacing:2px;margin-bottom:10px;">SCORE NOT SAVED</div>`:'' ;
   const fcBanner=isFC?`<div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>`:'';
   const autoNote=autoMode?`<div style="font-size:10px;color:#555;letter-spacing:2px;margin-bottom:10px;">AUTO MODE — score not saved</div>`:'';
+  const gemReward=!autoMode&&!isGuest&&CU?`<div style="font-size:10px;color:#00aaff;letter-spacing:2px;margin-top:6px;">💎 +${GEM_REWARDS[CS?.difficulty||'easy']||3} gems earned</div>`:'';
   showOv(`
     <div class="rl">— RESULTS —</div>
-    ${autoNote}
+    ${autoNote}${lostBanner}
     <div class="ov-song">${esc(CS?.title||'')}</div>
-    <div class="rs">${String(score).padStart(6,'0')}</div>
-    <div class="rg" style="color:${gc}">${gr}</div>
+    <div class="rs" style="color:${_lost?'var(--red)':'inherit'}">${String(score).padStart(6,'0')}</div>
+    <div class="rg" style="color:${_lost?'var(--red)':gc}">${_lost?'LOST':gr}</div>
     ${fcBanner}
     <div class="sr"><span>ACCURACY</span><span style="color:#fff">${ac}%</span></div>
     <div class="sr"><span>MAX COMBO</span><span style="color:var(--amber)">${maxC}×</span></div>
@@ -3053,6 +3101,7 @@ async function endPlay2(){
     <div class="sr"><span>GOOD</span><span style="color:var(--green)">${gstats.g}</span></div>
     <div class="sr"><span>OK</span><span style="color:#88ff44">${gstats.ok}</span></div>
     <div class="sr" style="margin-bottom:20px;"><span>MISS</span><span style="color:var(--red)">${gstats.m}</span></div>
+    ${gemReward}
     <div class="ov-btns">
       <button class="xbtn cy" onclick="startPlay()">[ RETRY ]</button>
       ${CS?.id&&!fc?`<button class="xbtn am" onclick="showLB('${CS.id}','${esc(CS.title||'')}')">[ SCORES ]</button>`:''}
