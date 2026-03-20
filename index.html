@@ -9,8 +9,8 @@
 :root{--bg:#05050d;--bg2:#08080f;--bg3:#0d0d1a;--border:#1a1a30;--border2:#252540;--text:#fff;--text2:#aaa;--cyan:#00f0ff;--pink:#ff00aa;--green:#00ff88;--amber:#ffaa00;--red:#ff4444;}
 html,body{height:100%;overflow:hidden;}
 body{background:var(--bg);font-family:'Courier New',monospace;color:var(--text);display:flex;align-items:center;justify-content:center;}
-#app{width:100%;height:100%;display:flex;align-items:stretch;justify-content:center;}
-.page{display:none;width:100%;height:100%;overflow-y:auto;flex-direction:column;align-items:center;}
+#app{width:100%;height:100%;display:flex;align-items:flex-start;justify-content:center;overflow:hidden;}
+.page{display:none;width:100%;height:100%;overflow-y:auto;flex-direction:column;align-items:center;box-sizing:border-box;}
 .page.active{display:flex;width:100%;justify-content:flex-start;}
 .xbtn{background:none;border:1px solid #ffffff22;color:#fff;font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;padding:10px 24px;cursor:pointer;transition:all .15s;outline:none;white-space:nowrap;}
 .xbtn:hover{background:#fff;color:#000;border-color:#fff;}
@@ -58,7 +58,11 @@ body{background:var(--bg);font-family:'Courier New',monospace;color:var(--text);
 .admin-badge{font-size:9px;background:#ff00aa22;border:1px solid #ff00aa44;color:var(--pink);padding:2px 8px;letter-spacing:2px;}
 /* SONGS */
 #songs-page{padding-top:0;}
-.page-header{width:100%;max-width:700px;display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);}
+.page-header{width:100%;max-width:700px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:14px 16px 12px;position:sticky;top:0;background:var(--bg);z-index:10;border-bottom:1px solid var(--border);}
+  .lb-list, .songs-list, .profile-inner, .settings-inner, .create-inner {
+  margin-left: auto;
+  margin-right: auto;
+}
 .page-header-title{font-size:13px;letter-spacing:4px;color:var(--text2);}
 .songs-list{width:100%;max-width:700px;padding:10px 12px 60px;display:flex;flex-direction:column;gap:6px;}
 .song-card{background:var(--bg3);border:1px solid var(--border);padding:12px 12px 10px;display:flex;flex-direction:column;gap:6px;}
@@ -81,6 +85,10 @@ body{background:var(--bg);font-family:'Courier New',monospace;color:var(--text);
 /* LB */
 #lb-page{padding-top:0;}
 .lb-list{width:100%;max-width:700px;padding:12px 20px 60px;display:flex;flex-direction:column;gap:6px;}
+.lb-list, .songs-list, .profile-inner, .settings-inner, .create-inner {
+  margin-left: auto;
+  margin-right: auto;
+}  
 .lb-row{background:var(--bg3);border:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:14px;}
 .lb-rank{font-size:18px;font-weight:bold;width:32px;text-align:center;color:#333;}
 .lb-rank.r1{color:var(--amber);}.lb-rank.r2{color:#aaa;}.lb-rank.r3{color:#8b6914;}
