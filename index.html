@@ -3185,9 +3185,7 @@ function pUpdate2(){
       if(!autoMode){
         _consecutiveMiss++;_lastRegenStreak=0;
         if(_consecutiveMiss>=2){hp=Math.max(0,hp+HP_MISS);updateHpHud();}
-        if(hp<=0&&!_lost){_lost=true;
-          window._deathTimer=setTimeout(()=>{if(_lost&&running){running=false;if(aud)aud.pause();setTimeout(endPlay2,200);}},1500);
-        }
+        if(hp<=0&&!_lost){_lost=true;} // song continues, just flagged
       }
     }
     if(n.holding){n.hp=Math.min(1,(now-n.sMs)/Math.max(n.hMs,1));if(n.hp>=1){n.hit=true;n.holding=false;laneHolding[n.lane]=false;combo++;if(combo>maxC)maxC=combo;score+=Math.floor(200*(1+combo*.04));judgeShow('PERFECT','#00f0ff');burstP(n.lane,GHIT_Y());}}
@@ -3256,8 +3254,8 @@ async function endPlay2(){
       }
     }catch(e){console.warn('score save',e);}
   }
-  // Award gems (even if lost, just less)
-  await awardGems(CS?.difficulty,_lost);
+  // Award gems only if not lost
+  if(!_lost)await awardGems(CS?.difficulty,false);
   // Spectating — just show a "finished watching" screen, no results
   if(_spectatingUid||CS?.spectating){
     stopSpectate();
