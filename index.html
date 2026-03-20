@@ -625,6 +625,39 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:8px;">ONLY NOTE FALL SPEED · SONG TEMPO UNCHANGED</div>
     </div>
     <div class="settings-section">
+      <div class="settings-section-title">GRAPHICS</div>
+      <div style="font-size:9px;color:#252540;letter-spacing:2px;margin-bottom:12px;">ALL OFF BY DEFAULT — ENABLE WHAT YOU WANT</div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">✨ NOTE SKIN<br><span style="font-size:8px;color:#555;">STRIPED / GLOWING NOTES</span></div>
+        <div id="noteskin-btn" onclick="toggleNoteSkin()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">💫 HIT ZONE PULSE<br><span style="font-size:8px;color:#555;">IDLE GLOW ON TARGET RINGS</span></div>
+        <div id="hitpulse-btn" onclick="toggleHitPulse()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">⚡ HOLD ENERGY<br><span style="font-size:8px;color:#555;">FLOWING ENERGY IN HOLD NOTES</span></div>
+        <div id="holdenergy-btn" onclick="toggleHoldEnergy()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🌠 NOTE TRAIL<br><span style="font-size:8px;color:#555;">FADE TRAIL AS NOTES FALL</span></div>
+        <div id="notetrail-btn" onclick="toggleNoteTrail()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">📊 WAVEFORM<br><span style="font-size:8px;color:#555;">AUDIO VISUALIZER BEHIND NOTES</span></div>
+        <div id="waveform-btn" onclick="toggleWaveform()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">💥 PERFECT FLASH<br><span style="font-size:8px;color:#555;">HIT ZONE BURST ON PERFECT</span></div>
+        <div id="perfectflash-btn" onclick="togglePerfectFlash()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+    </div>
+    <div class="settings-section">
       <div class="settings-section-title">INPUT OFFSET</div>
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
         <div id="offset-display" style="font-size:20px;font-weight:bold;letter-spacing:2px;color:var(--amber);min-width:60px;text-align:center;">0 ms</div>
@@ -4234,19 +4267,33 @@ function drawPlay2(){
     if(n.hit&&!n.holding)continue;
     const cx=n.lane*GLW()+GLW()/2,ny=n.cy;const[r,g,b]=rgbC(COLS[n.lane]);
     if(n.missed){ctx2.fillStyle=`rgba(${r},${g},${b},.08)`;ctx2.beginPath();ctx2.arc(cx,ny,GNR,0,Math.PI*2);ctx2.fill();continue;}
+    // Note trail
+    if(_gfxNoteTrail&&n._trail){
+      for(let i=0;i<n._trail.length;i++){
+        const tp=n._trail[i];const a=(i/n._trail.length)*0.25;
+        ctx2.fillStyle=`rgba(${r},${g},${b},${a})`;ctx2.beginPath();ctx2.arc(cx,tp,GNR*(0.4+i/n._trail.length*0.6),0,Math.PI*2);ctx2.fill();
+      }
+    }
+    if(!n._trail)n._trail=[];
+    n._trail.push(ny);if(n._trail.length>8)n._trail.shift();
+    // Hold note
     if(n.hMs>80){
       const hpx=n.hMs*GPPM();let bt,bh;
       if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}
       ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);
       ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);
+      // Hold energy flow
+      if(_gfxHoldEnergy&&n.holding){
+        const flowY=bt+((fn*3)%(bh||1));
+        ctx2.fillStyle=`rgba(${r},${g},${b},0.5)`;ctx2.fillRect(cx-GNR*.38,flowY,GNR*.76,4);
+        ctx2.fillStyle=`rgba(255,255,255,0.25)`;ctx2.fillRect(cx-GNR*.38,flowY,GNR*.76,2);
+      }
       if(n.holding){ctx2.fillStyle=`rgba(${r},${g},${b},.95)`;ctx2.fillRect(cx-GNR*.38,GHIT_Y()+20-hpx*(1-n.hp)-3,GNR*.76,4);}
     }
     const grd=ctx2.createRadialGradient(cx,ny,0,cx,ny,GNR+8);grd.addColorStop(0,`rgba(${r},${g},${b},.55)`);grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
     ctx2.fillStyle=grd;ctx2.beginPath();ctx2.arc(cx,ny,GNR+8,0,Math.PI*2);ctx2.fill();
     const nr=n.holding?GNR*(1+Math.sin(fn*.18)*.08):GNR;
-    ctx2.fillStyle=`rgba(${r},${g},${b},.92)`;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.fill();
-    ctx2.fillStyle='rgba(255,255,255,.15)';ctx2.beginPath();ctx2.arc(cx-GNR*.25,ny-GNR*.25,GNR*.38,0,Math.PI*2);ctx2.fill();
-    ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;ctx2.lineWidth=n.holding?2:1.5;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
+    drawNote(cx,ny,nr,r,g,b,n.lane);
   }
   drawParts2();
   if(effectsEnabled&&CS?.allowFire!==false){
@@ -4280,13 +4327,13 @@ function drawPlay2_nofire(){
     if(n.hit&&!n.holding)continue;
     const cx=n.lane*GLW()+GLW()/2,ny=n.cy;const[r,g,b]=rgbC(COLS[n.lane]);
     if(n.missed){ctx2.fillStyle=`rgba(${r},${g},${b},.08)`;ctx2.beginPath();ctx2.arc(cx,ny,GNR,0,Math.PI*2);ctx2.fill();continue;}
-    if(n.hMs>80){const hpx=n.hMs*GPPM();let bt,bh;if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);if(n.holding){ctx2.fillStyle=`rgba(${r},${g},${b},.95)`;ctx2.fillRect(cx-GNR*.38,GHIT_Y()+20-hpx*(1-n.hp)-3,GNR*.76,4);}}
+    if(_gfxNoteTrail&&n._trail){for(let i=0;i<n._trail.length;i++){const a=(i/n._trail.length)*0.25;ctx2.fillStyle=`rgba(${r},${g},${b},${a})`;ctx2.beginPath();ctx2.arc(cx,n._trail[i],GNR*(0.4+i/n._trail.length*0.6),0,Math.PI*2);ctx2.fill();}}
+    if(!n._trail)n._trail=[];n._trail.push(ny);if(n._trail.length>8)n._trail.shift();
+    if(n.hMs>80){const hpx=n.hMs*GPPM();let bt,bh;if(n.holding){bt=GHIT_Y()+20-hpx*(1-n.hp);bh=hpx*(1-n.hp);}else{bt=ny-hpx;bh=hpx;}ctx2.fillStyle=`rgba(${r},${g},${b},.22)`;ctx2.fillRect(cx-GNR*.38,bt,GNR*.76,bh);ctx2.strokeStyle=`rgba(${r},${g},${b},.5)`;ctx2.lineWidth=1;ctx2.strokeRect(cx-GNR*.38,bt,GNR*.76,bh);if(_gfxHoldEnergy&&n.holding){const flowY=bt+((fn*3)%(bh||1));ctx2.fillStyle=`rgba(${r},${g},${b},0.5)`;ctx2.fillRect(cx-GNR*.38,flowY,GNR*.76,4);}if(n.holding){ctx2.fillStyle=`rgba(${r},${g},${b},.95)`;ctx2.fillRect(cx-GNR*.38,GHIT_Y()+20-hpx*(1-n.hp)-3,GNR*.76,4);}}
     const grd=ctx2.createRadialGradient(cx,ny,0,cx,ny,GNR+8);grd.addColorStop(0,`rgba(${r},${g},${b},.55)`);grd.addColorStop(1,`rgba(${r},${g},${b},0)`);
     ctx2.fillStyle=grd;ctx2.beginPath();ctx2.arc(cx,ny,GNR+8,0,Math.PI*2);ctx2.fill();
     const nr=n.holding?GNR*(1+Math.sin(fn*.18)*.08):GNR;
-    ctx2.fillStyle=`rgba(${r},${g},${b},.92)`;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.fill();
-    ctx2.fillStyle='rgba(255,255,255,.15)';ctx2.beginPath();ctx2.arc(cx-GNR*.25,ny-GNR*.25,GNR*.38,0,Math.PI*2);ctx2.fill();
-    ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;ctx2.lineWidth=n.holding?2:1.5;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
+    drawNote(cx,ny,nr,r,g,b,n.lane);
   }
   drawParts2();drawFire();
   if(aud&&aud.duration){ctx2.fillStyle='#111124';ctx2.fillRect(0,GH()-5,GW(),5);ctx2.fillStyle='#00f0ff';ctx2.fillRect(0,GH()-5,GW()*(aud.currentTime/aud.duration),5);}
@@ -4301,6 +4348,12 @@ function drawRec2(){
 function drawTargets2(){
   for(let i=0;i<GLANES;i++){
     const cx=i*GLW()+GLW()/2,cy=GHIT_Y()+20,f=fl[i]/14,isH=laneHolding[i];const[r,g,b]=rgbC(COLS[i]);
+    // Hit zone idle pulse
+    if(_gfxHitPulse&&!isH&&f<=0){
+      const pulse=(Math.sin(fn*0.06+i*1.5)*0.5+0.5)*0.12+0.04;
+      ctx2.fillStyle=`rgba(${r},${g},${b},${pulse})`;
+      ctx2.beginPath();ctx2.arc(cx,cy,GNR+6,0,Math.PI*2);ctx2.fill();
+    }
     const rr=isH?GNR+6+Math.sin(fn*.18)*3:GNR+6;
     ctx2.strokeStyle=isH?`rgba(${r},${g},${b},.9)`:f>0?`rgba(${r},${g},${b},${.35+f*.65})`:`rgba(${r},${g},${b},.2)`;
     ctx2.lineWidth=isH?2.5:1.5;ctx2.beginPath();ctx2.arc(cx,cy,rr,0,Math.PI*2);ctx2.stroke();
@@ -5283,6 +5336,186 @@ function drawGhostNotes(){
 const _styleEl=document.createElement('style');
 _styleEl.textContent=`@keyframes levelup-pop{0%{transform:scale(0.5);opacity:0;}60%{transform:scale(1.1);opacity:1;}100%{transform:scale(1);opacity:1;}}`;
 document.head.appendChild(_styleEl);
+
+// ══════════════════════════════════════════════════════════
+// ── GRAPHICS OPTIONS ─────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+let _gfxNoteSkin    = false;
+let _gfxHitPulse    = false;
+let _gfxHoldEnergy  = false;
+let _gfxNoteTrail   = false;
+let _gfxWaveform    = false;
+let _gfxPerfectFlash= false;
+
+function _gfxLoad(){
+  const load=(key,def)=>{try{const v=localStorage.getItem(key);return v===null?def:v==='1';}catch(e){return def;}};
+  _gfxNoteSkin    =load('bl_gfx_skin',false);
+  _gfxHitPulse    =load('bl_gfx_hitpulse',false);
+  _gfxHoldEnergy  =load('bl_gfx_holdenergy',false);
+  _gfxNoteTrail   =load('bl_gfx_trail',false);
+  _gfxWaveform    =load('bl_gfx_waveform',false);
+  _gfxPerfectFlash=load('bl_gfx_perfectflash',false);
+  _gfxUpdateBtns();
+}
+function _gfxSave(key,val){try{localStorage.setItem(key,val?'1':'0');}catch(e){}}
+function _gfxBtn(id,val){
+  const btn=document.getElementById(id);if(!btn)return;
+  if(val){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+  else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+}
+function _gfxUpdateBtns(){
+  _gfxBtn('noteskin-btn',    _gfxNoteSkin);
+  _gfxBtn('hitpulse-btn',    _gfxHitPulse);
+  _gfxBtn('holdenergy-btn',  _gfxHoldEnergy);
+  _gfxBtn('notetrail-btn',   _gfxNoteTrail);
+  _gfxBtn('waveform-btn',    _gfxWaveform);
+  _gfxBtn('perfectflash-btn',_gfxPerfectFlash);
+}
+function toggleNoteSkin(){_gfxNoteSkin=!_gfxNoteSkin;_gfxSave('bl_gfx_skin',_gfxNoteSkin);_gfxBtn('noteskin-btn',_gfxNoteSkin);}
+function toggleHitPulse(){_gfxHitPulse=!_gfxHitPulse;_gfxSave('bl_gfx_hitpulse',_gfxHitPulse);_gfxBtn('hitpulse-btn',_gfxHitPulse);}
+function toggleHoldEnergy(){_gfxHoldEnergy=!_gfxHoldEnergy;_gfxSave('bl_gfx_holdenergy',_gfxHoldEnergy);_gfxBtn('holdenergy-btn',_gfxHoldEnergy);}
+function toggleNoteTrail(){_gfxNoteTrail=!_gfxNoteTrail;_gfxSave('bl_gfx_trail',_gfxNoteTrail);_gfxBtn('notetrail-btn',_gfxNoteTrail);}
+function toggleWaveform(){_gfxWaveform=!_gfxWaveform;_gfxSave('bl_gfx_waveform',_gfxWaveform);_gfxBtn('waveform-btn',_gfxWaveform);}
+function togglePerfectFlash(){_gfxPerfectFlash=!_gfxPerfectFlash;_gfxSave('bl_gfx_perfectflash',_gfxPerfectFlash);_gfxBtn('perfectflash-btn',_gfxPerfectFlash);}
+window.toggleNoteSkin=toggleNoteSkin;window.toggleHitPulse=toggleHitPulse;
+window.toggleHoldEnergy=toggleHoldEnergy;window.toggleNoteTrail=toggleNoteTrail;
+window.toggleWaveform=toggleWaveform;window.togglePerfectFlash=togglePerfectFlash;
+_gfxLoad();
+
+// ── drawNote — replaces direct ctx2 note drawing ──────────
+function drawNote(cx,ny,nr,r,g,b,lane){
+  if(_gfxNoteSkin){
+    // Striped glowing skin
+    // Outer glow ring
+    ctx2.save();
+    ctx2.shadowColor=`rgba(${r},${g},${b},0.9)`;
+    ctx2.shadowBlur=12;
+    ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;
+    ctx2.lineWidth=2.5;
+    ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
+    ctx2.shadowBlur=0;
+    // Filled base
+    const grd2=ctx2.createRadialGradient(cx-nr*0.3,ny-nr*0.3,0,cx,ny,nr);
+    grd2.addColorStop(0,`rgba(255,255,255,0.55)`);
+    grd2.addColorStop(0.4,`rgba(${r},${g},${b},0.9)`);
+    grd2.addColorStop(1,`rgba(${Math.max(0,r-40)},${Math.max(0,g-40)},${Math.max(0,b-40)},1)`);
+    ctx2.fillStyle=grd2;ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.fill();
+    // Stripe lines (3 diagonal)
+    ctx2.save();ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.clip();
+    ctx2.strokeStyle=`rgba(255,255,255,0.18)`;ctx2.lineWidth=3;
+    for(let s=-1;s<=1;s++){
+      ctx2.beginPath();
+      ctx2.moveTo(cx-nr+s*nr*0.7,ny-nr);
+      ctx2.lineTo(cx+nr+s*nr*0.7,ny+nr);
+      ctx2.stroke();
+    }
+    ctx2.restore();
+    ctx2.restore();
+  } else {
+    // Original style
+    ctx2.fillStyle=`rgba(${r},${g},${b},.92)`;
+    ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.fill();
+    ctx2.fillStyle='rgba(255,255,255,.15)';
+    ctx2.beginPath();ctx2.arc(cx-GNR*.25,ny-GNR*.25,GNR*.38,0,Math.PI*2);ctx2.fill();
+    ctx2.strokeStyle=`rgba(${r},${g},${b},1)`;
+    ctx2.lineWidth=1.5;
+    ctx2.beginPath();ctx2.arc(cx,ny,nr,0,Math.PI*2);ctx2.stroke();
+  }
+}
+
+// ── WAVEFORM VISUALIZER ────────────────────────────────────
+let _waveAnalyserData2=null;
+function drawWaveform(){
+  if(!_gfxWaveform||!analyser)return;
+  if(!_waveAnalyserData2||_waveAnalyserData2.length!==analyser.fftSize){
+    analyser.fftSize=256;
+    _waveAnalyserData2=new Uint8Array(analyser.fftSize);
+  }
+  analyser.getByteTimeDomainData(_waveAnalyserData2);
+  const W=GW(),HY=GHIT_Y()-4,H=GH();
+  const step=W/_waveAnalyserData2.length;
+  ctx2.save();
+  ctx2.globalAlpha=0.18;
+  ctx2.strokeStyle='#00f0ff';
+  ctx2.lineWidth=1.5;
+  ctx2.beginPath();
+  for(let i=0;i<_waveAnalyserData2.length;i++){
+    const v=(_waveAnalyserData2[i]/128-1)*60; // scale to ±60px
+    const x=i*step;
+    const y=H/2+v;
+    i===0?ctx2.moveTo(x,y):ctx2.lineTo(x,y);
+  }
+  ctx2.stroke();
+  ctx2.restore();
+}
+
+// ── PERFECT FLASH ─────────────────────────────────────────
+let _perfectFlashes=[];
+function triggerPerfectFlash(lane){
+  if(!_gfxPerfectFlash)return;
+  const[r,g,b]=rgbC(COLS[lane]);
+  const cx=lane*GLW()+GLW()/2;
+  _perfectFlashes.push({cx,cy:GHIT_Y()+20,r,g,b,a:1.0,size:GNR+6});
+}
+function drawPerfectFlashes(){
+  for(let p of _perfectFlashes){
+    // expanding burst ring
+    ctx2.save();
+    ctx2.shadowColor=`rgba(${p.r},${p.g},${p.b},${p.a})`;
+    ctx2.shadowBlur=20;
+    ctx2.strokeStyle=`rgba(${p.r},${p.g},${p.b},${p.a})`;
+    ctx2.lineWidth=3;
+    ctx2.beginPath();ctx2.arc(p.cx,p.cy,p.size,0,Math.PI*2);ctx2.stroke();
+    // Inner fill burst
+    ctx2.globalAlpha=p.a*0.3;
+    ctx2.fillStyle=`rgba(${p.r},${p.g},${p.b},1)`;
+    ctx2.beginPath();ctx2.arc(p.cx,p.cy,p.size*0.7,0,Math.PI*2);ctx2.fill();
+    ctx2.restore();
+    p.size+=4;p.a-=0.07;
+  }
+  _perfectFlashes=_perfectFlashes.filter(p=>p.a>0);
+}
+
+// Patch judgeShow to trigger perfect flash
+const _origJudgeShow=judgeShow;
+judgeShow=function(t,c){
+  _origJudgeShow(t,c);
+  if(t==='PERFECT'){
+    // Find the lane that was just hit (check fl array for freshest hit)
+    let bestLane=0,bestFl=0;
+    for(let i=0;i<4;i++){if(fl[i]>bestFl){bestFl=fl[i];bestLane=i;}}
+    triggerPerfectFlash(bestLane);
+  }
+};
+
+// Patch drawPlay2 to include waveform + perfect flashes
+const _origDrawPlay2b=drawPlay2;
+drawPlay2=function(){
+  _origDrawPlay2b();
+  drawWaveform();
+  drawPerfectFlashes();
+};
+
+// ── GRADE ANIMATION ────────────────────────────────────────
+// After endPlay2 shows the overlay, animate the grade letter in
+const _origEndPlay2b=endPlay2;
+endPlay2=async function(){
+  await _origEndPlay2b();
+  // Grade letter pop-in animation
+  const rg=document.querySelector('.rg');
+  if(rg){
+    rg.style.transform='scale(0.2)';rg.style.opacity='0';
+    rg.style.transition='transform .5s cubic-bezier(.17,.67,.35,1.4),opacity .3s';
+    setTimeout(()=>{rg.style.transform='scale(1)';rg.style.opacity='1';},80);
+    // S grade gets extra sparkle
+    if(rg.textContent==='S'){
+      setTimeout(()=>{
+        rg.style.textShadow='0 0 30px #00f0ff,0 0 60px #00f0ff';
+        setTimeout(()=>rg.style.textShadow='',1500);
+      },600);
+    }
+  }
+};
 </script>
 </body>
 </html>
