@@ -2524,7 +2524,7 @@ function loadShop(){
       </div>
       <div style="text-align:right;">
         <div style="font-size:11px;color:#00aaff;letter-spacing:2px;margin-bottom:6px;">💎 ${item.cost}</div>
-        <button class="xbtn sm ${canBuy?'cy':''}\" onclick="buyItem('${item.id}')" ${canBuy?'':'disabled'} style="font-size:9px;padding:5px 14px;">BUY</button>
+        <button class="xbtn sm" style="font-size:9px;padding:5px 14px;" onclick="buyItem('${item.id}')" ${canBuy?'':'disabled'}>BUY</button>
       </div>
     </div>`;
   }).join('');
