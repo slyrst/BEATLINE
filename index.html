@@ -4336,19 +4336,19 @@ function scaleGame(){
   const wrap=document.getElementById('game-wrap');
   if(!wrap)return;
   const vw=window.innerWidth,vh=window.innerHeight;
-  const gameH=620+60+2;
+  const gameH=682;
   const scaleW=vw/440,scaleH=vh/gameH;
   const scale=Math.min(scaleW,scaleH,1);
+  wrap.style.position='absolute';
+  wrap.style.transformOrigin='top left';
   if(scale<1){
     wrap.style.transform=`scale(${scale})`;
-    wrap.style.marginTop=`${(vh-(gameH*scale))/2}px`;
-    wrap.style.marginLeft=`${(vw-(440*scale))/2}px`;
-    wrap.style.marginRight='0';
+    wrap.style.left=`${(vw-(440*scale))/2}px`;
+    wrap.style.top=`${(vh-(gameH*scale))/2}px`;
   } else {
     wrap.style.transform='';
-    wrap.style.marginTop='';
-    wrap.style.marginLeft='';
-    wrap.style.marginRight='';
+    wrap.style.left=`${(vw-440)/2}px`;
+    wrap.style.top=`${(vh-gameH)/2}px`;
   }
 }
 window.addEventListener('resize',scaleGame);
