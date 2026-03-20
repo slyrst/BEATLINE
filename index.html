@@ -1292,7 +1292,26 @@ async function openProfile(uid, backPage){
     const initials=username.slice(0,2).toUpperCase();
 
     const bg=ud.profileBg||'';
-    const bgDiv=bg?`<div class="profile-header-bg" style="background-image:url('${esc(bg)}');"></div>`:'';
+    // Friend streak
+    let friendStreak=0;
+    if(!isSelf&&CU&&CUD){
+      const myFriends=CUD.friendStreaks||{};
+      friendStreak=myFriends[uid]||0;
+    }
+    const streakBadge=(!isSelf&&friendStreak>0)?`<div style="display:inline-flex;align-items:center;gap:4px;background:#ff88001a;border:1px solid #ff880044;padding:2px 8px;font-size:9px;color:#ffaa00;letter-spacing:2px;">🔥 ${friendStreak} DAY STREAK</div>`:'';
+
+    // Profile accent color
+    const accentColor=ud.accentColor||'#00f0ff';
+    const accentStyle=`--profile-accent:${accentColor};`;
+
+    // Profile banner color (gradient)
+    const bannerGradient=ud.bannerGradient||'';
+    const bgDiv=bg?`<div class="profile-header-bg" style="background-image:url('${esc(bg)}');"></div>`:
+      bannerGradient?`<div class="profile-header-bg" style="background:${bannerGradient};opacity:0.7;"></div>`:'';
+
+    // Favorite song
+    const favSong=ud.favSong;
+    const favSongHtml=favSong?`<div style="font-size:9px;color:#444;letter-spacing:2px;margin-top:4px;">🎵 FAVE: <span style="color:${accentColor};">${esc(favSong)}</span></div>`:'';
 
     // Role badge
     const roleMap={
@@ -1304,20 +1323,28 @@ async function openProfile(uid, backPage){
     const roleBadge=roleMap[ud.role||'']||'';
 
     const bgUploadBtn=isSelf?`
-      <div style="margin-top:6px;">
-        <input type="file" id="profile-bg-input" accept="image/*" style="display:none;" onchange="handleProfileBgUpload(event)">
-        <button class="xbtn sm" style="padding:2px 8px;font-size:8px;" onclick="document.getElementById('profile-bg-input').click()">🖼 PROFILE BG</button>
-        ${bg?`<button class="xbtn sm rd" style="padding:2px 8px;font-size:8px;margin-left:4px;" onclick="clearProfileBg()">✕ REMOVE BG</button>`:''}
-      </div>`:'';
+      <input type="file" id="profile-bg-input" accept="image/*" style="display:none;" onchange="handleProfileBgUpload(event)">`:''
+    ;
 
     const avatarHtml=avatar
-      ?`<img src="${esc(avatar)}" style="width:64px;height:64px;object-fit:cover;border:2px solid var(--cyan);display:block;">`
-      :`<div class="profile-avatar">${initials}</div>`;
+      ?`<img src="${esc(avatar)}" style="width:64px;height:64px;object-fit:cover;border:2px solid ${accentColor};display:block;">`
+      :`<div class="profile-avatar" style="border-color:${accentColor};">${initials}</div>`;
 
     const uploadBtn=isSelf?`
-      <div style="margin-top:6px;">
-        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
-        <button class="xbtn sm" style="padding:3px 10px;font-size:9px;" onclick="document.getElementById('avatar-file-input').click()">[ CHANGE AVATAR ]</button>
+      <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;">
+        <input type="file" id="avatar-file-input" accept="image/*,image/gif" style="display:none;" onchange="handleAvatarUpload(event)">
+        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="document.getElementById('avatar-file-input').click()">📷 AVATAR / GIF</button>
+        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="document.getElementById('profile-bg-input').click()">🖼 BG IMAGE</button>
+        ${bg?`<button class="xbtn sm rd" style="padding:3px 6px;font-size:8px;" onclick="clearProfileBg()">✕</button>`:''}
+      </div>
+      <div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;">
+        <label style="font-size:8px;color:#555;letter-spacing:2px;display:flex;align-items:center;gap:4px;cursor:pointer;">
+          🎨 ACCENT
+          <input type="color" value="${accentColor}" oninput="saveAccentColor(this.value)"
+            style="width:22px;height:18px;border:none;background:none;cursor:pointer;padding:0;">
+        </label>
+        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="pickBannerGradient()">🌈 BANNER</button>
+        <button class="xbtn sm" style="padding:3px 8px;font-size:8px;" onclick="editFavSong()">🎵 FAV</button>
       </div>`:'';
 
     const topScoreRows=topScores.length?topScores.map((sc,i)=>`
@@ -1394,19 +1421,21 @@ async function openProfile(uid, backPage){
       </div>`:`<div class="profile-bio ${ud.bio?'':'profile-bio-empty'}" style="margin-top:6px;">${ud.bio?esc(ud.bio):'no bio'}</div>`;
 
     inner.innerHTML=`
-      <div class="profile-header-card">
+      <div class="profile-header-card" style="${accentStyle}">
         ${bgDiv}
-        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;z-index:1;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;z-index:1;">
           ${avatarHtml}
           ${uploadBtn}
           ${bgUploadBtn}
         </div>
         <div class="profile-info" style="position:relative;z-index:1;">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <div class="profile-name">${esc(username)}${onlineDot(isOnline(ud))}</div>
+            <div class="profile-name" style="color:${accentColor};">${esc(username)}${onlineDot(isOnline(ud))}</div>
             ${roleBadge}
             ${isSelf?`<button class="xbtn sm" style="padding:2px 8px;font-size:8px;letter-spacing:2px;" onclick="startEditUsername()">✏ RENAME</button>`:''}
           </div>
+          ${streakBadge}
+          ${favSongHtml}
           ${bioSection}
           ${nowPlayingHtml}
           <div class="profile-stats-row" style="margin-top:10px;">
@@ -1435,7 +1464,14 @@ async function openProfile(uid, backPage){
 
 async function handleAvatarUpload(event){
   const file=event.target.files?.[0];if(!file||!CU)return;
-  // Resize to 128x128 via canvas, convert to base64
+  // GIFs: store as-is (preserve animation). Images: resize to 128x128
+  if(file.type==='image/gif'){
+    const reader=new FileReader();
+    reader.onload=async(ev)=>{
+      const b64=ev.target.result;
+      try{await dUpd(dDoc('users',CU.uid),{avatar:b64});if(CUD)CUD.avatar=b64;openProfile(CU.uid);toast('AVATAR UPDATED','#00ff88');}catch(e){toast('ERROR: '+e.message,'#ff4444');}
+    };reader.readAsDataURL(file);return;
+  }
   const reader=new FileReader();
   reader.onload=async(e)=>{
     const img=new Image();
@@ -1821,12 +1857,66 @@ document.addEventListener('visibilitychange',()=>{
     if(!_globalMsgUnsub){_globalMsgUnsub=null;startGlobalNotifListener();}
   }
 });
+// ── PROFILE CUSTOMIZATION ─────────────────────────────────────────────────────
+async function saveAccentColor(color){
+  if(!CU)return;
+  try{await dUpd(dDoc('users',CU.uid),{accentColor:color});if(CUD)CUD.accentColor=color;}catch(e){}
+}
+const _gradients=['linear-gradient(135deg,#ff0044,#0044ff)','linear-gradient(135deg,#00f0ff,#ff00aa)','linear-gradient(135deg,#ffaa00,#ff4400)','linear-gradient(135deg,#00ff88,#00aaff)','linear-gradient(135deg,#aa44ff,#ff44ff)','linear-gradient(135deg,#ff4444,#ffaa00)','linear-gradient(135deg,#000000,#1a1a30)','linear-gradient(135deg,#0a0a22,#001144)','radial-gradient(circle,#ff004444,#000000)','radial-gradient(circle,#00f0ff22,#000000)'];
+function pickBannerGradient(){
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:900;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML=`<div style="background:#0d0d1a;border:1px solid #252540;padding:20px;max-width:340px;width:90%;">
+    <div style="font-size:11px;letter-spacing:4px;margin-bottom:14px;">BANNER GRADIENT</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;">
+      ${_gradients.map(g=>`<div onclick="applyBannerGradient('${g}',this.closest('div[style*=fixed]'))" style="height:32px;border-radius:2px;cursor:pointer;background:${g};border:1px solid #333;"></div>`).join('')}
+      <div onclick="applyBannerGradient('',this.closest('div[style*=fixed]'))" style="height:32px;border:1px dashed #333;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;color:#555;">NONE</div>
+    </div>
+    <button class="xbtn sm" onclick="this.closest('div[style*=fixed]').remove()">[ CLOSE ]</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+async function applyBannerGradient(gradient,modal){
+  if(modal)modal.remove();
+  if(!CU)return;
+  try{await dUpd(dDoc('users',CU.uid),{bannerGradient:gradient});if(CUD)CUD.bannerGradient=gradient;openProfile(CU.uid);}catch(e){toast('ERROR','#ff4444');}
+}
+function editFavSong(){
+  const current=CUD?.favSong||'';
+  const val=prompt('Favorite song (shown on profile):',current);
+  if(val===null)return;
+  const trimmed=val.trim().slice(0,60);
+  if(!CU)return;
+  dUpd(dDoc('users',CU.uid),{favSong:trimmed}).then(()=>{if(CUD)CUD.favSong=trimmed;openProfile(CU.uid);}).catch(()=>{});
+}
+window.saveAccentColor=saveAccentColor;window.pickBannerGradient=pickBannerGradient;window.applyBannerGradient=applyBannerGradient;window.editFavSong=editFavSong;
+
+// ── FRIEND STREAK ─────────────────────────────────────────────────────────────
+async function updateFriendStreak(friendId){
+  if(!CU||!friendId||isGuest)return;
+  try{
+    const today=new Date().toDateString();
+    const snap=await dGet(dDoc('users',CU.uid));
+    const me=snap.data()||{};
+    const streaks=me.friendStreaks||{};
+    const lastDates=me.friendStreakDates||{};
+    const lastDate=lastDates[friendId];
+    const yesterday=new Date(Date.now()-86400000).toDateString();
+    if(lastDate===today)return;
+    const newStreak=lastDate===yesterday?(streaks[friendId]||0)+1:1;
+    await dUpd(dDoc('users',CU.uid),{[`friendStreaks.${friendId}`]:newStreak,[`friendStreakDates.${friendId}`]:today});
+    if(CUD){if(!CUD.friendStreaks)CUD.friendStreaks={};CUD.friendStreaks[friendId]=newStreak;}
+  }catch(e){}
+}
+
+// ── CHAT ──────────────────────────────────────────────────────────────────────
 let _chatFriendId=null,_chatFriendName='',_chatUnsub=null;
 
 function getChatId(uid1,uid2){return [uid1,uid2].sort().join('_');}
 
 function openChat(friendId,friendName){
   _chatFriendId=friendId;_chatFriendName=friendName;
+  updateFriendStreak(friendId);
   document.getElementById('chat-title').textContent='CHAT — '+friendName;
   document.getElementById('chat-messages').innerHTML='';
   const ov=document.getElementById('chat-overlay');
@@ -2853,8 +2943,8 @@ function applyVisualEffects(t){
       case 'fade_in':{const[r,g,b]=hexRgb(ev.color||'#000000');const dur=(ev.e-ev.s)*1000;const frac=Math.max(0,1-(t2-(ev.s*1000))/dur);ctx2.fillStyle=`rgba(${r},${g},${b},${frac*0.9})`;ctx2.fillRect(0,0,W,H);}break;
       case 'fade_out':{const[r,g,b]=hexRgb(ev.color||'#000000');const dur=(ev.e-ev.s)*1000;const frac=Math.min(1,(t2-(ev.s*1000))/dur);ctx2.fillStyle=`rgba(${r},${g},${b},${frac*0.9})`;ctx2.fillRect(0,0,W,H);}break;
       // MIRROR
-      case 'mirror_h':{ctx2.save();ctx2.scale(-1,1);ctx2.translate(-W,0);ctx2.drawImage(cv2,0,0);ctx2.restore();}break;
-      case 'mirror_v':{ctx2.save();ctx2.scale(1,-1);ctx2.translate(0,-H);ctx2.drawImage(cv2,0,0);ctx2.restore();}break;
+      case 'mirror_h':{ctx2.save();ctx2.scale(-1,1);ctx2.translate(-W,0);ctx2.drawImage(cv,0,0);ctx2.restore();}break;
+      case 'mirror_v':{ctx2.save();ctx2.scale(1,-1);ctx2.translate(0,-H);ctx2.drawImage(cv,0,0);ctx2.restore();}break;
     }
   }
   if(transforms.length)gc.style.transform=transforms.join(' ');
