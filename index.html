@@ -432,6 +432,14 @@ canvas#cv{display:block;width:440px;height:620px;}
       <span id="guest-name-display" style="color:#444;"></span><br>
       <button class="xbtn cy sm" onclick="showPage('auth-page')" style="margin-top:8px;">[ LOGIN / REGISTER ]</button>
     </div>
+    <div id="last-played-widget" style="display:none;width:260px;background:#0a0a1a;border:1px solid #00f0ff22;padding:10px 14px;margin-bottom:12px;cursor:pointer;" onclick="lastPlayedClick()">
+      <div style="font-size:8px;color:#00f0ff;letter-spacing:3px;margin-bottom:6px;">▶ CONTINUE</div>
+      <div id="lp-title" style="font-size:12px;letter-spacing:1px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px;"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px;">
+        <div id="lp-meta" style="font-size:9px;color:#444;letter-spacing:1px;"></div>
+        <div id="lp-score" style="font-size:13px;font-weight:bold;color:var(--cyan);letter-spacing:2px;"></div>
+      </div>
+    </div>
     <div class="menu-btns">
       <button class="xbtn cy lg" onclick="showPage('songs-page')">[ PLAY ]</button>
       <button class="xbtn" onclick="openLobbyMenu()" style="border-color:#ff44ff44;color:#ff44ff;">[ ⚔ MULTIPLAYER ]</button>
@@ -449,7 +457,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="menu-contact">
       <div class="menu-contact-title">WANT YOUR SONG IN THE GAME?</div>
       <div class="menu-contact-desc">SEND THE OWNER AN EMAIL WITH YOUR SONG REQUEST — OR CREATE YOUR OWN LEVEL ABOVE</div>
-      <a href="/cdn-cgi/l/email-protection#aeddcbd8c7c2ccdbc2dbdaddc9eec9c3cfc7c280cdc1c3"><span class="__cf_email__" data-cfemail="30435546595c52455c4544435770575d51595c1e535f5d">[email&#160;protected]</span></a>
+      <a href="mailto:sevilbulutsg@gmail.com">sevilbulutsg@gmail.com</a>
     </div>
   </div>
 </div>
@@ -560,13 +568,30 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div style="font-size:8px;color:#333;letter-spacing:2px;margin-bottom:4px;">NOTE DENSITY</div>
       <canvas id="cr-density-cv" width="596" height="36" style="width:100%;display:block;"></canvas>
     </div>
-    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+    <!-- NOTE EDITOR -->
+    <div id="cr-note-editor" style="display:none;background:#07071a;border:1px solid #00f0ff22;border-top:none;">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #0d0d1a;flex-wrap:wrap;">
+        <span style="font-size:9px;letter-spacing:3px;color:var(--cyan);">✏ NOTE EDITOR</span>
+        <span style="font-size:8px;color:#333;letter-spacing:1px;">CLICK = SELECT · ← → = SHIFT · DEL = DELETE</span>
+        <button id="cr-edit-mode-btn" onclick="crToggleEditMode()" style="margin-left:auto;background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:2px;">EDIT: OFF</button>
+      </div>
+      <canvas id="cr-edit-cv" height="180" style="display:block;width:100%;cursor:crosshair;touch-action:none;"></canvas>
+      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-top:1px solid #0d0d1a;flex-wrap:wrap;">
+        <span id="cr-edit-sel" style="font-size:9px;color:#555;letter-spacing:1px;flex:1;">no note selected</span>
+        <button onclick="crEditShift(-100)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">◀100ms</button>
+        <button onclick="crEditShift(-50)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">◀50ms</button>
+        <button onclick="crEditShift(50)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">50ms▶</button>
+        <button onclick="crEditShift(100)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">100ms▶</button>
+        <button onclick="crEditDelete()" style="background:none;border:1px solid #ff444433;color:#ff6666;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">🗑 DEL</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
       <button class="xbtn gn" id="cr-rec-btn" onclick="crStartRec()">[ ● RECORD ]</button>
       <button class="xbtn rd" id="cr-stop-btn" onclick="crStopClick()" style="display:none;">[ ■ STOP ]</button>
       <button class="xbtn am sm" id="cr-prev-btn" onclick="crPreview()" style="display:none;">[ ▶ PREVIEW ]</button>
       <button class="xbtn pk sm" id="cr-eff-btn" onclick="crOpenEffectEdit()" style="display:none;">[ ✦ EFFECTS ]</button>
-      <button class="xbtn sm" id="cr-copy-btn" onclick="crCopyNotes()" style="display:none;" title="Copy selected notes">COPY</button>
-      <button class="xbtn sm" id="cr-paste-btn" onclick="crPasteNotes()" style="display:none;" title="Paste notes">PASTE</button>
+      <button class="xbtn sm" id="cr-copy-btn" onclick="crCopyNotes()" style="display:none;">COPY</button>
+      <button class="xbtn sm" id="cr-paste-btn" onclick="crPasteNotes()" style="display:none;">PASTE</button>
       <button class="xbtn sm" id="cr-clr-btn" onclick="crClearNotes()" style="display:none;">CLEAR</button>
     </div>
     <div class="kr" style="margin-top:4px;">
@@ -6129,6 +6154,288 @@ initCreatePage=function(existing){
     crDrawDensity();
   }
 };
+
+// ══════════════════════════════════════════════════════════
+// ── NOTE EDITOR ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+let _crEditMode = false;
+let _crSelectedNote = null;   // index into crNotes
+let _crEditCv = null, _crEditCtx = null;
+let _crEditRaf = 0;
+const COLS_EDIT = ['#00f0ff','#ff00aa','#00ff88','#ffaa00'];
+
+function crToggleEditMode(){
+  _crEditMode = !_crEditMode;
+  const btn = document.getElementById('cr-edit-mode-btn');
+  if(btn){
+    btn.textContent = 'EDIT: ' + (_crEditMode ? 'ON' : 'OFF');
+    btn.style.background = _crEditMode ? '#00f0ff22' : '#00f0ff11';
+    btn.style.color = _crEditMode ? '#fff' : 'var(--cyan)';
+  }
+  if(_crEditMode){
+    crInitEditCv();
+    crDrawEditCanvas();
+  } else {
+    cancelAnimationFrame(_crEditRaf);
+    _crSelectedNote = null;
+    crUpdateEditSel();
+  }
+}
+window.crToggleEditMode = crToggleEditMode;
+
+function crInitEditCv(){
+  _crEditCv = document.getElementById('cr-edit-cv');
+  if(!_crEditCv) return;
+  _crEditCv.width = _crEditCv.offsetWidth || 596;
+  _crEditCtx = _crEditCv.getContext('2d');
+  // Touch/click handlers
+  _crEditCv.onclick = crEditCanvasClick;
+  _crEditCv.ontouchstart = e => { e.preventDefault(); crEditCanvasTouch(e); };
+}
+
+function crEditCanvasClick(e){
+  if(!_crEditMode || !crNotes.length) return;
+  const rect = _crEditCv.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  crSelectNoteAt(x, y);
+}
+function crEditCanvasTouch(e){
+  if(!_crEditMode || !crNotes.length) return;
+  const rect = _crEditCv.getBoundingClientRect();
+  const t = e.touches[0];
+  crSelectNoteAt(t.clientX - rect.left, t.clientY - rect.top);
+}
+
+function crSelectNoteAt(x, y){
+  if(!crNotes.length || !_crEditCv) return;
+  const W = _crEditCv.width, H = _crEditCv.height;
+  if(!W) return;
+  const maxT = Math.max(...crNotes.map(n => n.sMs + (n.hMs||0))) + 500;
+  const LW = W / 4;
+  let closest = null, bestDist = 999;
+  crNotes.forEach((n, i) => {
+    const nx = n.lane * LW + LW/2;
+    const ny = (n.sMs / maxT) * (H - 20) + 10;
+    const dist = Math.hypot(x - nx, y - ny);
+    if(dist < bestDist){ bestDist = dist; closest = i; }
+  });
+  if(bestDist < 30){
+    _crSelectedNote = (_crSelectedNote === closest) ? null : closest;
+  } else {
+    _crSelectedNote = null;
+  }
+  crUpdateEditSel();
+  crDrawEditCanvas();
+}
+
+function crUpdateEditSel(){
+  const el = document.getElementById('cr-edit-sel');
+  if(!el) return;
+  if(_crSelectedNote === null || !crNotes[_crSelectedNote]){
+    el.textContent = 'no note selected';
+    el.style.color = '#555';
+  } else {
+    const n = crNotes[_crSelectedNote];
+    const laneNames = ['D','F','J','K'];
+    el.textContent = `LANE ${laneNames[n.lane]}  @  ${fmtMs(n.sMs)}${n.hMs>80?' (HOLD '+Math.round(n.hMs)+'ms)':''}`;
+    el.style.color = COLS_EDIT[n.lane];
+  }
+}
+
+function crEditShift(ms){
+  if(_crSelectedNote === null || !crNotes[_crSelectedNote]) return;
+  crSaveState();
+  crNotes[_crSelectedNote].sMs = Math.max(0, crNotes[_crSelectedNote].sMs + ms);
+  crNotes.sort((a,b) => a.sMs - b.sMs);
+  // Re-find selected note after sort
+  const note = crNotes.find((_,i) => i === _crSelectedNote);
+  crUpdateEditSel();
+  crDrawEditCanvas();
+  crDrawDensity();
+  toast((ms>0?'+':'')+ms+'ms','#ffaa00');
+}
+window.crEditShift = crEditShift;
+
+function crEditDelete(){
+  if(_crSelectedNote === null || !crNotes[_crSelectedNote]) return;
+  crSaveState();
+  crNotes.splice(_crSelectedNote, 1);
+  _crSelectedNote = null;
+  crUpdateEditSel();
+  crDrawEditCanvas();
+  crDrawDensity();
+  crAfterEdit();
+  toast('NOTE DELETED','#ff4444');
+}
+window.crEditDelete = crEditDelete;
+
+// Keyboard: arrow keys shift, delete key removes
+document.addEventListener('keydown', e => {
+  if(document.querySelector('.page.active')?.id !== 'create-page') return;
+  if(!_crEditMode || _crSelectedNote === null) return;
+  if(e.key === 'ArrowLeft'){ e.preventDefault(); crEditShift(e.shiftKey ? -100 : -50); }
+  if(e.key === 'ArrowRight'){ e.preventDefault(); crEditShift(e.shiftKey ? 100 : 50); }
+  if(e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); crEditDelete(); }
+});
+
+function crDrawEditCanvas(){
+  if(!_crEditCv || !_crEditCtx) return;
+  const W = _crEditCv.width || 596;
+  const H = _crEditCv.height || 180;
+  const ctx = _crEditCtx;
+  const LW = W / 4;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#05050f';
+  ctx.fillRect(0,0,W,H);
+  // Lane dividers
+  for(let i=1;i<4;i++){
+    ctx.strokeStyle='rgba(255,255,255,0.05)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(i*LW,0);ctx.lineTo(i*LW,H);ctx.stroke();
+  }
+  if(!crNotes.length){ return; }
+  const maxT = Math.max(...crNotes.map(n => n.sMs + (n.hMs||0))) + 500;
+  const NR = 7;
+  crNotes.forEach((n, i) => {
+    const cx = n.lane * LW + LW/2;
+    const ny = (n.sMs / maxT) * (H - 20) + 10;
+    const isSelected = i === _crSelectedNote;
+    const [r,g,b] = [
+      [0,240,255],[255,0,170],[0,255,136],[255,170,0]
+    ][n.lane];
+    // Hold bar
+    if(n.hMs > 80){
+      const endY = ((n.sMs+n.hMs) / maxT) * (H-20) + 10;
+      ctx.fillStyle = `rgba(${r},${g},${b},0.2)`;
+      ctx.fillRect(cx-3, ny, 6, endY-ny);
+    }
+    // Note circle
+    if(isSelected){
+      ctx.shadowColor=`rgba(${r},${g},${b},1)`;
+      ctx.shadowBlur = 14;
+    }
+    ctx.fillStyle = `rgba(${r},${g},${b},${isSelected?1:0.7})`;
+    ctx.beginPath();ctx.arc(cx, ny, isSelected?NR+3:NR, 0, Math.PI*2);ctx.fill();
+    if(isSelected){
+      ctx.strokeStyle='#fff';ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(cx,ny,NR+3,0,Math.PI*2);ctx.stroke();
+      ctx.shadowBlur=0;
+    }
+  });
+  // Time axis labels
+  ctx.fillStyle='rgba(255,255,255,0.15)';
+  ctx.font='8px "Courier New"';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText(fmtMs(0),3,2);
+  ctx.textAlign='right';
+  ctx.fillText(fmtMs(maxT),W-3,2);
+  // Selected note time indicator
+  if(_crSelectedNote !== null && crNotes[_crSelectedNote]){
+    const n = crNotes[_crSelectedNote];
+    const ny = (n.sMs/maxT)*(H-20)+10;
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(0,ny);ctx.lineTo(W,ny);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,255,255,0.6)';ctx.font='9px "Courier New"';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(fmtMs(n.sMs), n.lane*LW+LW/2, ny-12);
+  }
+}
+
+// Show note editor after recording stops
+const _origCrAfterEdit2 = crAfterEdit;
+crAfterEdit = function(){
+  _origCrAfterEdit2();
+  const editor = document.getElementById('cr-note-editor');
+  if(editor) editor.style.display = crNotes.length ? 'block' : 'none';
+  if(_crEditMode && crNotes.length){ crDrawEditCanvas(); }
+};
+
+// ══════════════════════════════════════════════════════════
+// ── CONTINUE WHERE YOU LEFT OFF ──────────────────────────
+// ══════════════════════════════════════════════════════════
+const LP_KEY = 'bl_last_played';
+
+function saveLastPlayed(songId, songTitle, diff, score, grade){
+  try{
+    localStorage.setItem(LP_KEY, JSON.stringify({
+      songId, songTitle, diff, score, grade, ts: Date.now()
+    }));
+  }catch(e){}
+}
+
+function loadLastPlayed(){
+  try{
+    const d = localStorage.getItem(LP_KEY);
+    return d ? JSON.parse(d) : null;
+  }catch(e){ return null; }
+}
+
+function renderLastPlayedWidget(){
+  const lp = loadLastPlayed();
+  const widget = document.getElementById('last-played-widget');
+  if(!widget) return;
+  if(!lp || !lp.songId){
+    widget.style.display = 'none';
+    return;
+  }
+  // Only show if played within 30 days
+  if(Date.now() - lp.ts > 30*24*3600*1000){ widget.style.display='none'; return; }
+  widget.style.display = 'block';
+  const titleEl = document.getElementById('lp-title');
+  const metaEl  = document.getElementById('lp-meta');
+  const scoreEl = document.getElementById('lp-score');
+  if(titleEl) titleEl.textContent = lp.songTitle || '?';
+  if(metaEl){
+    const diffCol = {easy:'#00ff88',medium:'#ffaa00',hard:'#ff4444',expert:'#ff00aa'}[lp.diff]||'#aaa';
+    metaEl.innerHTML = `<span style="color:${diffCol}">${(lp.diff||'').toUpperCase()}</span>`;
+  }
+  if(scoreEl){
+    const gradeCol = {S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[lp.grade]||'#aaa';
+    scoreEl.innerHTML = `<span style="color:${gradeCol};margin-right:8px;">${lp.grade||''}</span><span>${(lp.score||0).toLocaleString()}</span>`;
+  }
+}
+
+async function lastPlayedClick(){
+  const lp = loadLastPlayed();
+  if(!lp || !lp.songId) return;
+  setLoad('LOADING...');
+  try{
+    const [s, efx] = await Promise.all([
+      db.collection('songs').doc(lp.songId).get({source:'server'}).catch(()=>dGet(dDoc('songs',lp.songId))),
+      db.collection('songeffects').doc(lp.songId).get({source:'server'}).catch(()=>db.collection('songeffects').doc(lp.songId).get())
+    ]);
+    if(!s.exists){ hideLoad(); toast('SONG NOT FOUND','#ff4444'); return; }
+    CS = {id:lp.songId, ...s.data()};
+    if(efx.exists){const e=efx.data();CS.effectEvents=e.effectEvents||[];CS.fireRanges=e.fireRanges||[];CS.speedEffect=e.speedEffect||1;}
+    hideLoad();
+    showPage('game-page');
+    setTimeout(()=>initPlay(), 100);
+    dUpd(dDoc('songs',lp.songId),{plays:(CS.plays||0)+1}).catch(()=>{});
+  }catch(e){ hideLoad(); toast('ERROR: '+e.message,'#ff4444'); }
+}
+window.lastPlayedClick = lastPlayedClick;
+
+// Hook into endPlay2 to save last played
+const _origEndPlay2c = endPlay2;
+endPlay2 = async function(){
+  await _origEndPlay2c();
+  if(CS && CS.id && !CS.preview && !autoMode && !_spectatingUid){
+    const tot = gstats.p+gstats.g+gstats.ok+gstats.m;
+    const ac = tot ? Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100) : 0;
+    const gr = ac>=95?'S':ac>=85?'A':ac>=70?'B':ac>=50?'C':'D';
+    saveLastPlayed(CS.id, CS.title||'', CS.difficulty||'', score, gr);
+  }
+};
+
+// Show widget when menu page opens
+const _origShowPage3 = showPage;
+showPage = function(id, skip){
+  _origShowPage3(id, skip);
+  if(id === 'menu-page') renderLastPlayedWidget();
+};
+
+// Also render on initial load after auth
+setTimeout(renderLastPlayedWidget, 1000);
 </script>
 </body>
 </html>
