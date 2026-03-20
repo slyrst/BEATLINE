@@ -2748,6 +2748,7 @@ window.togglePause=togglePause;window.resumeWithCountdown=resumeWithCountdown;
 function stopAll(){
   _paused=false;
   if(_countdownRaf)cancelAnimationFrame(_countdownRaf);_countdownRaf=null;
+  clearTimeout(window._deathTimer);
   const pov=document.getElementById('pause-overlay');if(pov)pov.remove();
   running=false;cancelAnimationFrame(raf2);if(aud){aud.pause();aud=null;}
   laneHolding=[false,false,false,false];holdPulses=[];clearInterval(window._rb2);
@@ -3138,7 +3139,9 @@ function initPlay(){
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
   score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
-  hp=HP_MAX;_lost=false;_consecutiveMiss=0;_lastRegenStreak=0;updateHpHud();
+  hp=HP_MAX;_lost=false;_consecutiveMiss=0;_lastRegenStreak=0;
+  clearTimeout(window._deathTimer);
+  updateHpHud();
   document.getElementById('streak-popup').style.opacity='0';
   _paused=false;
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=_spectatingUid?'WATCH':autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
@@ -3182,8 +3185,7 @@ function pUpdate2(){
         _consecutiveMiss++;_lastRegenStreak=0;
         if(_consecutiveMiss>=2){hp=Math.max(0,hp+HP_MISS);updateHpHud();}
         if(hp<=0&&!_lost){_lost=true;
-          // Wait 1.5s so player sees the last miss, then end
-          setTimeout(()=>{if(_lost&&running){running=false;aud&&aud.pause();setTimeout(endPlay2,200);}},1500);
+          window._deathTimer=setTimeout(()=>{if(_lost&&running){running=false;if(aud)aud.pause();setTimeout(endPlay2,200);}},1500);
         }
       }
     }
