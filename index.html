@@ -668,9 +668,9 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div id="jt"></div>
       <div id="snotice"></div>
       <!-- EFFECT EDIT / WATCH TIMELINE -->
-      <div id="watch-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:25;background:rgba(5,5,18,0.97);border-top:1px solid #252540;padding:10px 12px 8px;max-height:45%;overflow-y:auto;">
-        <!-- timeline -->
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div id="watch-bar" style="display:none;position:absolute;bottom:0;left:0;right:0;z-index:25;background:rgba(5,5,18,0.97);border-top:1px solid #252540;">
+        <!-- timeline row -->
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 12px 4px;">
           <span id="watch-cur" style="font-size:10px;color:#aaa;letter-spacing:1px;min-width:36px;">0:00</span>
           <div style="flex:1;position:relative;">
             <div id="watch-track" style="height:8px;background:#1a1a30;cursor:pointer;border-radius:4px;position:relative;overflow:visible;">
@@ -679,46 +679,27 @@ canvas#cv{display:block;width:440px;height:620px;}
             </div>
           </div>
           <span id="watch-dur" style="font-size:10px;color:#555;letter-spacing:1px;min-width:36px;text-align:right;">0:00</span>
+          <!-- PAUSE button in effect editor -->
+          <button id="watch-pause-btn" onclick="toggleWatchPause()" style="background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:11px;padding:3px 10px;cursor:pointer;letter-spacing:2px;">⏸</button>
+          <button onclick="saveEffects()" style="background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:4px 12px;cursor:pointer;font-weight:bold;">SAVE</button>
+          <button onclick="exitWatch()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 9px;cursor:pointer;">✕</button>
         </div>
-        <!-- fire ranges list -->
-        <div id="fire-range-list" style="margin-bottom:8px;min-height:16px;"></div>
-        <!-- controls -->
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
-          <span style="font-size:9px;color:#444;letter-spacing:2px;">EFFECT EDIT MODE</span>
-          <div style="flex:1;"></div>
-          <button onclick="saveEffects()" style="background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:5px 14px;cursor:pointer;font-weight:bold;">[ SAVE ]</button>
-          <button onclick="loadPreset()" style="background:#ff00aa11;border:1px solid #ff00aa44;color:var(--pink);font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;padding:5px 14px;cursor:pointer;">[ PRESET ]</button>
-          <button onclick="exitWatch()" style="background:none;border:1px solid #ff444466;color:#ff8888;font-family:'Courier New',monospace;font-size:9px;letter-spacing:2px;padding:4px 10px;cursor:pointer;">✕ EXIT</button>
+        <!-- main area: event list left, library right -->
+        <div style="display:flex;gap:0;max-height:200px;">
+          <!-- left: active effects + pending -->
+          <div style="flex:1;padding:6px 12px;overflow-y:auto;border-right:1px solid #1a1a30;">
+            <div id="effect-pending-label" style="display:none;font-size:9px;letter-spacing:2px;margin-bottom:6px;padding:3px 8px;border:1px solid;"></div>
+            <!-- speed/color/size params shown when pending -->
+            <div id="eff-params" style="display:none;flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center;"></div>
+            <div id="fire-range-list" style="min-height:8px;"></div>
+            <div id="effect-event-list" style="font-size:9px;"></div>
+          </div>
+          <!-- right: effect library -->
+          <div style="width:200px;overflow-y:auto;padding:6px 8px;" id="eff-library">
+            <div style="font-size:8px;color:#333;letter-spacing:3px;margin-bottom:6px;">EFFECT LIBRARY</div>
+            <div id="eff-lib-list" style="display:flex;flex-direction:column;gap:3px;"></div>
+          </div>
         </div>
-        <!-- effect type picker -->
-        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;">
-          <span style="font-size:9px;color:#333;letter-spacing:2px;align-self:center;">ADD:</span>
-          <button class="eff-btn" data-type="fire"    onclick="startEffectRange('fire')"    style="--ec:#ffaa00;">🔥 FIRE</button>
-          <button class="eff-btn" data-type="speed"   onclick="startEffectRange('speed')"   style="--ec:#00f0ff;">⚡ SPEED</button>
-          <button class="eff-btn" data-type="dark"    onclick="startEffectRange('dark')"    style="--ec:#aaaaaa;">🌑 DARK</button>
-          <button class="eff-btn" data-type="flash"   onclick="startEffectRange('flash')"   style="--ec:#ffffff;">💡 FLASH</button>
-          <button class="eff-btn" data-type="shake"   onclick="startEffectRange('shake')"   style="--ec:#ff4444;">💥 SHAKE</button>
-          <button class="eff-btn" data-type="red"     onclick="startEffectRange('red')"     style="--ec:#ff4444;">🔴 RED</button>
-          <button class="eff-btn" data-type="blue"    onclick="startEffectRange('blue')"    style="--ec:#4488ff;">🔵 BLUE</button>
-          <button class="eff-btn" data-type="invert"  onclick="startEffectRange('invert')"  style="--ec:#ff00aa;">🌀 INVERT</button>
-          <button class="eff-btn" data-type="rainbow" onclick="startEffectRange('rainbow')" style="--ec:#ff44ff;">🌈 RAINBOW</button>
-          <button onclick="loadMyPreset()" style="background:#ff00aa11;border:1px solid #ff00aa44;color:#ff00aa;font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:4px 9px;cursor:pointer;">⭐ MY PRESET</button>
-        </div>
-        <!-- speed value picker (shown when speed mode) -->
-        <div id="speed-val-row" style="display:none;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:9px;color:var(--cyan);letter-spacing:2px;">SPEED VALUE:</span>
-          <select id="effect-speed-val" style="background:#0d0d1a;border:1px solid #252540;color:#fff;font-family:'Courier New',monospace;font-size:10px;padding:3px 8px;">
-            <option value="0.5">0.5× (HALF)</option>
-            <option value="0.75">0.75× (SLOW)</option>
-            <option value="1.25">1.25× (FAST)</option>
-            <option value="1.5">1.5× (FASTER)</option>
-            <option value="2">2× (DOUBLE)</option>
-          </select>
-        </div>
-        <!-- pending label -->
-        <div id="effect-pending-label" style="display:none;font-size:10px;letter-spacing:2px;margin-bottom:6px;padding:4px 10px;border:1px solid;"></div>
-        <!-- event list -->
-        <div id="effect-event-list" style="max-height:120px;overflow-y:auto;"></div>
       </div>
       <button id="stopbtn" onclick="endRecord()">[ STOP &amp; SAVE ]</button>
       <button id="pausebtn" onclick="togglePause()" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:9px;letter-spacing:3px;padding:4px 12px;cursor:pointer;z-index:16;">⏸</button>
@@ -2764,35 +2745,183 @@ function hideOv(){document.getElementById('ov').style.display='none';}
 let _shakeX=0,_shakeY=0,_rainbowHue=0;
 function applyVisualEffects(t){
   const evts=watchMode?watchEffectEvents:(CS?.effectEvents||[]);
-  const active=evts.filter(e=>t>=e.s&&t<=e.e&&e.type!=='fire'&&e.type!=='speed');
+  const active=evts.filter(e=>t>=e.s&&t<=e.e&&e.type!=='fire'&&e.type!=='speed'&&e.type!=='slow_mo'&&e.type!=='fast_mo');
   const gc=document.getElementById('gc');
   if(!gc)return;
-  // reset
   gc.style.filter='';gc.style.transform='';
   ctx2.globalCompositeOperation='source-over';
   const W=GW(),H=GH();
+  let filters=[];let transforms=[];
+
   for(const ev of active){
+    const t2=Date.now();
+    const a=ev.amount||0.22;
+    const spd=ev.speed;
+    const speedHz={'slow':0.5,'medium':1.5,'fast':4,'strobe':12}[spd]||2;
+    const pulse=Math.sin(t2/1000*speedHz*Math.PI*2)*0.5+0.5;
+
     switch(ev.type){
-      case 'dark':
-        ctx2.fillStyle='rgba(0,0,0,0.5)';ctx2.fillRect(0,0,W,H);break;
-      case 'flash':
-        {const t2=(Date.now()/100)%2;if(t2<1){ctx2.fillStyle='rgba(255,255,255,0.18)';ctx2.fillRect(0,0,W,H);}}break;
-      case 'shake':
-        _shakeX=(Math.random()-0.5)*8;_shakeY=(Math.random()-0.5)*8;
-        gc.style.transform=`translate(${_shakeX}px,${_shakeY}px)`;break;
-      case 'red':
-        ctx2.fillStyle='rgba(255,0,0,0.22)';ctx2.fillRect(0,0,W,H);break;
-      case 'blue':
-        ctx2.fillStyle='rgba(0,80,255,0.22)';ctx2.fillRect(0,0,W,H);break;
-      case 'invert':
-        gc.style.filter='invert(1)';break;
-      case 'rainbow':
-        _rainbowHue=(_rainbowHue+2)%360;
-        gc.style.filter=`hue-rotate(${_rainbowHue}deg) saturate(1.4)`;break;
+      // COLOR OVERLAYS
+      case 'dark': ctx2.fillStyle=`rgba(0,0,0,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'red':  ctx2.fillStyle=`rgba(255,0,0,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'blue': ctx2.fillStyle=`rgba(0,80,255,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'green':ctx2.fillStyle=`rgba(0,255,100,${ev.amount||0.2})`;ctx2.fillRect(0,0,W,H);break;
+      case 'purple':ctx2.fillStyle=`rgba(140,0,255,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'pink': ctx2.fillStyle=`rgba(255,0,160,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'yellow':ctx2.fillStyle=`rgba(255,230,0,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'orange':ctx2.fillStyle=`rgba(255,100,0,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'teal': ctx2.fillStyle=`rgba(0,255,200,${ev.amount||0.2})`;ctx2.fillRect(0,0,W,H);break;
+      case 'white':ctx2.fillStyle=`rgba(255,255,255,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'black':ctx2.fillStyle=`rgba(0,0,0,${a})`;ctx2.fillRect(0,0,W,H);break;
+      case 'colorpick':{const[r,g,b]=hexRgb(ev.color||'#ff0088');ctx2.fillStyle=`rgba(${r},${g},${b},${a})`;ctx2.fillRect(0,0,W,H);}break;
+      // FILTERS
+      case 'flash': case 'flash_white':{if(pulse>0.5){ctx2.fillStyle=`rgba(255,255,255,0.18)`;ctx2.fillRect(0,0,W,H);}}break;
+      case 'flash_red':{if(pulse>0.5){ctx2.fillStyle=`rgba(255,0,0,0.28)`;ctx2.fillRect(0,0,W,H);}}break;
+      case 'flash_blue':{if(pulse>0.5){ctx2.fillStyle=`rgba(0,80,255,0.28)`;ctx2.fillRect(0,0,W,H);}}break;
+      case 'flash_color':{if(pulse>0.5){const[r,g,b]=hexRgb(ev.color||'#ff00aa');ctx2.fillStyle=`rgba(${r},${g},${b},0.3)`;ctx2.fillRect(0,0,W,H);}}break;
+      case 'strobe':{const hz=ev.speed||8;if(Math.floor(t2/(1000/hz))%2===0){ctx2.fillStyle='rgba(255,255,255,0.7)';ctx2.fillRect(0,0,W,H);}}break;
+      case 'invert': filters.push('invert(1)');break;
+      case 'rainbow': _rainbowHue=(_rainbowHue+(ev.speed||2)*0.5)%360;filters.push(`hue-rotate(${_rainbowHue}deg) saturate(1.4)`);break;
+      case 'saturate':filters.push(`saturate(${ev.amount||2.5})`);break;
+      case 'desaturate':filters.push(`saturate(${1-(ev.amount||0.8)})`);break;
+      case 'sepia':   filters.push(`sepia(${ev.amount||0.8})`);break;
+      case 'blur':    filters.push(`blur(${ev.amount||4}px)`);break;
+      case 'contrast':filters.push(`contrast(${ev.amount||2})`);break;
+      case 'nightvision':{filters.push('saturate(0) brightness(1.2)');ctx2.fillStyle='rgba(0,255,50,0.12)';ctx2.fillRect(0,0,W,H);}break;
+      case 'thermal':{filters.push('hue-rotate(0deg)');ctx2.fillStyle='rgba(255,60,0,0.18)';ctx2.fillRect(0,0,W,H);}break;
+      case 'glitch':{const ints={light:3,medium:8,heavy:16}[ev.intensity||'medium']||8;
+        const x=(Math.random()-0.5)*ints;const y=(Math.random()-0.5)*ints;
+        transforms.push(`translate(${x}px,${y}px)`);
+        ctx2.fillStyle=`rgba(255,0,100,0.06)`;ctx2.fillRect(Math.random()*W,0,W*0.3,H*0.05);
+        ctx2.fillStyle=`rgba(0,200,255,0.06)`;ctx2.fillRect(Math.random()*W,Math.random()*H,W*0.4,3);}break;
+      case 'vhs':{ctx2.fillStyle=`rgba(255,50,50,${(ev.amount||0.3)*0.5})`;ctx2.fillRect(0,0,W,H);
+        for(let i=0;i<H;i+=4){ctx2.fillStyle=`rgba(0,0,0,0.05)`;ctx2.fillRect(0,i,W,2);}}break;
+      case 'scanlines':for(let i=0;i<H;i+=3){ctx2.fillStyle=`rgba(0,0,0,${ev.amount||0.25})`;ctx2.fillRect(0,i,W,1);}break;
+      // MOTION
+      case 'shake': {_shakeX=(Math.random()-0.5)*(ev.intensity||8);_shakeY=(Math.random()-0.5)*(ev.intensity||8);transforms.push(`translate(${_shakeX}px,${_shakeY}px)`);}break;
+      case 'zoom':{const sc=1+(Math.sin(t2/1000*(ev.speed||2)*Math.PI)*0.5+0.5)*((ev.amount||1.08)-1);transforms.push(`scale(${sc})`);}break;
+      case 'spin':{const deg=(t2/16*(ev.speed||2))%360;transforms.push(`rotate(${deg}deg)`);}break;
+      case 'wave':{const dx=Math.sin(t2/1000*(ev.speed||2)*Math.PI)*(ev.amount||6);transforms.push(`translateX(${dx}px)`);}break;
+      case 'bounce':{const dy=Math.abs(Math.sin(t2/400))*(ev.amount||12);transforms.push(`translateY(${-dy}px)`);}break;
+      case 'slide_left':transforms.push(`translateX(${-(ev.amount||20)}px)`);break;
+      case 'slide_right':transforms.push(`translateX(${ev.amount||20}px)`);break;
+      case 'slide_up':transforms.push(`translateY(${-(ev.amount||20)}px)`);break;
+      case 'slide_down':transforms.push(`translateY(${ev.amount||20}px)`);break;
+      case 'tilt':transforms.push(`rotate(${ev.deg||8}deg)`);break;
+      case 'jitter':{const jx=(Math.random()-0.5)*(ev.amount||3);const jy=(Math.random()-0.5)*(ev.amount||3);transforms.push(`translate(${jx}px,${jy}px)`);}break;
+      // VIGNETTE
+      case 'vignette':{const[r,g,b]=hexRgb(ev.color||'#000000');const grd=ctx2.createRadialGradient(W/2,H/2,H*(1-(ev.amount||0.5)),W/2,H/2,H);grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(1,`rgba(${r},${g},${b},0.9)`);ctx2.fillStyle=grd;ctx2.fillRect(0,0,W,H);}break;
+      case 'vignette_color':{const[r,g,b]=hexRgb(ev.color||'#ff0044');const grd=ctx2.createRadialGradient(W/2,H/2,H*(1-(ev.amount||0.5)),W/2,H/2,H);grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(1,`rgba(${r},${g},${b},0.7)`);ctx2.fillStyle=grd;ctx2.fillRect(0,0,W,H);}break;
+      case 'spotlight':{const grd=ctx2.createRadialGradient(W/2,H/2,0,W/2,H/2,H*(ev.size||0.4));grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(1,'rgba(0,0,0,0.92)');ctx2.fillStyle=grd;ctx2.fillRect(0,0,W,H);}break;
+      // TEXT
+      case 'text':case 'neon_text':{
+        const s=ev.size||32;ctx2.font=`bold ${s}px 'Courier New'`;ctx2.textAlign='center';ctx2.textBaseline='middle';
+        const[r,g,b]=hexRgb(ev.color||'#ffffff');
+        if(ev.type==='neon_text'){ctx2.shadowColor=ev.color||'#00f0ff';ctx2.shadowBlur=20;}
+        ctx2.fillStyle=`rgba(${r},${g},${b},0.9)`;ctx2.fillText(ev.text||'BEATLINE',W/2,H/2);
+        ctx2.shadowBlur=0;}break;
+      case 'warning':{if(pulse>0.5){ctx2.fillStyle='rgba(255,0,0,0.3)';ctx2.fillRect(0,0,W,H);}
+        ctx2.font=`bold 24px 'Courier New'`;ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillStyle='#ff4444';ctx2.fillText(ev.text||'WARNING',W/2,30);}break;
+      // IMAGE
+      case 'image':case 'image_bg':{
+        if(ev.img&&!ev._imgEl){ev._imgEl=new Image();ev._imgEl.src=ev.img;}
+        if(ev._imgEl&&ev._imgEl.complete&&ev._imgEl.naturalWidth>0){
+          ctx2.globalAlpha=ev.opacity||0.9;
+          if(ev.type==='image_bg'){ctx2.drawImage(ev._imgEl,0,0,W,H);}
+          else{const sz=Math.min(W,H)*(ev.size||50)/100;const px=W*(ev.x||50)/100-sz/2;const py=H*(ev.y||50)/100-sz/2;ctx2.drawImage(ev._imgEl,px,py,sz,sz);}
+          ctx2.globalAlpha=1;
+        }}break;
+      // LANES
+      case 'lane_pulse':{const[r,g,b]=hexRgb(ev.color||'#00f0ff');for(let i=0;i<4;i++){const cx=i*GLW()+GLW()/2;const p=Math.sin(t2/400+i)*0.5+0.5;ctx2.fillStyle=`rgba(${r},${g},${b},${p*0.15})`;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
+      case 'lane_glow':{const[r,g,b]=hexRgb(ev.color||'#ffaa00');for(let i=0;i<4;i++){const cx=i*GLW()+GLW()/2;const grd=ctx2.createLinearGradient(i*GLW(),0,(i+1)*GLW(),0);grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(0.5,`rgba(${r},${g},${b},0.12)`);grd.addColorStop(1,'rgba(0,0,0,0)');ctx2.fillStyle=grd;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
+      case 'lane_rainbow':{for(let i=0;i<4;i++){const h=(t2/20+i*90)%360;ctx2.fillStyle=`hsla(${h},100%,60%,0.1)`;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
+      // BORDER
+      case 'border':case 'border_flash':{
+        if(ev.type==='border_flash'&&pulse<0.5)break;
+        const[r,g,b]=hexRgb(ev.color||'#00f0ff');const bw=ev.size||6;
+        ctx2.strokeStyle=`rgba(${r},${g},${b},0.8)`;ctx2.lineWidth=bw;ctx2.strokeRect(bw/2,bw/2,W-bw,H-bw);}break;
+      // BG
+      case 'bg_gradient':{const[r1,g1,b1]=hexRgb(ev.color1||'#ff0044');const[r2,g2,b2]=hexRgb(ev.color2||'#0044ff');const grd=ctx2.createLinearGradient(0,0,W,H);grd.addColorStop(0,`rgba(${r1},${g1},${b1},${ev.opacity||0.25})`);grd.addColorStop(1,`rgba(${r2},${g2},${b2},${ev.opacity||0.25})`);ctx2.fillStyle=grd;ctx2.fillRect(0,0,W,H);}break;
+      case 'bg_pulse':{const[r,g,b]=hexRgb(ev.color||'#ff0088');const p2=Math.sin(t2/500)*0.5+0.5;ctx2.fillStyle=`rgba(${r},${g},${b},${p2*(ev.opacity||0.2)})`;ctx2.fillRect(0,0,W,H);}break;
+      // PARTICLES
+      case 'sparkle':case 'snow':case 'confetti':case 'stars':case 'bubbles':
+      case 'meteors':case 'petals':case 'smoke':case 'embers':case 'lightning':
+        applyParticleEffect(ev,W,H,t2);break;
+      // WIPE
+      case 'wipe_left':{const[r,g,b]=hexRgb(ev.color||'#000000');const frac=Math.min(1,(t2-(ev.s*1000||0))/500);ctx2.fillStyle=`rgba(${r},${g},${b},0.85)`;ctx2.fillRect(0,0,W*frac,H);}break;
+      case 'wipe_right':{const[r,g,b]=hexRgb(ev.color||'#000000');const frac=Math.min(1,(t2-(ev.s*1000||0))/500);ctx2.fillStyle=`rgba(${r},${g},${b},0.85)`;ctx2.fillRect(W*(1-frac),0,W,H);}break;
+      case 'fade_in':{const[r,g,b]=hexRgb(ev.color||'#000000');const dur=(ev.e-ev.s)*1000;const frac=Math.max(0,1-(t2-(ev.s*1000))/dur);ctx2.fillStyle=`rgba(${r},${g},${b},${frac*0.9})`;ctx2.fillRect(0,0,W,H);}break;
+      case 'fade_out':{const[r,g,b]=hexRgb(ev.color||'#000000');const dur=(ev.e-ev.s)*1000;const frac=Math.min(1,(t2-(ev.s*1000))/dur);ctx2.fillStyle=`rgba(${r},${g},${b},${frac*0.9})`;ctx2.fillRect(0,0,W,H);}break;
+      // MIRROR
+      case 'mirror_h':{ctx2.save();ctx2.scale(-1,1);ctx2.translate(-W,0);ctx2.drawImage(cv2,0,0);ctx2.restore();}break;
+      case 'mirror_v':{ctx2.save();ctx2.scale(1,-1);ctx2.translate(0,-H);ctx2.drawImage(cv2,0,0);ctx2.restore();}break;
     }
   }
-  if(!active.some(e=>e.type==='shake'))gc.style.transform='';
-  if(!active.some(e=>e.type==='invert'||e.type==='rainbow'))gc.style.filter='';
+  if(transforms.length)gc.style.transform=transforms.join(' ');
+  if(filters.length)gc.style.filter=filters.join(' ');
+  if(!active.some(e=>['shake','zoom','spin','wave','bounce','slide_left','slide_right','slide_up','slide_down','tilt','jitter','glitch','mirror_h','mirror_v'].includes(e.type)))gc.style.transform='';
+  if(!active.some(e=>['invert','rainbow','saturate','desaturate','sepia','blur','contrast','nightvision','thermal'].includes(e.type)))gc.style.filter='';
+}
+
+// Particle effect manager
+const _effParticles={};
+function applyParticleEffect(ev,W,H,t2){
+  const key=ev.s+'_'+ev.type;
+  if(!_effParticles[key])_effParticles[key]=[];
+  const pts=_effParticles[key];
+  const count=ev.count||8;
+  // Spawn
+  if(pts.length<count*3){
+    const[r,g,b]=hexRgb(ev.color||'#ffffff');
+    for(let i=pts.length;i<count;i++){
+      switch(ev.type){
+        case 'sparkle':case 'stars':pts.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-0.5)*1.5,vy:-1-Math.random()*2,r:2+Math.random()*3,a:1,col:`rgba(${r},${g},${b},1)`});break;
+        case 'snow':pts.push({x:Math.random()*W,y:-10,vx:(Math.random()-0.5)*0.5,vy:0.5+Math.random()*1.5,r:2+Math.random()*3,a:0.9,col:'rgba(200,220,255,0.9)'});break;
+        case 'confetti':pts.push({x:Math.random()*W,y:-10,vx:(Math.random()-0.5)*2,vy:1+Math.random()*2,r:4+Math.random()*4,a:1,col:`hsl(${Math.random()*360},100%,60%)`});break;
+        case 'bubbles':pts.push({x:Math.random()*W,y:H+10,vx:(Math.random()-0.5)*0.5,vy:-0.5-Math.random(),r:4+Math.random()*8,a:0.6,col:`rgba(${r},${g},${b},0.5)`});break;
+        case 'meteors':pts.push({x:Math.random()*W,y:-20,vx:3+Math.random()*5,vy:3+Math.random()*5,r:2,a:1,col:`rgba(${r},${g},${b},0.9)`,tail:[]});break;
+        case 'petals':pts.push({x:Math.random()*W,y:-10,vx:(Math.random()-0.5)*1,vy:0.8+Math.random(),r:5+Math.random()*5,a:0.8,col:`rgba(${r},${g},${b},0.8)`});break;
+        case 'smoke':pts.push({x:W/2+(Math.random()-0.5)*W*0.3,y:H,vx:(Math.random()-0.5)*0.3,vy:-0.3-Math.random()*0.5,r:15+Math.random()*20,a:0.1+Math.random()*0.1,col:`rgba(${r},${g},${b},0.08)`});break;
+        case 'embers':pts.push({x:Math.random()*W,y:H,vx:(Math.random()-0.5)*2,vy:-1-Math.random()*3,r:1+Math.random()*2,a:1,col:`rgba(255,${100+Math.random()*100},0,1)`});break;
+        case 'lightning':{const[r2,g2,b2]=hexRgb(ev.color||'#ffffff');pts.push({x:Math.random()*W,y:0,points:[],a:1,col:`rgba(${r2},${g2},${b2},0.8)`,ttl:8});}break;
+      }
+    }
+  }
+  // Draw & update
+  for(let i=pts.length-1;i>=0;i--){
+    const p=pts[i];
+    ctx2.globalAlpha=p.a;
+    ctx2.fillStyle=p.col;
+    if(ev.type==='lightning'){
+      if(p.ttl-->0){ctx2.strokeStyle=p.col;ctx2.lineWidth=1;ctx2.beginPath();let lx=p.x,ly=0;for(let j=0;j<8;j++){const nx=lx+(Math.random()-0.5)*40;const ny=ly+H/8;ctx2.lineTo(nx,ny);lx=nx;ly=ny;}ctx2.stroke();}
+      else pts.splice(i,1);
+      continue;
+    }
+    ctx2.beginPath();ctx2.arc(p.x,p.y,p.r,0,Math.PI*2);ctx2.fill();
+    p.x+=p.vx;p.y+=p.vy;
+    // recycle
+    if(p.y>H+20||p.y<-20||p.x<-20||p.x>W+20||p.a<0.02){
+      switch(ev.type){
+        case 'sparkle':case 'stars':p.x=Math.random()*W;p.y=Math.random()*H;p.vy=-1-Math.random()*2;p.a=1;break;
+        case 'snow':p.x=Math.random()*W;p.y=-10;p.a=0.9;break;
+        case 'confetti':p.x=Math.random()*W;p.y=-10;p.a=1;break;
+        case 'bubbles':p.x=Math.random()*W;p.y=H+10;p.a=0.6;break;
+        case 'meteors':p.x=Math.random()*W;p.y=-20;p.a=1;break;
+        case 'petals':p.x=Math.random()*W;p.y=-10;p.a=0.8;break;
+        case 'smoke':p.y=H;p.a=0.1+Math.random()*0.1;p.x=W/2+(Math.random()-0.5)*W*0.3;break;
+        case 'embers':p.x=Math.random()*W;p.y=H;p.a=1;break;
+        default:pts.splice(i,1);
+      }
+    }
+    if(['sparkle','stars','embers'].includes(ev.type))p.a-=0.012;
+    if(['bubbles','smoke'].includes(ev.type))p.a-=0.003;
+  }
+  ctx2.globalAlpha=1;
+}
+
+// Color helper
+function hexRgb(hex){
+  const r=parseInt(hex.slice(1,3),16)||0;const g=parseInt(hex.slice(3,5),16)||0;const b=parseInt(hex.slice(5,7),16)||0;return[r,g,b];
 }
 let watchMode=false,watchRaf=0,watchFireStart=0;
 
@@ -2817,6 +2946,8 @@ async function startWatch(){
   fn=0;jAlpha=0;bpIdx=0;score=0;combo=0;maxC=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;
   document.getElementById('dim-overlay').style.display=CS.dimEffect?'block':'none';
   document.getElementById('watch-bar').style.display='block';
+  _watchPaused=false;
+  buildEffectLibrary();
   document.getElementById('ov').style.display='none';
   document.getElementById('mb').textContent='EDIT';document.getElementById('mb').className='play';
   document.getElementById('stopbtn').style.display='none';
@@ -2852,7 +2983,7 @@ async function startWatch(){
     setTimeout(()=>updateEffectUI(),200); // update after aud.duration is known
     watchRaf=requestAnimationFrame(watchLoop);
   });
-  aud.onended=()=>{if(watchMode){watchMode=false;autoMode=false;document.getElementById('watch-bar').style.display='none';initPlay();}};
+  aud.onended=()=>{if(watchMode){watchEndHandler();}else if(mode==='play'){running=false;setTimeout(endPlay2,1000);}};
 }
 
 function seekWatch(clientX,track){
@@ -2872,38 +3003,241 @@ function seekWatch(clientX,track){
 // ── EFFECT EVENTS SYSTEM ─────────────────────────────────────────────────────
 let watchEffectEvents=[];
 let pendingEffectType=null,pendingEffectStart=null;
-const EFFECT_META={
-  fire:  {label:'🔥 FIRE',    col:'#ffaa00'},
-  speed: {label:'⚡ SPEED',   col:'#00f0ff'},
-  dark:  {label:'🌑 DARK',    col:'#888888'},
-  flash: {label:'💡 FLASH',   col:'#ffffff'},
-  shake: {label:'💥 SHAKE',   col:'#ff4444'},
-  red:   {label:'🔴 RED',     col:'#ff4444'},
-  blue:  {label:'🔵 BLUE',    col:'#4488ff'},
-  invert:{label:'🌀 INVERT',  col:'#ff00aa'},
-  rainbow:{label:'🌈 RAINBOW',col:'#ff44ff'},
-};
+// ── EFFECT LIBRARY — 100 EFFECTS ─────────────────────────────────────────────
+const EFF_LIB=[
+  // OVERLAYS
+  {id:'fire',      cat:'🔥 ZONE',     label:'Fire Zone',     col:'#ffaa00', params:[]},
+  {id:'speed',     cat:'⚡ ZONE',     label:'Speed Change',  col:'#00f0ff', params:[{id:'val',label:'Speed',type:'select',opts:['0.25','0.5','0.75','1.25','1.5','2','3'],def:'1.5'}]},
+  // COLOR OVERLAYS
+  {id:'dark',      cat:'🎨 COLOR',    label:'Darken',        col:'#888',    params:[{id:'amount',label:'Amount',type:'range',min:0.1,max:0.9,step:0.05,def:0.5}]},
+  {id:'flash',     cat:'🎨 COLOR',    label:'Flash Pulse',   col:'#fff',    params:[{id:'speed',label:'Speed',type:'select',opts:['slow','medium','fast','strobe'],def:'medium'}]},
+  {id:'red',       cat:'🎨 COLOR',    label:'Red Tint',      col:'#ff4444', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.22}]},
+  {id:'blue',      cat:'🎨 COLOR',    label:'Blue Tint',     col:'#4488ff', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.22}]},
+  {id:'green',     cat:'🎨 COLOR',    label:'Green Tint',    col:'#00ff88', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.2}]},
+  {id:'purple',    cat:'🎨 COLOR',    label:'Purple Tint',   col:'#aa44ff', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.22}]},
+  {id:'pink',      cat:'🎨 COLOR',    label:'Pink Tint',     col:'#ff00aa', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.22}]},
+  {id:'yellow',    cat:'🎨 COLOR',    label:'Yellow Tint',   col:'#ffee00', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.22}]},
+  {id:'orange',    cat:'🎨 COLOR',    label:'Orange Tint',   col:'#ff6600', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.22}]},
+  {id:'teal',      cat:'🎨 COLOR',    label:'Teal Tint',     col:'#00ffcc', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.2}]},
+  {id:'white',     cat:'🎨 COLOR',    label:'White Overlay', col:'#ffffff', params:[{id:'amount',label:'Amount',type:'range',min:0.05,max:0.8,step:0.05,def:0.3}]},
+  {id:'black',     cat:'🎨 COLOR',    label:'Blackout',      col:'#111',    params:[{id:'amount',label:'Amount',type:'range',min:0.1,max:1,step:0.05,def:0.85}]},
+  {id:'colorpick', cat:'🎨 COLOR',    label:'Custom Color',  col:'#ff44ff', params:[{id:'color',label:'Color',type:'color',def:'#ff0088'},{id:'amount',label:'Amount',type:'range',min:0.05,max:0.5,step:0.05,def:0.25}]},
+  // FILTERS
+  {id:'invert',    cat:'🔮 FILTER',   label:'Invert',        col:'#ff00aa', params:[]},
+  {id:'rainbow',   cat:'🔮 FILTER',   label:'Rainbow Hue',   col:'#ff44ff', params:[{id:'speed',label:'Speed',type:'range',min:0.5,max:10,step:0.5,def:2}]},
+  {id:'saturate',  cat:'🔮 FILTER',   label:'Saturate',      col:'#ffcc00', params:[{id:'amount',label:'Amount',type:'range',min:0.5,max:5,step:0.1,def:2.5}]},
+  {id:'desaturate',cat:'🔮 FILTER',   label:'Desaturate',    col:'#888',    params:[{id:'amount',label:'Amount',type:'range',min:0.1,max:1,step:0.1,def:0.8}]},
+  {id:'sepia',     cat:'🔮 FILTER',   label:'Sepia',         col:'#cc8844', params:[{id:'amount',label:'Amount',type:'range',min:0.1,max:1,step:0.1,def:0.8}]},
+  {id:'blur',      cat:'🔮 FILTER',   label:'Blur',          col:'#aaccff', params:[{id:'amount',label:'Blur px',type:'range',min:1,max:20,step:1,def:4}]},
+  {id:'contrast',  cat:'🔮 FILTER',   label:'High Contrast', col:'#ffffff', params:[{id:'amount',label:'Amount',type:'range',min:1.2,max:4,step:0.1,def:2}]},
+  {id:'glitch',    cat:'🔮 FILTER',   label:'Glitch',        col:'#00ffcc', params:[{id:'intensity',label:'Intensity',type:'select',opts:['light','medium','heavy'],def:'medium'}]},
+  {id:'vhs',       cat:'🔮 FILTER',   label:'VHS Lines',     col:'#88aaff', params:[{id:'amount',label:'Opacity',type:'range',min:0.1,max:0.7,step:0.05,def:0.3}]},
+  {id:'scanlines', cat:'🔮 FILTER',   label:'Scan Lines',    col:'#aaaaaa', params:[{id:'amount',label:'Opacity',type:'range',min:0.1,max:0.6,step:0.05,def:0.25}]},
+  {id:'pixelate',  cat:'🔮 FILTER',   label:'Pixelate',      col:'#ffaa44', params:[{id:'size',label:'Pixel Size',type:'range',min:2,max:20,step:1,def:6}]},
+  {id:'neon',      cat:'🔮 FILTER',   label:'Neon Glow',     col:'#00f0ff', params:[{id:'color',label:'Color',type:'color',def:'#00f0ff'}]},
+  {id:'nightvision',cat:'🔮 FILTER',  label:'Night Vision',  col:'#00ff44', params:[]},
+  {id:'thermal',   cat:'🔮 FILTER',   label:'Thermal',       col:'#ff4400', params:[]},
+  // MOTION
+  {id:'shake',     cat:'💫 MOTION',   label:'Shake',         col:'#ff4444', params:[{id:'intensity',label:'Intensity',type:'range',min:2,max:20,step:1,def:8}]},
+  {id:'zoom',      cat:'💫 MOTION',   label:'Zoom Pulse',    col:'#ffcc00', params:[{id:'amount',label:'Scale',type:'range',min:1.02,max:1.3,step:0.01,def:1.08},{id:'speed',label:'Speed',type:'range',min:0.5,max:5,step:0.25,def:2}]},
+  {id:'spin',      cat:'💫 MOTION',   label:'Spin',          col:'#aa44ff', params:[{id:'speed',label:'Deg/frame',type:'range',min:0.5,max:10,step:0.5,def:2}]},
+  {id:'wave',      cat:'💫 MOTION',   label:'Wave',          col:'#00f0ff', params:[{id:'amount',label:'Amplitude',type:'range',min:2,max:20,step:1,def:6},{id:'speed',label:'Speed',type:'range',min:0.5,max:5,step:0.25,def:2}]},
+  {id:'bounce',    cat:'💫 MOTION',   label:'Bounce',        col:'#ffaa00', params:[{id:'amount',label:'Height px',type:'range',min:5,max:40,step:1,def:12}]},
+  {id:'slide_left',cat:'💫 MOTION',   label:'Slide Left',    col:'#88aaff', params:[{id:'amount',label:'Px',type:'range',min:5,max:60,step:1,def:20}]},
+  {id:'slide_right',cat:'💫 MOTION',  label:'Slide Right',   col:'#88aaff', params:[{id:'amount',label:'Px',type:'range',min:5,max:60,step:1,def:20}]},
+  {id:'slide_up',  cat:'💫 MOTION',   label:'Slide Up',      col:'#88aaff', params:[{id:'amount',label:'Px',type:'range',min:5,max:60,step:1,def:20}]},
+  {id:'slide_down',cat:'💫 MOTION',   label:'Slide Down',    col:'#88aaff', params:[{id:'amount',label:'Px',type:'range',min:5,max:60,step:1,def:20}]},
+  {id:'tilt',      cat:'💫 MOTION',   label:'Tilt',          col:'#cc88ff', params:[{id:'deg',label:'Degrees',type:'range',min:1,max:30,step:1,def:8}]},
+  {id:'jitter',    cat:'💫 MOTION',   label:'Jitter',        col:'#ff8844', params:[{id:'amount',label:'Amount',type:'range',min:1,max:10,step:0.5,def:3}]},
+  // PARTICLES
+  {id:'sparkle',   cat:'✨ PARTICLE', label:'Sparkles',      col:'#ffff88', params:[{id:'color',label:'Color',type:'color',def:'#ffff88'},{id:'count',label:'Count',type:'range',min:2,max:20,step:1,def:8}]},
+  {id:'snow',      cat:'✨ PARTICLE', label:'Snow',          col:'#aaccff', params:[{id:'count',label:'Count',type:'range',min:3,max:30,step:1,def:12}]},
+  {id:'confetti',  cat:'✨ PARTICLE', label:'Confetti',      col:'#ff88ff', params:[{id:'count',label:'Count',type:'range',min:5,max:40,step:1,def:15}]},
+  {id:'bubbles',   cat:'✨ PARTICLE', label:'Bubbles',       col:'#88ccff', params:[{id:'color',label:'Color',type:'color',def:'#88ccff'},{id:'count',label:'Count',type:'range',min:2,max:15,step:1,def:6}]},
+  {id:'lightning', cat:'✨ PARTICLE', label:'Lightning',     col:'#ffffaa', params:[{id:'color',label:'Color',type:'color',def:'#ffffff'}]},
+  {id:'stars',     cat:'✨ PARTICLE', label:'Stars Fall',    col:'#ffeeaa', params:[{id:'color',label:'Color',type:'color',def:'#ffeeaa'},{id:'count',label:'Count',type:'range',min:3,max:25,step:1,def:10}]},
+  {id:'meteors',   cat:'✨ PARTICLE', label:'Meteors',       col:'#ff8844', params:[{id:'color',label:'Color',type:'color',def:'#ff8844'}]},
+  {id:'petals',    cat:'✨ PARTICLE', label:'Petals',        col:'#ff88aa', params:[{id:'color',label:'Color',type:'color',def:'#ff88aa'}]},
+  {id:'smoke',     cat:'✨ PARTICLE', label:'Smoke',         col:'#888888', params:[{id:'color',label:'Color',type:'color',def:'#888888'}]},
+  {id:'embers',    cat:'✨ PARTICLE', label:'Embers',        col:'#ff6600', params:[]},
+  // SCREEN FLASH
+  {id:'flash_red', cat:'⚡ FLASH',    label:'Red Flash',     col:'#ff4444', params:[{id:'speed',label:'Speed',type:'select',opts:['slow','medium','fast','strobe'],def:'fast'}]},
+  {id:'flash_blue',cat:'⚡ FLASH',    label:'Blue Flash',    col:'#4488ff', params:[{id:'speed',label:'Speed',type:'select',opts:['slow','medium','fast','strobe'],def:'fast'}]},
+  {id:'flash_white',cat:'⚡ FLASH',   label:'White Flash',   col:'#ffffff', params:[{id:'speed',label:'Speed',type:'select',opts:['slow','medium','fast','strobe'],def:'medium'}]},
+  {id:'flash_color',cat:'⚡ FLASH',   label:'Color Flash',   col:'#ff00aa', params:[{id:'color',label:'Color',type:'color',def:'#ff00aa'},{id:'speed',label:'Speed',type:'select',opts:['slow','medium','fast','strobe'],def:'medium'}]},
+  {id:'strobe',    cat:'⚡ FLASH',    label:'Strobe',        col:'#ffffff', params:[{id:'speed',label:'Hz',type:'range',min:1,max:30,step:1,def:8}]},
+  // VIGNETTE
+  {id:'vignette',  cat:'🌑 VIGNETTE', label:'Vignette',      col:'#000000', params:[{id:'amount',label:'Size',type:'range',min:0.1,max:0.9,step:0.05,def:0.5},{id:'color',label:'Color',type:'color',def:'#000000'}]},
+  {id:'vignette_color',cat:'🌑 VIGNETTE',label:'Color Vignette',col:'#ff0044',params:[{id:'color',label:'Color',type:'color',def:'#ff0044'},{id:'amount',label:'Size',type:'range',min:0.1,max:0.9,step:0.05,def:0.5}]},
+  {id:'spotlight', cat:'🌑 VIGNETTE', label:'Spotlight',     col:'#ffff88', params:[{id:'size',label:'Size',type:'range',min:0.1,max:0.8,step:0.05,def:0.4}]},
+  // TEXT
+  {id:'text',      cat:'📝 TEXT',     label:'Screen Text',   col:'#ffffff', params:[{id:'text',label:'Text',type:'text',def:'BEATLINE'},{id:'color',label:'Color',type:'color',def:'#ffffff'},{id:'size',label:'Size',type:'range',min:12,max:80,step:2,def:32}]},
+  {id:'countdown', cat:'📝 TEXT',     label:'Countdown',     col:'#ff4444', params:[{id:'from',label:'From',type:'select',opts:['3','5','10'],def:'3'},{id:'color',label:'Color',type:'color',def:'#ff4444'}]},
+  {id:'neon_text', cat:'📝 TEXT',     label:'Neon Text',     col:'#00f0ff', params:[{id:'text',label:'Text',type:'text',def:'BEATLINE'},{id:'color',label:'Color',type:'color',def:'#00f0ff'}]},
+  {id:'warning',   cat:'📝 TEXT',     label:'Warning Flash', col:'#ff4444', params:[{id:'text',label:'Text',type:'text',def:'WARNING'}]},
+  // IMAGE
+  {id:'image',     cat:'🖼️ IMAGE',    label:'Drop Image',    col:'#88aaff', params:[{id:'img',label:'Image',type:'image',def:''},{id:'size',label:'Size %',type:'range',min:10,max:100,step:5,def:50},{id:'x',label:'X %',type:'range',min:0,max:100,step:1,def:50},{id:'y',label:'Y %',type:'range',min:0,max:100,step:1,def:50},{id:'opacity',label:'Opacity',type:'range',min:0.1,max:1,step:0.05,def:0.9}]},
+  {id:'image_bg',  cat:'🖼️ IMAGE',    label:'Background Image',col:'#88aaff',params:[{id:'img',label:'Image',type:'image',def:''},{id:'opacity',label:'Opacity',type:'range',min:0.05,max:1,step:0.05,def:0.4}]},
+  // LANES
+  {id:'lane_pulse',cat:'🎯 LANES',    label:'Lane Pulse',    col:'#00f0ff', params:[{id:'color',label:'Color',type:'color',def:'#00f0ff'}]},
+  {id:'lane_glow', cat:'🎯 LANES',    label:'Lane Glow',     col:'#ffaa00', params:[{id:'color',label:'Color',type:'color',def:'#ffaa00'}]},
+  {id:'lane_rainbow',cat:'🎯 LANES',  label:'Lane Rainbow',  col:'#ff44ff', params:[]},
+  // BORDER
+  {id:'border',    cat:'🖼️ BORDER',   label:'Border Glow',   col:'#00f0ff', params:[{id:'color',label:'Color',type:'color',def:'#00f0ff'},{id:'size',label:'Width px',type:'range',min:2,max:20,step:1,def:6}]},
+  {id:'border_flash',cat:'🖼️ BORDER', label:'Border Flash',  col:'#ff4444', params:[{id:'color',label:'Color',type:'color',def:'#ff4444'},{id:'speed',label:'Speed',type:'select',opts:['slow','medium','fast'],def:'fast'}]},
+  // TIME / SPECIAL
+  {id:'slow_mo',   cat:'⏱ TIME',      label:'Slow Motion',   col:'#88ccff', params:[{id:'val',label:'Speed',type:'select',opts:['0.25','0.33','0.5','0.75'],def:'0.5'}]},
+  {id:'fast_mo',   cat:'⏱ TIME',      label:'Fast Motion',   col:'#ffcc44', params:[{id:'val',label:'Speed',type:'select',opts:['1.25','1.5','2','3'],def:'1.5'}]},
+  // BG GRADIENTS
+  {id:'bg_gradient',cat:'🌈 BG',      label:'BG Gradient',   col:'#aa44ff', params:[{id:'color1',label:'Color A',type:'color',def:'#ff0044'},{id:'color2',label:'Color B',type:'color',def:'#0044ff'},{id:'opacity',label:'Opacity',type:'range',min:0.05,max:0.6,step:0.05,def:0.25}]},
+  {id:'bg_pulse',  cat:'🌈 BG',       label:'BG Color Pulse', col:'#ff44aa', params:[{id:'color',label:'Color',type:'color',def:'#ff0088'},{id:'opacity',label:'Opacity',type:'range',min:0.05,max:0.5,step:0.05,def:0.2}]},
+  // WIPE / TRANSITION
+  {id:'wipe_left', cat:'🔀 WIPE',     label:'Wipe Left',     col:'#00f0ff', params:[{id:'color',label:'Color',type:'color',def:'#000000'}]},
+  {id:'wipe_right',cat:'🔀 WIPE',     label:'Wipe Right',    col:'#00f0ff', params:[{id:'color',label:'Color',type:'color',def:'#000000'}]},
+  {id:'fade_in',   cat:'🔀 WIPE',     label:'Fade In',       col:'#aaaaaa', params:[{id:'color',label:'Color',type:'color',def:'#000000'}]},
+  {id:'fade_out',  cat:'🔀 WIPE',     label:'Fade Out',      col:'#aaaaaa', params:[{id:'color',label:'Color',type:'color',def:'#000000'}]},
+  // DISTORT
+  {id:'mirror_h',  cat:'🪞 DISTORT',  label:'Mirror H',      col:'#ff88aa', params:[]},
+  {id:'mirror_v',  cat:'🪞 DISTORT',  label:'Mirror V',      col:'#88aaff', params:[]},
+  {id:'fisheye',   cat:'🪞 DISTORT',  label:'Fisheye',       col:'#88ffcc', params:[{id:'amount',label:'Amount',type:'range',min:0.5,max:2,step:0.1,def:1}]},
+  // COMBO FX
+  {id:'fire',      cat:'🔥 ZONE',     label:'Fire Zone',     col:'#ffaa00', params:[]}, // already at top, kept for reference
+];
+// deduplicate by id
+const EFF_LIB_UNIQUE=[];const _effSeen=new Set();
+for(const e of EFF_LIB){if(!_effSeen.has(e.id)){_effSeen.add(e.id);EFF_LIB_UNIQUE.push(e);}}
+
+const EFFECT_META={};
+for(const e of EFF_LIB_UNIQUE)EFFECT_META[e.id]={label:e.label,col:e.col};
+
+// Build effect library panel
+function buildEffectLibrary(){
+  const el=document.getElementById('eff-lib-list');if(!el)return;
+  const cats={};
+  for(const e of EFF_LIB_UNIQUE){if(!cats[e.cat])cats[e.cat]=[];cats[e.cat].push(e);}
+  let html='';
+  for(const [cat,items] of Object.entries(cats)){
+    html+=`<div style="font-size:7px;color:#333;letter-spacing:2px;margin:6px 0 2px;">${cat}</div>`;
+    for(const item of items){
+      html+=`<button class="eff-btn" data-type="${item.id}" onclick="startEffectRange('${item.id}')"
+        style="--ec:${item.col};width:100%;text-align:left;font-size:9px;padding:3px 6px;">${item.label}</button>`;
+    }
+  }
+  el.innerHTML=html;
+}
+window.buildEffectLibrary=buildEffectLibrary;
+
+// Pending effect params storage
+let _pendingParams={};
+function buildParamsUI(effId){
+  const meta=EFF_LIB_UNIQUE.find(e=>e.id===effId);
+  const container=document.getElementById('eff-params');
+  if(!container)return;
+  if(!meta||!meta.params.length){container.style.display='none';_pendingParams={};return;}
+  _pendingParams={};
+  meta.params.forEach(p=>{_pendingParams[p.id]=p.def;});
+  let html='';
+  for(const p of meta.params){
+    html+=`<div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">
+      <span style="font-size:8px;color:#555;letter-spacing:1px;min-width:48px;">${p.label}</span>`;
+    if(p.type==='range'){
+      html+=`<input type="range" min="${p.min}" max="${p.max}" step="${p.step}" value="${p.def}"
+        oninput="_pendingParams['${p.id}']=parseFloat(this.value);document.getElementById('pv-${p.id}').textContent=this.value;"
+        style="width:80px;accent-color:${meta.col};">
+        <span id="pv-${p.id}" style="font-size:8px;color:#aaa;min-width:24px;">${p.def}</span>`;
+    } else if(p.type==='select'){
+      html+=`<select onchange="_pendingParams['${p.id}']=this.value;"
+        style="background:#0d0d1a;border:1px solid #252540;color:#fff;font-family:'Courier New',monospace;font-size:8px;padding:2px 4px;">
+        ${p.opts.map(o=>`<option value="${o}" ${o==p.def?'selected':''}>${o}</option>`).join('')}
+        </select>`;
+    } else if(p.type==='color'){
+      html+=`<input type="color" value="${p.def}" oninput="_pendingParams['${p.id}']=this.value;"
+        style="width:28px;height:18px;border:none;background:none;cursor:pointer;">`;
+    } else if(p.type==='text'){
+      html+=`<input type="text" value="${p.def}" placeholder="${p.label}"
+        oninput="_pendingParams['${p.id}']=this.value;"
+        style="background:#0d0d1a;border:1px solid #252540;color:#fff;font-family:'Courier New',monospace;font-size:8px;padding:2px 6px;width:80px;">`;
+    } else if(p.type==='image'){
+      html+=`<label style="font-size:8px;color:var(--cyan);cursor:pointer;border:1px solid #00f0ff44;padding:2px 6px;">
+        DROP/PICK <input type="file" accept="image/*" style="display:none;" onchange="loadEffImg(this,'${p.id}')"></label>
+        <span id="pv-${p.id}" style="font-size:7px;color:#555;">none</span>`;
+    }
+    html+='</div>';
+  }
+  container.innerHTML=html;
+  container.style.display='flex';
+  container.style.flexDirection='column';
+}
+
+function loadEffImg(input,paramId){
+  const f=input.files?.[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    _pendingParams[paramId]=e.target.result;
+    const sp=document.getElementById('pv-'+paramId);if(sp)sp.textContent='✓ loaded';
+  };
+  r.readAsDataURL(f);
+}
+window.loadEffImg=loadEffImg;
+
+// Watch pause
+let _watchPaused=false;
+function toggleWatchPause(){
+  _watchPaused=!_watchPaused;
+  const btn=document.getElementById('watch-pause-btn');
+  if(_watchPaused){
+    if(aud)aud.pause();
+    cancelAnimationFrame(watchRaf);
+    if(btn){btn.textContent='▶';btn.style.color='var(--cyan)';}
+  } else {
+    if(aud)aud.play().then(()=>{_cBase=performance.now();_cOff=aud.currentTime*1000;});
+    watchRaf=requestAnimationFrame(watchLoop);
+    if(btn){btn.textContent='⏸';btn.style.color='#555';}
+  }
+}
+window.toggleWatchPause=toggleWatchPause;
+
+// Also prevent auto-exit when song ends in watch mode — prompt to save instead
+function watchEndHandler(){
+  if(!watchMode)return;
+  const btn=document.getElementById('watch-pause-btn');
+  if(btn){btn.textContent='▶';btn.style.color='#555';}
+  // Restart from beginning in paused state so editor can still save
+  if(aud){aud.currentTime=0;aud.pause();}
+  _watchPaused=true;
+  // update scrubber to end
+  document.getElementById('watch-fill').style.width='100%';
+  document.getElementById('watch-thumb').style.left='100%';
+  document.getElementById('watch-cur').textContent=fmtT(aud?aud.duration*1000:0);
+  // toast reminder
+  toast('SONG ENDED — SAVE YOUR EFFECTS OR EXIT','#00f0ff');
+}
+
 window.startEffectRange=function(type){
+  // deactivate all lib buttons, activate clicked
+  document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.querySelector(`.eff-btn[data-type="${type}"]`);if(btn)btn.classList.add('active');
+
   if(pendingEffectType===type&&pendingEffectStart!==null){
+    // second click = set end
     const end=aud?aud.currentTime:pendingEffectStart+1;
     if(end>pendingEffectStart){
-      const ev={type,s:pendingEffectStart,e:end};
-      if(type==='speed')ev.val=parseFloat(document.getElementById('effect-speed-val')?.value)||1.5;
+      const ev={type,s:pendingEffectStart,e:end,..._pendingParams};
       watchEffectEvents.push(ev);watchEffectEvents.sort((a,b)=>a.s-b.s);
     }
     pendingEffectType=null;pendingEffectStart=null;
-    document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
     document.getElementById('effect-pending-label').style.display='none';
-    const spd=document.getElementById('speed-val-row');if(spd)spd.style.display='none';
+    document.getElementById('eff-params').style.display='none';
+    document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
+    _pendingParams={};
     updateEffectUI();
   } else {
     pendingEffectType=type;pendingEffectStart=aud?aud.currentTime:0;
-    document.querySelectorAll('.eff-btn').forEach(b=>b.classList.remove('active'));
-    const btn=document.querySelector('.eff-btn[data-type="'+type+'"]');if(btn)btn.classList.add('active');
-    const m=EFFECT_META[type]||{};
+    buildParamsUI(type);
+    const m=EFFECT_META[type]||{col:'#aaa',label:type};
     const lbl=document.getElementById('effect-pending-label');
-    if(lbl){lbl.style.display='block';lbl.style.color=m.col||'#aaa';lbl.style.borderColor=(m.col||'#aaa')+'66';lbl.textContent=m.label+' START = '+fmtT(pendingEffectStart*1000)+' — seek to END and press again';}
-    const spd=document.getElementById('speed-val-row');if(spd)spd.style.display=type==='speed'?'flex':'none';
+    if(lbl){lbl.style.display='block';lbl.style.color=m.col;lbl.style.borderColor=m.col+'55';
+      lbl.textContent=m.label+' START='+fmtT(pendingEffectStart*1000)+' → seek to end → click again';}
     updateEffectUI();
   }
 };
@@ -3707,7 +4041,7 @@ function _laneUp(lane){
 window.toggleFireOpt=toggleFireOpt;window.toggleDimOpt=toggleDimOpt;
 window.toggleEffectsSetting=toggleEffectsSetting;
 window.startWatch=startWatch;window.exitWatch=exitWatch;window.applyWatchSpeed=applyWatchSpeed;window.saveEffects=saveEffects;
-window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.loadMyPreset=loadMyPreset;
+window.removeEffectEvent=removeEffectEvent;window.clearAllFireRanges=clearAllFireRanges;window.seekToRange=seekToRange;window.toggleWatchPause=toggleWatchPause;
 window.doGuest=doGuest;window.openProfile=openProfile;window.handleAvatarUpload=handleAvatarUpload;window.startEditBio=startEditBio;window.cancelEditBio=cancelEditBio;window.saveBio=saveBio;window.startEditUsername=startEditUsername;window.removeFriend=removeFriend;
 window.sendFriendRequest=sendFriendRequest;window.acceptFriendRequest=acceptFriendRequest;window.declineFriendRequest=declineFriendRequest;window.loadFriendsPage=loadFriendsPage;window.startGlobalNotifListener=startGlobalNotifListener;window.requestNotifPermission=requestNotifPermission;
 window.openChat=openChat;window.closeChat=closeChat;window.sendChatMsg=sendChatMsg;window.handleChatImg=handleChatImg;window.clearChatImg=clearChatImg;
