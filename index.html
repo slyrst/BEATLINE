@@ -427,6 +427,7 @@ canvas#cv{display:block;width:440px;height:620px;}
       <button class="xbtn cy lg" onclick="showPage('songs-page')">[ PLAY ]</button>
       <button class="xbtn gn" onclick="showPage('create-page');initCreatePage()">[ CREATE LEVEL ]</button>
       <button class="xbtn pk" onclick="showPage('friends-page');loadFriendsPage()">[ FRIENDS <span id="friend-notif-dot" style="display:none;width:7px;height:7px;background:var(--pink);border-radius:50%;display:none;vertical-align:middle;margin-left:4px;"></span>]</button>
+      <button class="xbtn" onclick="showPage('shop-page');loadShop()" style="border-color:#00aaff44;color:#00aaff;">[ 💎 SHOP ]</button>
       <button class="xbtn am" onclick="showLeaderboardGlobal()">[ LEADERBOARD ]</button>
       <button class="xbtn" onclick="showPage('settings-page')">[ SETTINGS ]</button>
       <button class="xbtn rd sm" onclick="doLogout()">[ LOGOUT ]</button>
@@ -790,6 +791,18 @@ canvas#cv{display:block;width:440px;height:620px;}
     </div>
   </div>
 </div>
+<!-- SHOP -->
+<div class="page" id="shop-page">
+  <div class="page-header">
+    <div>
+      <div class="page-header-title">💎 SHOP</div>
+      <div style="font-size:9px;color:#00aaff;letter-spacing:2px;margin-top:3px;" id="shop-gems-display">💎 0</div>
+    </div>
+    <button class="xbtn sm" onclick="showPage('menu-page')">[ BACK ]</button>
+  </div>
+  <div style="width:100%;max-width:500px;padding:16px;display:flex;flex-direction:column;gap:12px;margin:0 auto;" id="shop-inner">
+  </div>
+</div>
 
 </div><!-- #app -->
 
@@ -927,7 +940,7 @@ auth.onAuthStateChanged(async user=>{
     if(adminSec)adminSec.style.display=ADM?'block':'none';
     const roleSec=document.getElementById('admin-role-section');
     if(roleSec)roleSec.style.display=ADM?'block':'none';
-    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();loadGems();
+    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();loadGems();loadInventory();
   }else{
     const activePage=document.querySelector('.page.active')?.id;
     const inGame=activePage==='game-page';
@@ -1248,6 +1261,15 @@ function isOnline(ud){
 function onlineDot(online){
   return`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${online?'#00ff88':'#333'};margin-left:5px;vertical-align:middle;" title="${online?'ONLINE':'OFFLINE'}"></span>`;
 }
+function timeAgo(ts){
+  if(!ts)return'a while ago';
+  const t=ts.toDate?ts.toDate().getTime():(typeof ts==='number'?ts:Date.now());
+  const diff=Math.floor((Date.now()-t)/1000);
+  if(diff<60)return'just now';
+  if(diff<3600)return Math.floor(diff/60)+'m ago';
+  if(diff<86400)return Math.floor(diff/3600)+'h ago';
+  return Math.floor(diff/86400)+'d ago';
+}
 function updateBottomBar(){
   const bar=document.getElementById('menu-bottom-bar');
   if(!bar)return;
@@ -1341,7 +1363,8 @@ async function openProfile(uid, backPage){
 
     // Now playing badge
     const nowPlaying=ud.playingNow;
-    const nowPlayingHtml=nowPlaying?.songId?`
+    const online=isOnline(ud);
+    const nowPlayingHtml=online&&nowPlaying?.songId?`
       <div style="margin-top:8px;padding:8px 12px;background:#00f0ff0a;border:1px solid #00f0ff22;display:flex;align-items:center;gap:10px;">
         <span style="font-size:16px;">🎮</span>
         <div style="flex:1;min-width:0;">
@@ -1349,7 +1372,7 @@ async function openProfile(uid, backPage){
           <div style="font-size:11px;color:#aaa;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nowPlaying.songTitle||'?')}</div>
         </div>
         ${!isSelf&&CU?`<button class="xbtn cy sm" onclick="spectatePlayer('${uid}','${nowPlaying.songId}')" style="padding:4px 12px;font-size:9px;">👁 WATCH</button>`:''}
-      </div>`:ud.activity&&!nowPlaying?.songId?`<div style="margin-top:6px;font-size:9px;color:#333;letter-spacing:2px;">${esc(ud.activity)}</div>`:'';
+      </div>`:online&&ud.activity&&!nowPlaying?.songId?`<div style="margin-top:6px;font-size:9px;color:#333;letter-spacing:2px;">● ${esc(ud.activity)}</div>`:!online&&ud.lastSeen?`<div style="margin-top:6px;font-size:9px;color:#252540;letter-spacing:2px;">LAST SEEN ${timeAgo(ud.lastSeen)}</div>`:'';
     let friendBtn='';
     if(!isSelf&&CU&&uid){
       const myFriends=CUD?.friends||[];
@@ -1408,7 +1431,7 @@ async function openProfile(uid, backPage){
           <div class="profile-stats-row" style="margin-top:10px;">
             <div class="profile-stat"><div class="profile-stat-val">${(ud.totalScore||0).toLocaleString()}</div><div class="profile-stat-lbl">SCORE</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${ud.gamesPlayed||0}</div><div class="profile-stat-lbl">PLAYS</div></div>
-            <div class="profile-stat"><div class="profile-stat-val" style="color:#00aaff;">💎${(ud.gems||0).toLocaleString()}</div><div class="profile-stat-lbl">GEMS</div></div>
+            <div class="profile-stat"><div class="profile-stat-val"><span style="font-size:12px;">💎</span><span style="color:#00aaff;">${(ud.gems||0).toLocaleString()}</span></div><div class="profile-stat-lbl">GEMS</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${topScores.length}</div><div class="profile-stat-lbl">RANKED</div></div>
             <div class="profile-stat"><div class="profile-stat-val">${friends.length}</div><div class="profile-stat-lbl">FRIENDS</div></div>
           </div>
@@ -1610,10 +1633,10 @@ async function loadFriendsPage(){
         rows+=`<div class="friend-row">
           ${av}
           <div style="flex:1;min-width:0;cursor:pointer;" onclick="openProfile('${fid}','friends-page')">
-            <div class="friend-name">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}${fd.playingNow?.songId?'<span style="font-size:9px;color:var(--cyan);margin-left:6px;">🎮</span>':''}</div>
+            <div class="friend-name">${esc(fd.username||'?')}${onlineDot(isOnline(fd))}${fd.role?'<span class="role-badge role-'+(fd.role)+'" style="font-size:7px;margin-left:4px;">'+(fd.role==='creator'?'CREATOR':fd.role.toUpperCase())+'</span>':''}${isOnline(fd)&&fd.playingNow?.songId?'<span style="font-size:9px;color:var(--cyan);margin-left:6px;">🎮</span>':''}${!isOnline(fd)&&fd.lastSeen?'<span style="font-size:8px;color:#252540;margin-left:6px;">'+timeAgo(fd.lastSeen)+'</span>':''}</div>
             ${fd.activity?`<div style="font-size:9px;color:#333;letter-spacing:1px;">${esc(fd.activity)}${fd.playingNow?.songTitle?' — '+esc(fd.playingNow.songTitle):''}</div>`:''}
           </div>
-          ${fd.playingNow?.songId?`<button class="xbtn sm cy" onclick="spectatePlayer('${fid}','${fd.playingNow.songId}')" style="padding:3px 8px;font-size:9px;">👁</button>`:''}
+          ${isOnline(fd)&&fd.playingNow?.songId?`<button class="xbtn sm cy" onclick="spectatePlayer('${fid}','${fd.playingNow.songId}')" style="padding:3px 8px;font-size:9px;">👁</button>`:''}
           <button class="xbtn sm" onclick="openChat('${fid}','${esc(fd.username||'?')}')" style="padding:3px 10px;font-size:9px;color:var(--cyan);border-color:#00f0ff33;">💬</button>
           <button class="xbtn sm rd" onclick="removeFriend('${fid}')" style="padding:3px 8px;font-size:9px;">✕</button>
         </div>`;
@@ -2444,7 +2467,104 @@ let holdPulses=[],laneHolding=[false,false,false,false],pulseTimer=[0,0,0,0];
 let rWall2=0,rNotes2=[],rHW2=[0,0,0,0],rAct2=[false,false,false,false];
 // ── HP SYSTEM ─────────────────────────────────────────────────────────────────
 const HP_MAX=1000,HP_MISS=-100;
-let hp=HP_MAX,_lost=false;
+let hp=HP_MAX,_lost=false,_consecutiveMiss=0;
+
+// HP regen on streak milestones
+const HP_REGEN_STREAKS={10:30,20:60,30:100,50:150};
+let _lastRegenStreak=0;
+
+function checkStreakHpRegen(c){
+  if(_lost||!c)return;
+  for(const [threshold,regen] of Object.entries(HP_REGEN_STREAKS)){
+    if(c>=parseInt(threshold)&&_lastRegenStreak<parseInt(threshold)){
+      _lastRegenStreak=parseInt(threshold);
+      hp=Math.min(HP_MAX,hp+regen);updateHpHud();
+      // flash green
+      const el=document.getElementById('hp-hud');
+      if(el){el.style.color='#00ff88';setTimeout(()=>updateHpHud(),800);}
+      judgeShowNoBC('+'+regen+' HP','#00ff88');
+    }
+  }
+}
+function judgeShowNoBC(t,c){const e=document.getElementById('jt');e.textContent=t;e.style.color=c;e.style.opacity=1;jAlpha=1;}
+
+// ── SHOP ──────────────────────────────────────────────────────────────────────
+const SHOP_ITEMS=[
+  {id:'potion_sm',name:'SMALL POTION',desc:'+300 HP',icon:'🧪',cost:5, hpGain:300},
+  {id:'potion_md',name:'POTION',      desc:'+500 HP',icon:'❤️',cost:10,hpGain:500},
+  {id:'potion_lg',name:'BIG POTION',  desc:'+750 HP',icon:'💊',cost:18,hpGain:750},
+  {id:'potion_xl',name:'MAX POTION',  desc:'Full HP',icon:'✨',cost:30,hpGain:HP_MAX},
+];
+
+let _inventory={}; // {potion_sm: 2, ...}
+
+function loadInventory(){
+  try{const d=localStorage.getItem('bl_inv');if(d)_inventory=JSON.parse(d);}catch(e){}
+  if(CU&&CUD?.inventory)_inventory={..._inventory,...CUD.inventory};
+}
+function saveInventory(){
+  try{localStorage.setItem('bl_inv',JSON.stringify(_inventory));}catch(e){}
+  if(CU)dUpd(dDoc('users',CU.uid),{inventory:_inventory}).catch(()=>{});
+}
+function getInvCount(id){return _inventory[id]||0;}
+
+function loadShop(){
+  const el=document.getElementById('shop-inner');if(!el)return;
+  const gems=_localGems||0;
+  document.getElementById('shop-gems-display').textContent='💎 '+gems.toLocaleString();
+  el.innerHTML=SHOP_ITEMS.map(item=>{
+    const owned=getInvCount(item.id);
+    const canBuy=gems>=item.cost&&CU&&!isGuest;
+    return`<div style="background:var(--bg3);border:1px solid var(--border);padding:16px;display:flex;align-items:center;gap:14px;">
+      <div style="font-size:28px;">${item.icon}</div>
+      <div style="flex:1;">
+        <div style="font-size:12px;letter-spacing:2px;font-weight:bold;">${item.name}</div>
+        <div style="font-size:10px;color:#555;letter-spacing:1px;margin-top:3px;">${item.desc}</div>
+        ${owned>0?`<div style="font-size:9px;color:var(--cyan);letter-spacing:2px;margin-top:3px;">OWNED: ${owned}</div>`:''}
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:11px;color:#00aaff;letter-spacing:2px;margin-bottom:6px;">💎 ${item.cost}</div>
+        <button class="xbtn sm ${canBuy?'cy':''}\" onclick="buyItem('${item.id}')" ${canBuy?'':'disabled'} style="font-size:9px;padding:5px 14px;">BUY</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function buyItem(id){
+  const item=SHOP_ITEMS.find(i=>i.id===id);
+  if(!item||!CU||isGuest)return;
+  if(_localGems<item.cost){toast('NOT ENOUGH GEMS','#ff4444');return;}
+  _localGems-=item.cost;
+  _inventory[id]=(getInvCount(id))+1;
+  updateGemDisplay();
+  saveInventory();
+  try{
+    const snap=await dGet(dDoc('users',CU.uid));
+    const cur=snap.data()?.gems||0;
+    await dUpd(dDoc('users',CU.uid),{gems:Math.max(0,cur-item.cost),inventory:_inventory});
+    if(CUD){CUD.gems=Math.max(0,cur-item.cost);CUD.inventory=_inventory;}
+  }catch(e){}
+  toast('BOUGHT: '+item.name,'#00ff88');
+  loadShop();
+}
+window.buyItem=buyItem;window.loadShop=loadShop;
+
+// Use potion during pause
+function usePotionInPause(id){
+  const item=SHOP_ITEMS.find(i=>i.id===id);
+  if(!item||!getInvCount(id)){toast('NO POTIONS','#ff4444');return;}
+  _inventory[id]=Math.max(0,getInvCount(id)-1);
+  saveInventory();
+  const gain=item.hpGain===HP_MAX?HP_MAX-hp:item.hpGain;
+  hp=Math.min(HP_MAX,hp+(item.hpGain===HP_MAX?HP_MAX:item.hpGain));
+  if(_lost&&hp>0)_lost=false; // revive!
+  updateHpHud();
+  toast(item.icon+' +'+gain+' HP','#00ff88');
+  // Refresh pause overlay to update counts
+  const pov=document.getElementById('pause-overlay');
+  if(pov)buildPauseOverlay(pov);
+}
+window.usePotionInPause=usePotionInPause;
 function updateHpHud(){
   const el=document.getElementById('hp-hud');
   if(!el)return;
@@ -2520,36 +2640,57 @@ function hudUpdate(now){
 }
 
 // ── PAUSE ─────────────────────────────────────────────────────────────────────
-let _paused=false,_countdownRaf=null;
+function buildPauseOverlay(pov){
+  const potionItems=SHOP_ITEMS.filter(i=>getInvCount(i.id)>0);
+  const potionHtml=potionItems.length?`
+    <div style="font-size:9px;letter-spacing:3px;color:#444;margin-top:4px;">POTIONS</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px;">
+      ${potionItems.map(item=>`
+        <button onclick="usePotionInPause('${item.id}')" style="background:#0d0d1a;border:1px solid #00aaff44;color:#00aaff;font-family:'Courier New',monospace;font-size:9px;padding:6px 10px;cursor:pointer;letter-spacing:1px;">
+          ${item.icon} ${item.name.replace(' POTION','')}<br><span style="font-size:8px;color:#333;">×${getInvCount(item.id)}</span>
+        </button>`).join('')}
+    </div>`:
+    `<div style="font-size:9px;color:#252540;letter-spacing:2px;margin-top:8px;">NO POTIONS — BUY IN 💎 SHOP</div>`;
+
+  const hpPct=Math.max(0,hp/HP_MAX);
+  const hpCol=hpPct>0.5?'#00ff88':hpPct>0.25?'#ffaa00':'#ff4444';
+  pov.innerHTML=`
+    <div style="font-size:28px;letter-spacing:8px;color:#fff;opacity:0;transition:opacity .25s;" id="pause-title">PAUSED</div>
+    <div style="font-size:11px;color:#444;letter-spacing:3px;opacity:0;transition:opacity .3s;transition-delay:.05s;" id="pause-song">${esc(CS?.title||'')}</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:4px;opacity:0;transition:opacity .3s;transition-delay:.1s;" id="pause-hp">
+      <span style="font-size:10px;color:#555;letter-spacing:2px;">❤</span>
+      <div style="width:120px;height:6px;background:#1a1a30;border-radius:3px;overflow:hidden;">
+        <div style="width:${Math.round(hpPct*100)}%;height:100%;background:${hpCol};transition:width .3s;"></div>
+      </div>
+      <span style="font-size:10px;color:${hpCol};letter-spacing:2px;">${hp}</span>
+    </div>
+    <div style="opacity:0;transition:opacity .3s;transition-delay:.15s;" id="pause-potions">${potionHtml}</div>
+    <div style="display:flex;gap:10px;margin-top:12px;opacity:0;transition:opacity .3s;transition-delay:.2s;" id="pause-btns">
+      <button class="xbtn cy" onclick="togglePause()">[ RESUME ]</button>
+      <button class="xbtn rd sm" onclick="_paused=false;if(_countdownRaf)cancelAnimationFrame(_countdownRaf);stopAll();goBack()">[ QUIT ]</button>
+    </div>`;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    ['pause-title','pause-song','pause-hp','pause-potions','pause-btns'].forEach(id=>{
+      const e=pov.querySelector('#'+id);if(e)e.style.opacity='1';
+    });
+  }));
+}
 
 function togglePause(){
   if(mode!=='play')return;
   if(_paused){
     resumeWithCountdown();
   } else {
-    // PAUSE
     _paused=true;running=false;cancelAnimationFrame(raf2);
     if(aud)aud.pause();
     broadcastPause(true);
     const pbtn=document.getElementById('pausebtn');
     if(pbtn){pbtn.textContent='▶';pbtn.style.color='var(--cyan)';}
-
-    // Smooth fade-in overlay
     const pov=document.createElement('div');pov.id='pause-overlay';
-    pov.style.cssText='position:absolute;inset:0;background:rgba(5,5,13,0);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:19;gap:14px;transition:background .25s;';
-    pov.innerHTML=`
-      <div style="font-size:28px;letter-spacing:8px;color:#fff;opacity:0;transition:opacity .25s;" id="pause-title">PAUSED</div>
-      <div style="font-size:11px;color:#444;letter-spacing:3px;opacity:0;transition:opacity .3s;transition-delay:.1s;" id="pause-song">${esc(CS?.title||'')}</div>
-      <div style="display:flex;gap:10px;margin-top:8px;opacity:0;transition:opacity .3s;transition-delay:.2s;" id="pause-btns">
-        <button class="xbtn cy" onclick="togglePause()">[ RESUME ]</button>
-        <button class="xbtn rd sm" onclick="_paused=false;if(_countdownRaf)cancelAnimationFrame(_countdownRaf);stopAll();goBack()">[ QUIT ]</button>
-      </div>`;
+    pov.style.cssText='position:absolute;inset:0;background:rgba(5,5,13,0);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:19;gap:10px;transition:background .25s;';
     document.getElementById('gc').appendChild(pov);
-    requestAnimationFrame(()=>{
-      pov.style.background='rgba(5,5,13,.88)';
-      const t=pov.querySelector('#pause-title'),s=pov.querySelector('#pause-song'),b=pov.querySelector('#pause-btns');
-      if(t)t.style.opacity='1';if(s)s.style.opacity='1';if(b)b.style.opacity='1';
-    });
+    buildPauseOverlay(pov);
+    requestAnimationFrame(()=>pov.style.background='rgba(5,5,13,.88)');
   }
 }
 
@@ -2997,7 +3138,7 @@ function initPlay(){
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
   score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
-  hp=HP_MAX;_lost=false;updateHpHud();
+  hp=HP_MAX;_lost=false;_consecutiveMiss=0;_lastRegenStreak=0;updateHpHud();
   document.getElementById('streak-popup').style.opacity='0';
   _paused=false;
   setAuto(autoMode);hideOv();document.getElementById('mb').textContent=_spectatingUid?'WATCH':autoMode?'AUTO':'PLAY';document.getElementById('mb').className='play';
@@ -3037,7 +3178,14 @@ function pUpdate2(){
     n.cy=GHIT_Y()-(n.sMs-now)*GPPM();
     if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){
       n.missed=true;combo=0;gstats.m++;judgeShow('MISS','#ff4444');laneHolding[n.lane]=false;
-      if(!autoMode){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost){_lost=true;}}
+      if(!autoMode){
+        _consecutiveMiss++;_lastRegenStreak=0;
+        if(_consecutiveMiss>=2){hp=Math.max(0,hp+HP_MISS);updateHpHud();}
+        if(hp<=0&&!_lost){_lost=true;
+          // Wait 1.5s so player sees the last miss, then end
+          setTimeout(()=>{if(_lost&&running){running=false;aud&&aud.pause();setTimeout(endPlay2,200);}},1500);
+        }
+      }
     }
     if(n.holding){n.hp=Math.min(1,(now-n.sMs)/Math.max(n.hMs,1));if(n.hp>=1){n.hit=true;n.holding=false;laneHolding[n.lane]=false;combo++;if(combo>maxC)maxC=combo;score+=Math.floor(200*(1+combo*.04));judgeShow('PERFECT','#00f0ff');burstP(n.lane,GHIT_Y());}}
   }
@@ -3065,7 +3213,8 @@ function hitPlay(lane,down){
       if(best.hMs>80){best.holding=true;laneHolding[lane]=true;pulseTimer[lane]=0;}
       else{best.hit=true;burstP(lane,best.cy);}
       combo++;if(combo>maxC)maxC=combo;score+=Math.floor(pts*(1+combo*.04));judgeShow(lbl,col);
-      _cpsHits++;
+      _cpsHits++;_consecutiveMiss=0;
+      checkStreakHpRegen(combo);
     }
   }else{
     for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');if(!autoMode){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost)_lost=true;}}}}
