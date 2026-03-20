@@ -3272,6 +3272,7 @@ async function endPlay2(){
     return;
   }
   const lostBanner=_lost?`<div style="font-size:14px;letter-spacing:5px;color:var(--red);margin-bottom:10px;font-weight:bold;">💀 FAILED</div><div style="font-size:9px;color:#555;letter-spacing:2px;margin-bottom:10px;">SCORE NOT SAVED</div>`:'' ;
+  const fc=CS?.fromCreate;
   const fcBanner=isFC?`<div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>`:'';
   const autoNote=autoMode?`<div style="font-size:10px;color:#555;letter-spacing:2px;margin-bottom:10px;">AUTO MODE — score not saved</div>`:'';
   const gemReward=!autoMode&&!isGuest&&CU?`<div style="font-size:10px;color:#00aaff;letter-spacing:2px;margin-top:6px;">💎 +${GEM_REWARDS[CS?.difficulty||'easy']||3} gems earned</div>`:'';
