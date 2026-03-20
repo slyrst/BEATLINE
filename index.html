@@ -581,7 +581,12 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="settings-section">
       <div class="settings-section-title">THUMB PLAYER</div>
       <canvas id="thumb-canvas" width="280" height="120" style="display:block;margin:0 auto 8px;"></canvas>
-      <div style="font-size:9px;color:#333;letter-spacing:2px;text-align:center;">PRESS KEYS OR TAP LANES TO SEE YOUR FINGERS LIGHT UP</div>
+      <div style="height:1px;background:var(--border);margin:12px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.5;">🎮 THUMB MODE<br><span style="font-size:8px;color:#555;letter-spacing:1px;">ALL 4 AT ONCE → VANISH</span></div>
+        <div id="thumb-mode-btn" onclick="toggleThumbMode()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:6px;">WHEN ON: ALL 4 LANES HIT SIMULTANEOUSLY → NOTES DISAPPEAR, NO MISS — EASIER FOR THUMBS</div>
     </div>
     <div class="settings-section">
       <div class="settings-section-title">GAMEPLAY</div>
@@ -618,6 +623,22 @@ canvas#cv{display:block;width:440px;height:620px;}
         <button class="xbtn sm" id="ns-8" onclick="setNoteSpeed(8)" style="letter-spacing:1px;">8×</button>
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:8px;">ONLY NOTE FALL SPEED · SONG TEMPO UNCHANGED</div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">INPUT OFFSET</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <div id="offset-display" style="font-size:20px;font-weight:bold;letter-spacing:2px;color:var(--amber);min-width:60px;text-align:center;">0 ms</div>
+        <div style="flex:1;">
+          <input type="range" id="offset-slider" min="-200" max="200" step="5" value="0"
+            oninput="setOffset(parseInt(this.value))"
+            style="width:100%;accent-color:var(--amber);">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:6px;">
+        <button class="xbtn sm" onclick="setOffset(0)" style="font-size:9px;">RESET</button>
+        <button class="xbtn am sm" onclick="openOffsetCalibration()" style="font-size:9px;">AUTO CALIBRATE</button>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;">NEGATIVE = HIT EARLIER · POSITIVE = HIT LATER<br>USE IF NOTES FEEL OFF WITH HEADPHONES OR MONITOR LAG</div>
     </div>
     <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
       <div class="settings-section-title" style="color:var(--pink);">ADMIN — MANAGE ROLES</div>
@@ -3905,6 +3926,7 @@ function initPlay(){
       <button class="xbtn cy" onclick="startPlay()">[ PLAY ]</button>
       ${(ADM||(CU&&CS.authorId===CU.uid)||CS.fromCreate)?`<button class="xbtn pk" onclick="startWatch()">[ EFFECT EDIT ]</button>`:''}
       <button class="xbtn am" id="auto-toggle-btn" onclick="toggleAuto()">[ AUTO: OFF ]</button>
+      <button class="xbtn gn sm" onclick="openPracticeSetup()">[ PRACTICE ]</button>
       ${ADM&&!fc?`<button class="xbtn" onclick="startAdminRec()">[ RE-RECORD (ADMIN) ]</button>`:''}
       ${fc?`<button class="xbtn am sm" onclick="goBack()">[ BACK TO EDITOR ]</button>`:`<button class="xbtn rd sm" onclick="goBack()">[ BACK ]</button>`}
     </div>
@@ -3961,6 +3983,7 @@ function pUpdate2(){
     n.cy=GHIT_Y()-(n.sMs-now)*GPPM();
     if(!n.missed&&!n.hit&&!n.holding&&now>n.sMs+WO){
       n.missed=true;combo=0;gstats.m++;judgeShow('MISS','#ff4444');laneHolding[n.lane]=false;
+      spawnMissAnim(n.lane,n.cy);
       if(!autoMode&&hpEnabled){
         _consecutiveMiss++;_lastRegenStreak=0;
         if(_consecutiveMiss>=2){hp=Math.max(0,hp+HP_MISS);updateHpHud();}
@@ -3983,21 +4006,24 @@ function hitPlay(lane,down){
   if(!running||mode!=='play')return;
   if(down){
     fl[lane]=14;ripples.push({x:lane*GLW()+GLW()/2,y:GHIT_Y()+20,r:8,c:COLS[lane],a:.8});
-    const now=sNow();let best=null,bd=WO+1;
+    const now=sNow()+_inputOffset;let best=null,bd=WO+1;
     for(let n of notes){if(n.hit||n.missed||n.holding||n.lane!==lane)continue;const d=Math.abs(now-n.sMs);if(d<bd){bd=d;best=n;}}
     if(best){
       let lbl,col,pts;
+      const timing=now-best.sMs; // negative=early, positive=late
       if(bd<WP){lbl='PERFECT';col='#00f0ff';pts=300;gstats.p++;}
-      else if(bd<WG){lbl='GOOD';col='#00ff88';pts=150;gstats.g++;}
-      else{lbl='OK';col='#88ff44';pts=60;gstats.ok++;}
+      else if(bd<WG){lbl='GOOD';col='#00ff88';pts=150;gstats.g++;showEarlyLate(timing);}
+      else{lbl='OK';col='#88ff44';pts=60;gstats.ok++;showEarlyLate(timing);}
       if(best.hMs>80){best.holding=true;laneHolding[lane]=true;pulseTimer[lane]=0;}
       else{best.hit=true;burstP(lane,best.cy);}
       combo++;if(combo>maxC)maxC=combo;score+=Math.floor(pts*(1+combo*.04));judgeShow(lbl,col);
       _cpsHits++;_consecutiveMiss=0;
       checkStreakHpRegen(combo);
+      // Record for ghost
+      if(_ghostRecord)_ghostRecord.push({t:sNow(),lane,type:'hit'});
     }
   }else{
-    for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');if(!autoMode&&hpEnabled){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost)_lost=true;}}}}
+    for(let n of notes){if(n.holding&&n.lane===lane){laneHolding[lane]=false;if(n.hp>.7){n.hit=true;n.holding=false;burstP(lane,GHIT_Y());score+=100;}else{n.holding=false;n.missed=true;combo=0;judgeShow('MISS','#ff4444');spawnMissAnim(lane,n.cy);if(!autoMode&&hpEnabled){hp=Math.max(0,hp+HP_MISS);updateHpHud();if(hp<=0&&!_lost)_lost=true;}}}}
   }
 }
 async function endPlay2(){
@@ -4035,6 +4061,12 @@ async function endPlay2(){
   }
   // Award gems only if not lost
   if(!_lost)await awardGems(CS?.difficulty,false);
+  // Award XP
+  if(!_lost&&!autoMode&&CU&&!isGuest)await awardXP(gr,isFC,gstats.p,tot);
+  // Save ghost replay
+  if(!_lost&&!autoMode&&CU&&!isGuest&&_ghostRecord&&_ghostRecord.length>0&&CS?.id){
+    saveGhostReplay(CS.id,score,gr,ac).catch(()=>{});
+  }
   // Spectating — just show a "finished watching" screen, no results
   if(_spectatingUid||CS?.spectating){
     stopSpectate();
@@ -4077,6 +4109,7 @@ async function endPlay2(){
   const fcBanner=isFC?`<div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>`:'';
   const autoNote=autoMode?`<div style="font-size:10px;color:#555;letter-spacing:2px;margin-bottom:10px;">AUTO MODE — score not saved</div>`:'';
   const gemReward=!autoMode&&!isGuest&&CU?`<div style="font-size:10px;color:#00aaff;letter-spacing:2px;margin-top:6px;">💎 +${GEM_REWARDS[CS?.difficulty||'easy']||3} gems earned</div>`:'';
+  const xpReward=!autoMode&&!isGuest&&CU&&!_lost?`<div id="xp-reward-banner" style="font-size:10px;color:#aa44ff;letter-spacing:2px;margin-top:3px;"></div>`:'';
   showOv(`
     <div class="rl">— RESULTS —</div>
     ${autoNote}${lostBanner}
@@ -4090,10 +4123,11 @@ async function endPlay2(){
     <div class="sr"><span>GOOD</span><span style="color:var(--green)">${gstats.g}</span></div>
     <div class="sr"><span>OK</span><span style="color:#88ff44">${gstats.ok}</span></div>
     <div class="sr" style="margin-bottom:20px;"><span>MISS</span><span style="color:var(--red)">${gstats.m}</span></div>
-    ${gemReward}
+    ${gemReward}${xpReward}
     <div class="ov-btns">
       <button class="xbtn cy" onclick="startPlay()">[ RETRY ]</button>
       ${CS?.id&&!fc?`<button class="xbtn am" onclick="showLB('${CS.id}','${esc(CS.title||'')}')">[ SCORES ]</button>`:''}
+      ${CS?.id&&!fc?`<button class="xbtn" onclick="startPlayWithGhost('${CS?.id||''}')" style="border-color:#aa44ff44;color:#aa44ff;">[ 👻 GHOST ]</button>`:''}
       ${fc?`<button class="xbtn gn" onclick="goBack()">[ BACK TO EDITOR ]</button>`:`<button class="xbtn rd sm" onclick="goBack()">[ SONG LIST ]</button>`}
     </div>
     ${savedNote}
@@ -4766,6 +4800,489 @@ setTimeout(()=>{if(CU)loadCustomEffects();},2000);
 loadChordHalveSetting();
 setTimeout(drawThumb,200);
 
+
+// ═══════════════════════════════════════════════════════════
+// ── INPUT OFFSET ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+let _inputOffset=0;
+function setOffset(v){
+  _inputOffset=v;
+  try{localStorage.setItem('bl_offset',v);}catch(e){}
+  const d=document.getElementById('offset-display');
+  if(d)d.textContent=(v>=0?'+':'')+v+' ms';
+  const s=document.getElementById('offset-slider');
+  if(s)s.value=v;
+}
+function loadOffset(){
+  try{const v=parseInt(localStorage.getItem('bl_offset')||'0');_inputOffset=v;setOffset(v);}catch(e){}
+}
+loadOffset();
+window.setOffset=setOffset;
+
+function openOffsetCalibration(){
+  // Tap 8 times to a metronome click; average drift = offset
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:901;display:flex;align-items:center;justify-content:center;';
+  let taps=[],metTimes=[],tick=0,raf3=0,startT=0;
+  const BPM=120,interval=60000/BPM;
+  modal.innerHTML=`<div style="background:#0d0d1a;border:1px solid #ffaa0044;padding:28px;max-width:320px;width:90%;text-align:center;">
+    <div style="font-size:11px;letter-spacing:4px;color:var(--amber);margin-bottom:16px;">OFFSET CALIBRATION</div>
+    <div id="cal-dot" style="width:60px;height:60px;border-radius:50%;background:#333;margin:0 auto 16px;transition:background .05s;"></div>
+    <div style="font-size:9px;color:#555;letter-spacing:2px;margin-bottom:14px;">TAP THE BUTTON WHEN THE CIRCLE FLASHES — 8 TIMES</div>
+    <button id="cal-tap-btn" class="xbtn am" style="width:100%;font-size:14px;padding:14px;" onclick="calTap()">TAP</button>
+    <div id="cal-result" style="font-size:10px;color:#aaa;letter-spacing:2px;margin-top:12px;min-height:20px;"></div>
+    <button class="xbtn sm rd" onclick="this.closest('[style*=fixed]').remove();cancelAnimationFrame(raf3)" style="margin-top:10px;width:100%;">[ CANCEL ]</button>
+  </div>`;
+  document.body.appendChild(modal);
+  startT=performance.now();
+  function metLoop(){
+    raf3=requestAnimationFrame(metLoop);
+    const elapsed=(performance.now()-startT)%interval;
+    const dot=document.getElementById('cal-dot');
+    if(!dot){cancelAnimationFrame(raf3);return;}
+    const flash=elapsed<80;
+    dot.style.background=flash?'#ffaa00':'#1a1a30';
+    if(flash&&(metTimes.length===0||performance.now()-metTimes[metTimes.length-1]>interval*0.5)){
+      metTimes.push(performance.now());
+    }
+  }
+  metLoop();
+  window.calTap=function(){
+    taps.push(performance.now());
+    const r=document.getElementById('cal-result');
+    if(taps.length<8){if(r)r.textContent='TAP '+(taps.length)+'/8...';}
+    else{
+      // Calculate average offset between tap and nearest metronome beat
+      let diffs=[];
+      for(let i=0;i<taps.length;i++){
+        const nearestMet=Math.round((taps[i]-startT)/interval)*interval+startT;
+        diffs.push(taps[i]-nearestMet);
+      }
+      const avg=Math.round(diffs.reduce((a,b)=>a+b,0)/diffs.length);
+      cancelAnimationFrame(raf3);
+      if(r)r.textContent='OFFSET: '+(avg>=0?'+':'')+avg+' ms — APPLIED!';
+      setOffset(Math.max(-200,Math.min(200,avg)));
+      setTimeout(()=>modal.remove(),2000);
+    }
+  };
+}
+window.openOffsetCalibration=openOffsetCalibration;
+
+// ── EARLY / LATE INDICATOR ────────────────────────────────
+let _elFadeRaf=null;
+function showEarlyLate(timing){
+  // timing: negative=early, positive=late
+  const el=document.getElementById('jt');if(!el)return;
+  const suffix=timing<-15?' ◀ EARLY':timing>15?' LATE ▶':'';
+  if(!suffix)return;
+  // append to judge text after short delay
+  clearTimeout(window._elTimer);
+  window._elTimer=setTimeout(()=>{
+    const sub=document.createElement('div');
+    sub.id='early-late-txt';
+    sub.style.cssText='font-size:9px;letter-spacing:3px;color:#888;text-align:center;margin-top:3px;pointer-events:none;';
+    sub.textContent=timing<0?'EARLY':'LATE';
+    const jt=document.getElementById('jt');
+    const old=document.getElementById('early-late-txt');if(old)old.remove();
+    if(jt&&jt.parentNode){jt.parentNode.insertBefore(sub,jt.nextSibling);}
+    setTimeout(()=>sub.remove(),600);
+  },60);
+}
+
+// ── MISS ANIMATION ───────────────────────────────────────
+let _missAnims=[];
+function spawnMissAnim(lane,cy){
+  const cx=lane*GLW()+GLW()/2;
+  const y=cy||GHIT_Y();
+  // Shatter pieces
+  for(let i=0;i<10;i++){
+    const a=Math.random()*Math.PI*2;
+    const s=2+Math.random()*4;
+    _missAnims.push({x:cx,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,a:0.9,r:3+Math.random()*5,lane,rot:Math.random()*Math.PI*2,vrot:(Math.random()-0.5)*0.3});
+  }
+}
+function drawMissAnims(){
+  for(let p of _missAnims){
+    const[r,g,b]=rgbC(COLS[p.lane]);
+    ctx2.save();
+    ctx2.globalAlpha=p.a;
+    ctx2.translate(p.x,p.y);
+    ctx2.rotate(p.rot);
+    // X shape
+    ctx2.strokeStyle=`rgba(${r},${g},${b},${p.a})`;
+    ctx2.lineWidth=2;
+    ctx2.beginPath();ctx2.moveTo(-p.r,-p.r);ctx2.lineTo(p.r,p.r);ctx2.stroke();
+    ctx2.beginPath();ctx2.moveTo(p.r,-p.r);ctx2.lineTo(-p.r,p.r);ctx2.stroke();
+    ctx2.restore();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.a-=0.045;p.rot+=p.vrot;p.r*=0.97;
+  }
+  _missAnims=_missAnims.filter(p=>p.a>0);
+}
+
+// Patch drawPlay2 to include miss anims and ghost
+const _origDrawPlay2=drawPlay2;
+drawPlay2=function(){
+  _origDrawPlay2();
+  drawMissAnims();
+  drawGhostNotes();
+};
+
+// ── THUMB MODE ───────────────────────────────────────────
+let _thumbMode=false;
+function toggleThumbMode(){
+  _thumbMode=!_thumbMode;
+  try{localStorage.setItem('bl_thumbmode',_thumbMode?'1':'0');}catch(e){}
+  const btn=document.getElementById('thumb-mode-btn');
+  if(btn){
+    if(_thumbMode){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+  }
+  toast('THUMB MODE '+ (_thumbMode?'ON — 4-key chords will vanish':'OFF'),'#00ff88');
+}
+function loadThumbMode(){
+  try{const v=localStorage.getItem('bl_thumbmode');if(v==='1')_thumbMode=true;}catch(e){}
+  const btn=document.getElementById('thumb-mode-btn');
+  if(btn){
+    if(_thumbMode){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+  }
+}
+loadThumbMode();
+window.toggleThumbMode=toggleThumbMode;
+
+// Patch _laneDown for thumb mode chord detection
+let _thumbChordWindow=[],_thumbChordTimer=null;
+const __origLaneDown=window._laneDown;
+window._laneDown=function(lane){
+  // Update thumb visual
+  _thumbActive[lane]=true;drawThumb();
+  if(_thumbMode&&mode==='play'&&running){
+    _thumbChordWindow.push(lane);
+    clearTimeout(_thumbChordTimer);
+    _thumbChordTimer=setTimeout(()=>{
+      if(_thumbChordWindow.length>=4){
+        // All 4 at once → vanish all notes in range without scoring or missing
+        const nowMs=sNow();
+        notes.forEach(n=>{
+          if(!n.hit&&!n.missed&&!n.holding&&Math.abs(nowMs-n.sMs)<WO*1.5){
+            n.hit=true; // just remove, no score, no miss count
+          }
+        });
+        _thumbChordWindow.forEach(l=>fl[l]=8);
+        toast('👍 CHORD CLEARED','#00ff88');
+      } else {
+        _thumbChordWindow.forEach(l=>__origLaneDown(l));
+      }
+      _thumbChordWindow=[];
+    },35);
+    return;
+  }
+  __origLaneDown(lane);
+};
+
+// ── PRACTICE MODE ────────────────────────────────────────
+let _practiceMode=false,_practiceStart=0,_practiceEnd=0;
+
+function openPracticeSetup(){
+  if(!CS||!CS.beatmap){toast('LOAD A SONG FIRST','#ff4444');return;}
+  const dur=CS.endTime||180; // fallback 3 min
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:901;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML=`<div style="background:#0d0d1a;border:1px solid #00ff8844;padding:24px;max-width:340px;width:90%;">
+    <div style="font-size:11px;letter-spacing:4px;color:var(--green);margin-bottom:16px;">🔁 PRACTICE MODE</div>
+    <div style="margin-bottom:12px;">
+      <label class="xlabel">START (seconds)</label>
+      <input class="xinput" id="prac-start" type="number" value="0" min="0" step="1" style="font-size:13px;">
+    </div>
+    <div style="margin-bottom:12px;">
+      <label class="xlabel">END (seconds)</label>
+      <input class="xinput" id="prac-end" type="number" value="30" min="1" step="1" style="font-size:13px;">
+    </div>
+    <div style="font-size:9px;color:#333;letter-spacing:2px;margin-bottom:16px;">SONG WILL LOOP BETWEEN THESE POINTS · FORMAT: SECONDS</div>
+    <div style="display:flex;gap:8px;">
+      <button class="xbtn gn" onclick="startPracticeMode()" style="flex:1;text-align:center;">[ START ]</button>
+      <button class="xbtn sm" onclick="this.closest('[style*=fixed]').remove()">[ CANCEL ]</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+window.openPracticeSetup=openPracticeSetup;
+
+function startPracticeMode(){
+  const s=parseFloat(document.getElementById('prac-start')?.value)||0;
+  const e=parseFloat(document.getElementById('prac-end')?.value)||30;
+  if(e<=s){toast('END MUST BE AFTER START','#ff4444');return;}
+  _practiceStart=s;_practiceEnd=e;_practiceMode=true;
+  document.querySelector('[style*="0.92"]')?.remove();
+  // Patch CS to use this range
+  const _origEnd=CS.endTime;
+  CS._practiceOrigEnd=_origEnd;
+  CS.endTime=e;
+  startPlay();
+  // Seek to start after audio loads
+  const trySeek=()=>{
+    if(aud&&aud.readyState>=2){
+      aud.currentTime=s;
+      _cBase=performance.now();_cOff=s*1000;
+      bpIdx=0;const nowMs=s*1000;
+      while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;
+    }else setTimeout(trySeek,100);
+  };
+  setTimeout(trySeek,200);
+  // Show practice badge
+  const pb=document.createElement('div');pb.id='practice-badge';
+  pb.style.cssText='position:absolute;top:48px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:3px;color:var(--green);background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);padding:2px 12px;z-index:12;pointer-events:none;';
+  pb.textContent='🔁 PRACTICE '+fmtT(s*1000)+' → '+fmtT(e*1000);
+  document.getElementById('gc')?.appendChild(pb);
+}
+window.startPracticeMode=startPracticeMode;
+
+// Patch pUpdate2 to loop in practice mode
+const _origPUpdate2=pUpdate2;
+pUpdate2=function(){
+  _origPUpdate2();
+  if(_practiceMode&&aud&&aud.currentTime>=(CS.endTime||_practiceEnd)-0.1){
+    // Loop back to start
+    aud.currentTime=_practiceStart;
+    _cBase=performance.now();_cOff=_practiceStart*1000;
+    notes=[];parts=[];ripples=[];laneHolding=[false,false,false,false];holdPulses=[];_missAnims=[];
+    bpIdx=0;const nowMs=_practiceStart*1000;
+    while(bpIdx<beatmap.length&&beatmap[bpIdx].sMs<nowMs-GAPP_MS())bpIdx++;
+    // Flash loop indicator
+    toast('🔁 LOOP','#00ff88');
+  }
+};
+
+// Clear practice mode on stopAll
+const _origStopAll=stopAll;
+stopAll=function(){
+  _origStopAll();
+  if(_practiceMode){
+    _practiceMode=false;
+    if(CS&&CS._practiceOrigEnd!==undefined)CS.endTime=CS._practiceOrigEnd;
+    document.getElementById('practice-badge')?.remove();
+  }
+  _missAnims=[];
+};
+
+// ── XP / LEVEL SYSTEM ────────────────────────────────────
+const XP_TABLE={S:200,A:120,B:70,C:35,D:15};
+const XP_FOR_LEVEL=n=>Math.floor(100*Math.pow(1.3,n-1));
+function xpForLevel(n){let t=0;for(let i=1;i<n;i++)t+=XP_FOR_LEVEL(i);return t;}
+function levelFromXP(xp){let lv=1;while(xpForLevel(lv+1)<=xp)lv++;return lv;}
+function xpInLevel(xp){const lv=levelFromXP(xp);return xp-xpForLevel(lv);}
+function xpNeeded(xp){const lv=levelFromXP(xp);return XP_FOR_LEVEL(lv);}
+
+async function awardXP(grade,isFC,perfects,total){
+  if(!CU||isGuest)return;
+  let earned=(XP_TABLE[grade]||15);
+  if(isFC)earned=Math.round(earned*1.5);
+  const acc=total?Math.round((perfects/total)*100):0;
+  earned=Math.round(earned*(0.5+acc/200)); // accuracy bonus up to 1.5x
+
+  try{
+    const snap=await dGet(dDoc('users',CU.uid));
+    const cur=snap.data()?.xp||0;
+    const newXP=cur+earned;
+    const oldLv=levelFromXP(cur),newLv=levelFromXP(newXP);
+    await dUpd(dDoc('users',CU.uid),{xp:newXP,level:newLv});
+    if(CUD){CUD.xp=newXP;CUD.level=newLv;}
+    // Show XP banner in results
+    const banner=document.getElementById('xp-reward-banner');
+    if(banner){
+      banner.textContent='⬆ +'+earned+' XP  ·  LV '+newLv+(newLv>oldLv?' 🎉 LEVEL UP!':'');
+      banner.style.color=newLv>oldLv?'#ffaa00':'#aa44ff';
+    }
+    if(newLv>oldLv){
+      setTimeout(()=>showLevelUpCelebration(newLv),400);
+    }
+  }catch(e){}
+}
+
+function showLevelUpCelebration(lv){
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:800;pointer-events:none;';
+  div.innerHTML=`<div style="text-align:center;animation:levelup-pop .6s ease-out;">
+    <div style="font-size:14px;letter-spacing:6px;color:#ffaa00;margin-bottom:6px;">LEVEL UP!</div>
+    <div style="font-size:56px;font-weight:bold;letter-spacing:4px;color:#fff;text-shadow:0 0 40px rgba(255,170,0,.8);">LV ${lv}</div>
+  </div>`;
+  document.body.appendChild(div);
+  setTimeout(()=>div.remove(),3000);
+}
+
+// Add level display to profile — patch openProfile to show XP bar
+const _origOpenProfile=openProfile;
+openProfile=async function(uid,back){
+  await _origOpenProfile(uid,back);
+  // Inject XP bar into profile header if it's our profile
+  if(!uid||!CU||uid!==CU.uid)return;
+  const xp=CUD?.xp||0;const lv=levelFromXP(xp);
+  const pct=Math.round((xpInLevel(xp)/xpNeeded(xp))*100);
+  const xpDiv=document.createElement('div');
+  xpDiv.style.cssText='padding:8px 20px;background:var(--bg3);border-bottom:1px solid var(--border);';
+  xpDiv.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+    <span style="font-size:9px;color:#aa44ff;letter-spacing:3px;">LV ${lv}</span>
+    <span style="font-size:9px;color:#555;letter-spacing:2px;">${xpInLevel(xp)} / ${xpNeeded(xp)} XP</span>
+  </div>
+  <div style="height:5px;background:#1a1a30;border-radius:3px;overflow:hidden;">
+    <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,#aa44ff,#ff44ff);border-radius:3px;transition:width .4s;"></div>
+  </div>`;
+  const inner=document.getElementById('profile-inner');
+  if(inner&&inner.firstChild)inner.insertBefore(xpDiv,inner.firstChild.nextSibling);
+};
+
+// ── DAILY CHALLENGE + LOGIN STREAK ──────────────────────
+const CHALLENGE_TYPES=['accuracy','combo','score','nonstop'];
+
+function getTodayKey(){return new Date().toISOString().slice(0,10);}
+
+function getDailyChallenge(){
+  const today=getTodayKey();
+  // Seed random from date for consistent daily challenge
+  let seed=0;for(let c of today)seed=(seed*31+c.charCodeAt(0))&0xffffffff;
+  const rnd=()=>{seed=(seed*1664525+1013904223)&0xffffffff;return (seed>>>0)/0xffffffff;};
+  const type=CHALLENGE_TYPES[Math.floor(rnd()*CHALLENGE_TYPES.length)];
+  const targets={accuracy:95,combo:50,score:50000,nonstop:3};
+  const descs={
+    accuracy:'Get '+targets.accuracy+'% accuracy on any song',
+    combo:'Hit a '+targets.combo+'x combo',
+    score:'Score '+targets.accuracy.toLocaleString()+'+ points',
+    nonstop:'Complete '+targets.nonstop+' songs without quitting'
+  };
+  return{type,target:targets[type],desc:descs[type],today};
+}
+
+async function checkDailyChallenge(){
+  if(!CU||isGuest)return;
+  const ch=getDailyChallenge();
+  const today=getTodayKey();
+  try{
+    const snap=await dGet(dDoc('users',CU.uid));
+    const d=snap.data()||{};
+    // Update login streak
+    const lastLogin=d.lastLoginDate||'';
+    const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+    let streak=d.loginStreak||0;
+    if(lastLogin===yesterday)streak++;
+    else if(lastLogin!==today)streak=1;
+    if(lastLogin!==today){
+      await dUpd(dDoc('users',CU.uid),{lastLoginDate:today,loginStreak:streak});
+      if(CUD){CUD.lastLoginDate=today;CUD.loginStreak=streak;}
+      if(streak>1)toast('🔥 '+streak+' DAY LOGIN STREAK!','#ff8800');
+    }
+    // Show daily challenge toast if not done yet
+    const done=d.dailyChallenges?.[today];
+    if(!done){
+      setTimeout(()=>{
+        showNotif('🎯','DAILY CHALLENGE','notif-song',ch.desc,()=>showPage('songs-page'));
+      },3000);
+    }
+  }catch(e){}
+}
+
+async function updateDailyProgress(type,value){
+  if(!CU||isGuest)return;
+  const ch=getDailyChallenge();
+  const today=getTodayKey();
+  if(ch.type!==type)return;
+  try{
+    const snap=await dGet(dDoc('users',CU.uid));
+    const d=snap.data()||{};
+    const done=d.dailyChallenges?.[today];
+    if(done)return;
+    if(value>=ch.target){
+      await dUpd(dDoc('users',CU.uid),{[`dailyChallenges.${today}`]:true});
+      if(CUD){if(!CUD.dailyChallenges)CUD.dailyChallenges={};CUD.dailyChallenges[today]=true;}
+      const xpBonus=50;
+      const curXP=d.xp||0;
+      await dUpd(dDoc('users',CU.uid),{xp:curXP+xpBonus});
+      showNotif('🎯','DAILY COMPLETE!','notif-song','+'+xpBonus+' XP bonus earned!',null);
+      toast('🎯 DAILY CHALLENGE COMPLETE! +'+xpBonus+' XP','#ffaa00');
+    }
+  }catch(e){}
+}
+
+// Hook endPlay2 to check daily challenge progress
+const _origEndPlay2=endPlay2;
+endPlay2=async function(){
+  await _origEndPlay2();
+  if(!_lost&&!autoMode){
+    const tot=gstats.p+gstats.g+gstats.ok+gstats.m;
+    const ac=tot?Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100):0;
+    updateDailyProgress('accuracy',ac);
+    updateDailyProgress('combo',maxC);
+    updateDailyProgress('score',score);
+  }
+};
+
+// Run daily check after login
+setTimeout(()=>{if(CU&&!isGuest)checkDailyChallenge();},2500);
+
+// ── GHOST REPLAY ─────────────────────────────────────────
+let _ghostRecord=null;  // array of {t, lane, type} during play
+let _ghostNotes=[];     // notes to render from top scorer
+let _ghostPlayback=[];  // current ghost hit timestamps
+let _ghostMode=false;
+
+async function startPlayWithGhost(songId){
+  if(!songId){startPlay();return;}
+  // Load top score's replay
+  try{
+    const snap=await dQ('scores',W('songId','==',songId));
+    const best=snap.docs.sort((a,b)=>(b.data().score||0)-(a.data().score||0))[0];
+    if(best&&best.data().ghostData){
+      _ghostPlayback=best.data().ghostData||[];
+      _ghostMode=true;
+      toast('👻 GHOST LOADED: '+esc(best.data().username||'?'),'#aa44ff');
+    }
+  }catch(e){}
+  startPlay();
+}
+window.startPlayWithGhost=startPlayWithGhost;
+
+// Start recording ghost on play
+const _origStartPlay=startPlay;
+startPlay=function(){
+  _ghostRecord=[];
+  _ghostMode=_ghostMode; // keep if set externally
+  _origStartPlay();
+};
+
+async function saveGhostReplay(songId,sc,grade,acc){
+  if(!CU||!_ghostRecord||_ghostRecord.length===0)return;
+  try{
+    const snap=await dQ('scores',W('songId','==',songId),W('userId','==',CU.uid));
+    if(snap.empty)return;
+    const prev=snap.docs[0];
+    if(sc>=(prev.data().score||0)){
+      await dUpd(prev.ref,{ghostData:_ghostRecord.slice(0,500)});// cap at 500 events
+    }
+  }catch(e){}
+}
+
+function drawGhostNotes(){
+  if(!_ghostMode||!_ghostPlayback||!_ghostPlayback.length)return;
+  const nowMs=sNow();
+  // Draw ghost hit ripples at GHIT_Y based on recorded times
+  _ghostPlayback.forEach(g=>{
+    const age=nowMs-g.t;
+    if(age<0||age>400)return;
+    const[r,gb,b]=rgbC(COLS[g.lane%4]);
+    const alpha=Math.max(0,1-age/400)*0.45;
+    const cx=g.lane*GLW()+GLW()/2;
+    const rr=12+age*0.08;
+    ctx2.strokeStyle=`rgba(${r},${gb},${b},${alpha})`;
+    ctx2.lineWidth=1.5;
+    ctx2.setLineDash([4,4]);
+    ctx2.beginPath();ctx2.arc(cx,GHIT_Y()+20,rr,0,Math.PI*2);ctx2.stroke();
+    ctx2.setLineDash([]);
+  });
+}
+
+// Add levelup CSS
+const _styleEl=document.createElement('style');
+_styleEl.textContent=`@keyframes levelup-pop{0%{transform:scale(0.5);opacity:0;}60%{transform:scale(1.1);opacity:1;}100%{transform:scale(1);opacity:1;}}`;
+document.head.appendChild(_styleEl);
 </script>
 </body>
 </html>
