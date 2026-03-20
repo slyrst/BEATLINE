@@ -134,12 +134,12 @@ input[type=file]#cr-file{display:none;}
 .eff-btn{background:transparent;border:1px solid color-mix(in srgb,var(--ec) 30%,transparent);color:var(--ec,#aaa);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:4px 9px;cursor:pointer;transition:background .1s;}
 .eff-btn:hover{background:color-mix(in srgb,var(--ec) 15%,transparent);}
 .eff-btn.active{background:color-mix(in srgb,var(--ec) 25%,transparent);border-color:var(--ec);}
-#game-page{justify-content:flex-start;align-items:flex-start;overflow:hidden;position:relative;}
+#game-page{justify-content:center;align-items:center;overflow:hidden;}
 #game-wrap{
   display:flex;flex-direction:column;
   align-items:center;
   width:440px;
-  transform-origin:top left;
+  transform-origin:top center;
 }
 #gc{
   position:relative;
@@ -720,7 +720,7 @@ canvas#cv{display:block;width:440px;height:620px;}
   </div>
 </div>
 <!-- PROFILE -->
-<div class="page" id="profile-page" style="align-items:center;">
+<div class="page" id="profile-page">
   <div class="page-header">
     <div class="page-header-title">PROFILE</div>
     <button class="xbtn sm" id="profile-back-btn" onclick="goPageBack()">[ BACK ]</button>
@@ -4336,20 +4336,11 @@ function scaleGame(){
   const wrap=document.getElementById('game-wrap');
   if(!wrap)return;
   const vw=window.innerWidth,vh=window.innerHeight;
-  const gameH=682;
+  const gameH=620+60+2; // canvas + buttons + borders
   const scaleW=vw/440,scaleH=vh/gameH;
-  const scale=Math.min(scaleW,scaleH,1);
-  wrap.style.position='absolute';
-  wrap.style.transformOrigin='top left';
-  if(scale<1){
-    wrap.style.transform=`scale(${scale})`;
-    wrap.style.left=`${(vw-(440*scale))/2}px`;
-    wrap.style.top=`${(vh-(gameH*scale))/2}px`;
-  } else {
-    wrap.style.transform='';
-    wrap.style.left=`${(vw-440)/2}px`;
-    wrap.style.top=`${(vh-gameH)/2}px`;
-  }
+  const scale=Math.min(scaleW,scaleH,1); // never scale up on desktop
+  wrap.style.transform=scale<1?`scale(${scale})`:'';
+  wrap.style.marginTop=scale<1?`${(vh-(gameH*scale))/2}px`:'';
 }
 window.addEventListener('resize',scaleGame);
 setTimeout(scaleGame,0);
