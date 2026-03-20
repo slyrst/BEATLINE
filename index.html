@@ -441,7 +441,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="menu-contact">
       <div class="menu-contact-title">WANT YOUR SONG IN THE GAME?</div>
       <div class="menu-contact-desc">SEND THE OWNER AN EMAIL WITH YOUR SONG REQUEST — OR CREATE YOUR OWN LEVEL ABOVE</div>
-      <a href="mailto:sevilbulutsg@gmail.com">sevilbulutsg@gmail.com</a>
+      <a href="/cdn-cgi/l/email-protection#aeddcbd8c7c2ccdbc2dbdaddc9eec9c3cfc7c280cdc1c3"><span class="__cf_email__" data-cfemail="30435546595c52455c4544435770575d51595c1e535f5d">[email&#160;protected]</span></a>
     </div>
   </div>
 </div>
@@ -451,7 +451,7 @@ canvas#cv{display:block;width:440px;height:620px;}
   <div class="page-header">
     <div>
       <div class="page-header-title">SELECT SONG</div>
-      <div style="font-size:9px;color:#1a1a2e;letter-spacing:3px;margin-top:3px;">REQUEST A SONG → <a href="mailto:sevilbulutsg@gmail.com" style="color:#1a1a2e;">sevilbulutsg@gmail.com</a></div>
+      <div style="font-size:9px;color:#1a1a2e;letter-spacing:3px;margin-top:3px;">REQUEST A SONG → <a href="/cdn-cgi/l/email-protection#374452415e5b55425b4243445077505a565e5b1954585a" style="color:#1a1a2e;"><span class="__cf_email__" data-cfemail="b1c2d4c7d8ddd3c4ddc4c5c2d6f1d6dcd0d8dd9fd2dedc">[email&#160;protected]</span></a></div>
     </div>
     <button class="xbtn sm" onclick="showPage('menu-page')">[ BACK ]</button>
   </div>
@@ -577,6 +577,12 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div style="font-size:10px;color:#333;letter-spacing:2px;margin-top:12px;">CLICK A KEY BUTTON THEN PRESS THE KEY YOU WANT</div>
       <button class="xbtn sm rd" style="margin-top:12px;" onclick="resetKeys()">[ RESET TO DEFAULT ]</button>
     </div>
+    <!-- THUMB PLAYER -->
+    <div class="settings-section">
+      <div class="settings-section-title">THUMB PLAYER</div>
+      <canvas id="thumb-canvas" width="280" height="120" style="display:block;margin:0 auto 8px;"></canvas>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;text-align:center;">PRESS KEYS OR TAP LANES TO SEE YOUR FINGERS LIGHT UP</div>
+    </div>
     <div class="settings-section">
       <div class="settings-section-title">GAMEPLAY</div>
       <div class="keybind-row">
@@ -586,11 +592,18 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">FIRE · SHAKE · FLASH · COLOR EFFECTS</div>
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
       <div class="keybind-row">
+        <div class="keybind-label">4-KEY CHORD → HALF</div>
+        <div id="chord-toggle-btn" onclick="toggleChordHalve()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">ALL 4 KEYS AT ONCE → ONLY 2 NOTES COUNT</div>
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+      <div class="keybind-row">
         <div class="keybind-label">❤ HEALTH BAR</div>
         <div id="hp-toggle-btn" onclick="toggleHpSetting()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">WHEN OFF — SCORES NOT SAVED</div>
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+      <div class="keybind-row" style="margin-bottom:6px;">
         <div class="keybind-label">NOTE SPEED</div>
         <div style="font-size:16px;font-weight:bold;letter-spacing:2px;color:var(--cyan);min-width:40px;text-align:center;" id="note-speed-display">2×</div>
       </div>
@@ -705,6 +718,9 @@ canvas#cv{display:block;width:440px;height:620px;}
           <div style="width:200px;overflow-y:auto;padding:6px 8px;" id="eff-library">
             <div style="font-size:8px;color:#333;letter-spacing:3px;margin-bottom:6px;">EFFECT LIBRARY</div>
             <div id="eff-lib-list" style="display:flex;flex-direction:column;gap:3px;"></div>
+            <div style="margin-top:8px;border-top:1px solid #1a1a30;padding-top:8px;">
+              <button onclick="openCustomEffectEditor()" style="background:#ff44ff11;border:1px solid #ff44ff44;color:#ff44ff;font-family:'Courier New',monospace;font-size:8px;letter-spacing:2px;padding:5px 8px;cursor:pointer;width:100%;text-align:center;">★ MAKE YOUR OWN</button>
+            </div>
           </div>
         </div>
       </div>
@@ -850,7 +866,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     <button class="xbtn sm pk" style="padding:4px 12px;font-size:9px;" onclick="openProfile(CU?.uid||null)">MY PROFILE</button>
   </div>
 </div>
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ── FIREBASE ──────────────────────────────────────────────────────────────────
 firebase.initializeApp({apiKey:"AIzaSyDUb5czI32n8GiWYy6_CZCGx-MmmHsbm6A",authDomain:"keough-f3d6b.firebaseapp.com",projectId:"keough-f3d6b",storageBucket:"keough-f3d6b.firebasestorage.app",messagingSenderId:"946275933372",appId:"1:946275933372:web:1a7423f7eca71b541944b9"});
 const auth=firebase.auth(),db=firebase.firestore();
@@ -1261,7 +1277,7 @@ auth.onAuthStateChanged(async user=>{
     if(adminSec)adminSec.style.display=ADM?'block':'none';
     const roleSec=document.getElementById('admin-role-section');
     if(roleSec)roleSec.style.display=ADM?'block':'none';
-    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();loadGems();loadInventory();
+    hideLoad();showPage('menu-page');updateBottomBar();startGlobalNotifListener();startPresence();initNotifPermission();loadGems();loadInventory();loadCustomEffects();
   }else{
     const activePage=document.querySelector('.page.active')?.id;
     const inGame=activePage==='game-page';
@@ -1722,7 +1738,7 @@ async function openProfile(uid, backPage){
           <div style="font-size:11px;color:#aaa;letter-spacing:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(nowPlaying.songTitle||'?')}</div>
         </div>
         ${!isSelf&&CU?`<button class="xbtn cy sm" onclick="spectatePlayer('${uid}','${nowPlaying.songId}')" style="padding:4px 12px;font-size:9px;">👁 WATCH</button>`:''}
-      </div>`:online&&ud.activity&&!nowPlaying?.songId?`<div style="margin-top:6px;font-size:9px;color:#333;letter-spacing:2px;">● ${esc(ud.activity)}</div>`:!online&&ud.lastSeen?`<div style="margin-top:6px;font-size:9px;color:#252540;letter-spacing:2px;">LAST SEEN ${timeAgo(ud.lastSeen)}</div>`:'';
+      </div>`:!online&&ud.lastSeen?`<div style="margin-top:6px;font-size:9px;color:#252540;letter-spacing:2px;">LAST SEEN ${timeAgo(ud.lastSeen)}</div>`:'';
     let friendBtn='';
     if(!isSelf&&CU&&uid){
       const myFriends=CUD?.friends||[];
@@ -3675,10 +3691,13 @@ function updateEffectUI(){
   if(!watchEffectEvents.length){list.innerHTML='<div style="font-size:9px;color:#333;letter-spacing:2px;padding:4px 0;">no effects yet</div>';return;}
   list.innerHTML=watchEffectEvents.map(function(ev,i){
     const m=EFFECT_META[ev.type]||{label:ev.type,col:'#aaa'};
-    const extra=ev.type==='speed'?' ('+ev.val+'x)':'';
+    const extra=ev.type==='speed'?' ('+ev.val+'x)':ev.text?' "'+ev.text.slice(0,12)+(ev.text.length>12?'…':'')+'"':'';
+    const hasText=['text','neon_text','warning','countdown'].includes(ev.type);
+    const editBtn=hasText?'<button onclick="editEffectText('+i+')" style="background:none;border:1px solid #ffaa0033;color:#ffaa00;font-size:8px;padding:2px 5px;cursor:pointer;">✏</button>':'';
     return '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">'
       +'<span style="color:'+m.col+';font-size:9px;min-width:85px;">'+m.label+extra+'</span>'
       +'<span style="color:#555;font-size:9px;">'+fmtT(ev.s*1000)+' → '+fmtT(ev.e*1000)+'</span>'
+      +editBtn
       +'<button onclick="seekToRange('+i+')" style="background:none;border:1px solid #333;color:#666;font-size:8px;padding:2px 5px;cursor:pointer;">▶</button>'
       +'<button onclick="removeEffectEvent('+i+')" style="background:none;border:1px solid #ff444433;color:#ff6666;font-size:8px;padding:2px 5px;cursor:pointer;">✕</button>'
       +'</div>';}).join('');
@@ -4481,7 +4500,249 @@ window.crPreview=crPreview;window.crClearNotes=crClearNotes;window.crPublish=crP
 window.confirmLeaveCreate=confirmLeaveCreate;window.endRecord=endRecord;window.initPlay=initPlay;
 window.startPlay=startPlay;window.startAdminRec=startAdminRec;window.goBack=goBack;
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadKeys();loadEffectsSetting();loadNoteSpeed();loadHpSetting();
+loadKeys();loadEffectsSetting();loadNoteSpeed();
+
+// ── CHORD HALVE SETTING ───────────────────────────────────────────────────────
+let _chordHalve = true;
+function loadChordHalveSetting(){
+  try{const v=localStorage.getItem('bl_chord');if(v==='0')_chordHalve=false;}catch(e){}
+  updateChordBtn();
+}
+function toggleChordHalve(){
+  _chordHalve=!_chordHalve;
+  try{localStorage.setItem('bl_chord',_chordHalve?'1':'0');}catch(e){}
+  updateChordBtn();
+}
+function updateChordBtn(){
+  const btn=document.getElementById('chord-toggle-btn');if(!btn)return;
+  if(_chordHalve){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+  else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+}
+window.toggleChordHalve=toggleChordHalve;
+
+// Patch hitPlay for chord halve
+let _chordWindow=[],_chordTimer=null;
+const _origHitPlay=hitPlay;
+window.hitPlay=function(lane,down){
+  if(!down||!_chordHalve||mode!=='play'){_origHitPlay(lane,down);return;}
+  _chordWindow.push(lane);
+  clearTimeout(_chordTimer);
+  _chordTimer=setTimeout(()=>{
+    const toProcess=_chordWindow.length>=4?_chordWindow.slice(0,2):_chordWindow;
+    toProcess.forEach(l=>_origHitPlay(l,true));
+    _chordWindow=[];
+  },30);
+};
+
+// ── THUMB PLAYER ──────────────────────────────────────────────────────────────
+let _thumbActive=[false,false,false,false];
+function drawThumb(){
+  const cv2=document.getElementById('thumb-canvas');if(!cv2)return;
+  const ctx=cv2.getContext('2d');
+  const W=cv2.width,H=cv2.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#03030c';ctx.fillRect(0,0,W,H);
+  const fingers=[
+    {x:18, y:22, label:'D', lane:0},
+    {x:72, y:14, label:'F', lane:1},
+    {x:W-110, y:14, label:'J', lane:2},
+    {x:W-56, y:22, label:'K', lane:3},
+  ];
+  const fw=46,fh=72,fr=9;
+  fingers.forEach(({x,y,label,lane})=>{
+    const act=_thumbActive[lane];
+    const[r,g,b]=rgbC(COLS[lane]);
+    ctx.beginPath();
+    if(ctx.roundRect){ctx.roundRect(x,y,fw,fh,fr);}else{ctx.rect(x,y,fw,fh);}
+    ctx.fillStyle=act?`rgba(${r},${g},${b},0.85)`:`rgba(${r},${g},${b},0.09)`;ctx.fill();
+    ctx.strokeStyle=act?`rgba(${r},${g},${b},1)`:`rgba(${r},${g},${b},0.25)`;ctx.lineWidth=act?2:1.5;ctx.stroke();
+    [0.3,0.58].forEach(k=>{
+      ctx.beginPath();ctx.moveTo(x+5,y+fh*k);ctx.lineTo(x+fw-5,y+fh*k);
+      ctx.strokeStyle=act?`rgba(${r},${g},${b},0.35)`:`rgba(${r},${g},${b},0.06)`;ctx.lineWidth=1;ctx.stroke();
+    });
+    if(act){ctx.shadowColor=`rgba(${r},${g},${b},0.85)`;ctx.shadowBlur=16;}
+    ctx.fillStyle=act?'#fff':`rgba(${r},${g},${b},0.45)`;
+    ctx.font='bold 13px "Courier New"';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(label,x+fw/2,y+fh/2);
+    ctx.shadowBlur=0;
+  });
+  ctx.fillStyle='rgba(255,255,255,0.035)';ctx.fillRect(8,92,118,14);ctx.fillRect(W-132,92,118,14);
+  ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='8px "Courier New"';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('LEFT',67,99);ctx.fillText('RIGHT',W-73,99);
+}
+
+document.addEventListener('keydown',e=>{
+  const i=KEYS.indexOf(e.key.toLowerCase());
+  if(i!==-1&&i<4){_thumbActive[i]=true;drawThumb();}
+},{passive:true});
+document.addEventListener('keyup',e=>{
+  const i=KEYS.indexOf(e.key.toLowerCase());
+  if(i!==-1&&i<4){_thumbActive[i]=false;drawThumb();}
+},{passive:true});
+
+// Hook lane events to update thumb
+const _origLD=_laneDown,_origLU=_laneUp;
+window._laneDown=function(l){_origLD(l);_thumbActive[l]=true;drawThumb();};
+window._laneUp=function(l){_origLU(l);_thumbActive[l]=false;drawThumb();};
+
+const _origShowPage2=showPage;
+window.showPage=function(id,skip){_origShowPage2(id,skip);if(id==='settings-page')setTimeout(drawThumb,60);};
+
+// ── EDIT EFFECT TEXT ──────────────────────────────────────────────────────────
+function editEffectText(i){
+  const ev=watchEffectEvents[i];if(!ev)return;
+  const meta=EFF_LIB_UNIQUE.find(e=>e.id===ev.type);if(!meta)return;
+  const m=EFFECT_META[ev.type]||{col:'#fff',label:ev.type};
+  let fields='';
+  meta.params.forEach(p=>{
+    const val=ev[p.id]!==undefined?ev[p.id]:p.def;
+    if(p.type==='text') fields+=`<div style="margin-bottom:10px;"><label class="xlabel">${p.label}</label><input id="eff-edit-${p.id}" class="xinput" value="${esc(String(val))}" maxlength="80"></div>`;
+    else if(p.type==='color') fields+=`<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;"><label class="xlabel" style="margin:0;">${p.label}</label><input type="color" id="eff-edit-${p.id}" value="${val}" style="width:32px;height:22px;border:none;background:none;cursor:pointer;"></div>`;
+    else if(p.type==='range') fields+=`<div style="margin-bottom:10px;"><label class="xlabel">${p.label}: <span id="eff-edit-disp-${p.id}">${val}</span></label><input type="range" id="eff-edit-${p.id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${val}" oninput="document.getElementById('eff-edit-disp-${p.id}').textContent=this.value" style="width:100%;margin-top:4px;"></div>`;
+    else if(p.type==='select') fields+=`<div style="margin-bottom:10px;"><label class="xlabel">${p.label}</label><select id="eff-edit-${p.id}" class="xinput" style="font-size:10px;">${p.opts.map(o=>`<option ${o==val?'selected':''}>${o}</option>`).join('')}</select></div>`;
+  });
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:900;display:flex;align-items:center;justify-content:center;';
+  modal.innerHTML=`<div style="background:#0d0d1a;border:1px solid ${m.col}55;padding:20px;max-width:320px;width:90%;">
+    <div style="font-size:11px;letter-spacing:3px;color:${m.col};margin-bottom:14px;">✏ EDIT — ${m.label}</div>
+    ${fields||'<div style="font-size:10px;color:#444;letter-spacing:2px;">NO EDITABLE PARAMS</div>'}
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="xbtn cy sm" onclick="applyEffectEdit(${i},this.closest('[style*=fixed]'))">[ SAVE ]</button>
+      <button class="xbtn sm" onclick="this.closest('[style*=fixed]').remove()">[ CANCEL ]</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+function applyEffectEdit(i,modal){
+  const ev=watchEffectEvents[i];if(!ev)return;
+  const meta=EFF_LIB_UNIQUE.find(e=>e.id===ev.type);
+  if(meta)meta.params.forEach(p=>{
+    const el=document.getElementById('eff-edit-'+p.id);
+    if(el)ev[p.id]=p.type==='range'?parseFloat(el.value):el.value;
+  });
+  if(modal)modal.remove();
+  updateEffectUI();toast('EFFECT UPDATED','#00ff88');
+}
+window.editEffectText=editEffectText;window.applyEffectEdit=applyEffectEdit;
+
+// ── CUSTOM EFFECT EDITOR ─────────────────────────────────────────────────────
+let _customEffects=[];
+
+async function loadCustomEffects(){
+  if(!CU)return;
+  try{const s=await dGet(dDoc('users',CU.uid));_customEffects=s.data()?.customEffects||[];_injectCustomToLib();}catch(e){}
+}
+
+function _injectCustomToLib(){
+  _customEffects.forEach(ce=>{
+    const id='custom_'+ce.name.replace(/\s+/g,'_').toLowerCase().slice(0,20);
+    if(!EFFECT_META[id]){
+      EFFECT_META[id]={label:'★ '+ce.name,col:'#ff44ff'};
+      EFF_LIB_UNIQUE.push({id,cat:'★ MY EFFECTS',label:ce.name,col:'#ff44ff',params:[]});
+    }
+  });
+}
+
+function openCustomEffectEditor(){
+  const ex=`// Variables: ctx2, W, H, t2 (ms), aud (audio element)
+// Example — pulsing pink overlay:
+const pulse = Math.sin(t2/400)*0.5+0.5;
+ctx2.fillStyle = \`rgba(255,0,128,\${pulse*0.3})\`;
+ctx2.fillRect(0,0,W,H);`;
+
+  const existing=_customEffects.map((ce,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #1a1a30;">
+      <span style="flex:1;font-size:10px;color:#ff44ff;letter-spacing:1px;">★ ${esc(ce.name)}</span>
+      <span style="font-size:8px;color:#333;padding:1px 5px;border:1px solid #252540;">${ce.isPublic?'PUBLIC':'PRIVATE'}</span>
+      <button onclick="deleteCustomEffect(${i})" style="background:none;border:1px solid #ff444433;color:#ff6666;font-family:'Courier New',monospace;font-size:8px;padding:2px 6px;cursor:pointer;">✕</button>
+    </div>`).join('');
+
+  const modal=document.createElement('div');
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:900;display:flex;align-items:center;justify-content:center;overflow-y:auto;';
+  modal.innerHTML=`<div style="background:#0a0a18;border:1px solid #ff44ff44;padding:20px;max-width:460px;width:95%;max-height:90vh;overflow-y:auto;margin:auto;">
+    <div style="font-size:11px;letter-spacing:4px;color:#ff44ff;margin-bottom:14px;">★ MY EFFECTS</div>
+    ${existing?`<div style="margin-bottom:14px;">${existing}</div>`:''}
+    <div style="font-size:9px;color:#444;letter-spacing:3px;margin-bottom:8px;border-top:1px solid #1a1a30;padding-top:12px;">CREATE NEW EFFECT</div>
+    <div style="margin-bottom:8px;"><label class="xlabel">EFFECT NAME</label><input class="xinput" id="ce-name" placeholder="My Effect" maxlength="30"></div>
+    <div style="margin-bottom:8px;"><label class="xlabel">CODE — runs every frame while active</label>
+      <textarea id="ce-code" style="background:#03030e;border:1px solid #252540;color:#00ff88;font-family:'Courier New',monospace;font-size:10px;padding:10px;width:100%;height:130px;resize:vertical;outline:none;line-height:1.6;">${ex}</textarea>
+    </div>
+    <label style="font-size:9px;color:#555;letter-spacing:2px;display:flex;align-items:center;gap:6px;cursor:pointer;margin-bottom:12px;">
+      <input type="checkbox" id="ce-public" style="accent-color:#ff44ff;">PUBLIC — visible to other players
+    </label>
+    <div id="ce-err" style="font-size:10px;color:var(--red);letter-spacing:2px;min-height:14px;margin-bottom:8px;"></div>
+    <div style="display:flex;gap:8px;">
+      <button class="xbtn pk sm" onclick="saveCustomEffect(this.closest('[style*=fixed]'))">[ SAVE EFFECT ]</button>
+      <button class="xbtn sm" onclick="this.closest('[style*=fixed]').remove()">[ CLOSE ]</button>
+    </div>
+    <div style="margin-top:12px;font-size:8px;color:#252540;letter-spacing:1px;line-height:1.9;">
+      AFTER SAVING → YOUR EFFECT APPEARS IN EFFECT LIBRARY UNDER ★ MY EFFECTS<br>
+      USE IT JUST LIKE ANY OTHER EFFECT — CLICK START, SEEK, CLICK END
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+window.openCustomEffectEditor=openCustomEffectEditor;
+
+async function saveCustomEffect(modal){
+  const name=(document.getElementById('ce-name')?.value||'').trim();
+  const code=(document.getElementById('ce-code')?.value||'').trim();
+  const isPublic=document.getElementById('ce-public')?.checked||false;
+  const errEl=document.getElementById('ce-err');
+  if(!name){if(errEl)errEl.textContent='ENTER A NAME';return;}
+  if(!code){if(errEl)errEl.textContent='ENTER SOME CODE';return;}
+  try{new Function('ctx2','W','H','t2','aud',code);}
+  catch(e){if(errEl)errEl.textContent='SYNTAX ERROR: '+e.message.slice(0,50);return;}
+  const ce={name,code,isPublic,createdAt:Date.now()};
+  _customEffects.push(ce);
+  const id='custom_'+name.replace(/\s+/g,'_').toLowerCase().slice(0,20);
+  if(!EFFECT_META[id]){
+    EFFECT_META[id]={label:'★ '+name,col:'#ff44ff'};
+    EFF_LIB_UNIQUE.push({id,cat:'★ MY EFFECTS',label:name,col:'#ff44ff',params:[]});
+  }
+  if(!CU){toast('LOGIN TO SAVE CUSTOM EFFECTS','#ff4444');return;}
+  try{
+    await dUpd(dDoc('users',CU.uid),{customEffects:_customEffects});
+    if(CUD)CUD.customEffects=_customEffects;
+    toast('EFFECT SAVED: '+name,'#ff44ff');
+    if(modal)modal.remove();
+    if(document.getElementById('watch-bar')?.style.display!=='none')buildEffectLibrary();
+  }catch(e){if(errEl)errEl.textContent='SAVE ERROR: '+e.message;}
+}
+window.saveCustomEffect=saveCustomEffect;
+
+async function deleteCustomEffect(i){
+  _customEffects.splice(i,1);
+  if(CU)await dUpd(dDoc('users',CU.uid),{customEffects:_customEffects}).catch(()=>{});
+  toast('DELETED','#ffaa00');
+  // Reopen editor to refresh list
+  document.querySelector('[style*="fixed"][style*="rgba(0,0,0,.92"]')?.remove();
+  openCustomEffectEditor();
+}
+window.deleteCustomEffect=deleteCustomEffect;
+
+// Run custom effects in applyVisualEffects
+const _origAVE=applyVisualEffects;
+applyVisualEffects=function(t){
+  _origAVE(t);
+  const evts=watchMode?watchEffectEvents:(CS?.effectEvents||[]);
+  const t2=Date.now(),W=GW(),H=GH();
+  evts.filter(ev=>t>=ev.s&&t<=ev.e&&String(ev.type).startsWith('custom_')).forEach(ev=>{
+    const cname=ev.type.replace('custom_','').replace(/_/g,' ');
+    const ce=_customEffects.find(c=>c.name.toLowerCase().replace(/\s+/g,'_')===ev.type.replace('custom_',''));
+    if(!ce)return;
+    try{new Function('ctx2','W','H','t2','aud',ce.code)(ctx2,W,H,t2,aud);}catch(e){}
+  });
+};
+
+// Load custom effects after login
+const _origAuthChanged=auth.onAuthStateChanged;
+setTimeout(()=>{if(CU)loadCustomEffects();},2000);
+
+// ── CHORD HALVE + THUMB INIT ──────────────────────────────────────────────────
+loadChordHalveSetting();
+setTimeout(drawThumb,200);
+
 </script>
 </body>
 </html>
