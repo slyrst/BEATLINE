@@ -5678,10 +5678,10 @@ const _origJudgeShow=judgeShow;
 judgeShow=function(t,c){
   _origJudgeShow(t,c);
   if(t==='PERFECT'){
-    // Find the lane that was just hit (check fl array for freshest hit)
-    let bestLane=0,bestFl=0;
+    // Only flash if a lane was actually hit (fl > 0)
+    let bestLane=-1,bestFl=0;
     for(let i=0;i<4;i++){if(fl[i]>bestFl){bestFl=fl[i];bestLane=i;}}
-    triggerPerfectFlash(bestLane);
+    if(bestLane>=0)triggerPerfectFlash(bestLane);
   }
 };
 
@@ -5938,9 +5938,9 @@ judgeShow=function(t,col){
   hapticTick();
   updateJudgeLog(t,col);
   if(t!=='MISS'&&combo>0){
-    let bestLane=0,bestFl=0;
+    let bestLane=-1,bestFl=0;
     for(let i=0;i<4;i++){if(fl[i]>bestFl){bestFl=fl[i];bestLane=i;}}
-    spawnComboPop(bestLane,combo);
+    if(bestLane>=0)spawnComboPop(bestLane,combo);
   }
 };
 
