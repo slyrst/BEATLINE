@@ -465,8 +465,7 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div class="mkey k0">D</div><div class="mkey k1">F</div>
       <div class="mkey k2">J</div><div class="mkey k3">K</div>
     </div>
-    <div class="menu-contact">
-      <div class="menu-contact-title">WANT YOUR SONG IN THE GAME?</div>
+    
       <div class="menu-contact-desc">SEND THE OWNER AN EMAIL WITH YOUR SONG REQUEST — OR CREATE YOUR OWN LEVEL ABOVE</div>
       <a href="/cdn-cgi/l/email-protection#abd8ceddc2c7c9dec7dedfd8ccebccc6cac2c785c8c4c6"><span class="__cf_email__" data-cfemail="1a697f6c7376786f766f6e697d5a7d777b737634797577">[email&#160;protected]</span></a>
     </div>
@@ -580,27 +579,46 @@ canvas#cv{display:block;width:440px;height:620px;}
       <canvas id="cr-density-cv" width="596" height="36" style="width:100%;display:block;"></canvas>
     </div>
     <!-- NOTE EDITOR -->
-    <div id="cr-note-editor" style="display:none;background:#07071a;border:1px solid #00f0ff22;border-top:none;">
-      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #0d0d1a;flex-wrap:wrap;">
-        <span style="font-size:9px;letter-spacing:3px;color:var(--cyan);">✏ NOTE EDITOR</span>
-        <span style="font-size:8px;color:#333;letter-spacing:1px;">CLICK = SELECT · D/F/J/K BUTTONS = CHANGE LANE · ← → = SHIFT · DEL = DELETE</span>
-        <button id="cr-edit-mode-btn" onclick="crToggleEditMode()" style="margin-left:auto;background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:2px;">EDIT: OFF</button>
+    <!-- NOTE EDITOR TOGGLE BUTTON (shown after recording) -->
+    <div id="cr-note-editor-toggle" style="display:none;margin-top:6px;">
+      <button onclick="crToggleNoteEditor()" id="cr-note-editor-toggle-btn"
+        style="background:#00f0ff11;border:1px solid #00f0ff33;color:var(--cyan);font-family:'Courier New',monospace;font-size:9px;padding:5px 14px;cursor:pointer;letter-spacing:2px;width:100%;">
+        ✏ NOTE EDITOR  ▼
+      </button>
+    </div>
+    <div id="cr-note-editor" style="display:none;background:#07071a;border:1px solid #00f0ff22;">
+      <!-- Timeline bar -->
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #0d0d1a;">
+        <span id="cr-edit-cur" style="font-size:10px;color:var(--cyan);letter-spacing:1px;min-width:38px;font-family:'Courier New',monospace;">0:00</span>
+        <div style="flex:1;position:relative;">
+          <div id="cr-edit-track" onclick="crEditSeek(event)"
+            style="height:8px;background:#1a1a30;cursor:pointer;border-radius:4px;position:relative;overflow:visible;">
+            <div id="cr-edit-fill" style="height:100%;background:var(--cyan);width:0%;border-radius:4px;pointer-events:none;"></div>
+            <div id="cr-edit-playhead" style="position:absolute;top:50%;width:12px;height:12px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);left:0%;pointer-events:none;z-index:2;"></div>
+          </div>
+        </div>
+        <span id="cr-edit-dur" style="font-size:10px;color:#333;letter-spacing:1px;min-width:38px;font-family:'Courier New',monospace;text-align:right;">0:00</span>
+        <button id="cr-edit-pause-btn" onclick="crEditTogglePlayback()"
+          style="background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:11px;padding:3px 10px;cursor:pointer;">▶</button>
       </div>
+      <!-- Canvas -->
       <canvas id="cr-edit-cv" height="180" style="display:block;width:100%;cursor:crosshair;touch-action:none;"></canvas>
-      <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-top:1px solid #0d0d1a;flex-wrap:wrap;">
-        <span id="cr-edit-sel" style="font-size:9px;color:#555;letter-spacing:1px;flex:1;">no note selected</span>
-        <span style="font-size:8px;color:#333;letter-spacing:1px;margin-right:2px;">LANE:</span>
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:5px;padding:5px 10px;border-top:1px solid #0d0d1a;flex-wrap:wrap;">
+        <span id="cr-edit-sel" style="font-size:9px;color:#555;letter-spacing:1px;flex:1;min-width:80px;">no note selected</span>
+        <span style="font-size:8px;color:#333;letter-spacing:1px;">LANE:</span>
         <button onclick="crEditLane(0)" style="background:#001a1f;border:1px solid #00f0ff44;color:#00f0ff;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">D</button>
         <button onclick="crEditLane(1)" style="background:#1a0010;border:1px solid #ff00aa44;color:#ff00aa;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">F</button>
         <button onclick="crEditLane(2)" style="background:#001a0a;border:1px solid #00ff8844;color:#00ff88;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">J</button>
         <button onclick="crEditLane(3)" style="background:#1a0e00;border:1px solid #ffaa0044;color:#ffaa00;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">K</button>
-        <div style="width:1px;background:#333;margin:0 2px;"></div>
-        <button onclick="crEditShift(-100)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">◀100ms</button>
-        <button onclick="crEditShift(-50)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">◀50ms</button>
-        <button onclick="crEditShift(50)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">50ms▶</button>
-        <button onclick="crEditShift(100)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">100ms▶</button>
-        <button onclick="crEditDelete()" style="background:none;border:1px solid #ff444433;color:#ff6666;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">🗑 DEL</button>
+        <div style="width:1px;background:#1a1a30;margin:0 2px;align-self:stretch;"></div>
+        <button onclick="crEditShift(-100)" style="background:none;border:1px solid #252540;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 7px;cursor:pointer;">◀100</button>
+        <button onclick="crEditShift(-50)" style="background:none;border:1px solid #252540;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 7px;cursor:pointer;">◀50</button>
+        <button onclick="crEditShift(50)" style="background:none;border:1px solid #252540;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 7px;cursor:pointer;">50▶</button>
+        <button onclick="crEditShift(100)" style="background:none;border:1px solid #252540;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 7px;cursor:pointer;">100▶</button>
+        <button onclick="crEditDelete()" style="background:none;border:1px solid #ff444433;color:#ff6666;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">🗑</button>
       </div>
+      <div style="padding:3px 10px 5px;font-size:8px;color:#1a1a30;letter-spacing:1px;">CLICK = SELECT · 1/2/3/4 = LANE · ← → = SHIFT 50ms · SHIFT+← → = 100ms · DEL = DELETE</div>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
       <button class="xbtn gn" id="cr-rec-btn" onclick="crStartRec()">[ ● RECORD ]</button>
@@ -4151,6 +4169,7 @@ function initPlay(){
       <button class="xbtn am" id="auto-toggle-btn" onclick="toggleAuto()">[ AUTO: OFF ]</button>
       <button class="xbtn gn sm" onclick="openPracticeSetup()">[ PRACTICE ]</button>
       ${ADM&&!fc?`<button class="xbtn" onclick="startAdminRec()">[ RE-RECORD (ADMIN) ]</button>`:''}
+      ${ADM?`<button class="xbtn" onclick="adminAutoFinish()" style="border-color:#ffaa0066;color:#ffaa00;background:#ffaa0011;">[ ⚡ AUTO FINISH 100% ]</button>`:''}
       ${fc?`<button class="xbtn am sm" onclick="goBack()">[ BACK TO EDITOR ]</button>`:`<button class="xbtn rd sm" onclick="goBack()">[ BACK ]</button>`}
     </div>
     <div style="font-size:10px;letter-spacing:3px;margin-top:8px;" class="song-tag diff-${CS.difficulty||'easy'}">${(CS.difficulty||'EASY').toUpperCase()}</div>
@@ -6428,9 +6447,10 @@ function crDrawEditCanvas(){
 const _origCrAfterEdit2 = crAfterEdit;
 crAfterEdit = function(){
   _origCrAfterEdit2();
-  const editor = document.getElementById('cr-note-editor');
-  if(editor) editor.style.display = crNotes.length ? 'block' : 'none';
-  if(_crEditMode && crNotes.length){ crDrawEditCanvas(); }
+  // Show toggle button when notes exist, hide editor itself unless user opened it
+  const toggle = document.getElementById('cr-note-editor-toggle');
+  if(toggle) toggle.style.display = crNotes.length ? 'block' : 'none';
+  if(_crNoteEditorOpen && crNotes.length){ crDrawEditCanvas(); crEditUpdateTimeline(); }
 };
 
 // ══════════════════════════════════════════════════════════
@@ -7014,6 +7034,198 @@ setTimeout(()=>{
   else btns.appendChild(qBtn);
   loadQuestState();
 }, 500);
+
+// ══════════════════════════════════════════════════════════
+// ── NOTE EDITOR — TOGGLE + TIMELINE ──────────────────────
+// ══════════════════════════════════════════════════════════
+let _crNoteEditorOpen = false;
+let _crEditAud = null;
+let _crEditPlaying = false;
+let _crEditTimelineRaf = 0;
+
+function crToggleNoteEditor(){
+  _crNoteEditorOpen = !_crNoteEditorOpen;
+  const panel = document.getElementById('cr-note-editor');
+  const btn   = document.getElementById('cr-note-editor-toggle-btn');
+  if(_crNoteEditorOpen){
+    if(panel) panel.style.display = 'block';
+    if(btn)   btn.innerHTML = '✏ NOTE EDITOR  ▲';
+    crInitEditCv();
+    crDrawEditCanvas();
+    crEditInitAudio();
+  } else {
+    if(panel) panel.style.display = 'none';
+    if(btn)   btn.innerHTML = '✏ NOTE EDITOR  ▼';
+    crEditStopAudio();
+  }
+}
+window.crToggleNoteEditor = crToggleNoteEditor;
+
+// ── Audio for note editor timeline ───────────────────────
+function crEditInitAudio(){
+  const src = crGetAudioSrc ? crGetAudioSrc() : null;
+  if(!src) return;
+  if(_crEditAud && _crEditAud.src && _crEditAud.src.endsWith(src)) return; // already loaded
+  crEditStopAudio();
+  _crEditAud = new Audio(resAudio ? resAudio(src) : src);
+  _crEditAud.preload = 'metadata';
+  _crEditAud.onloadedmetadata = () => {
+    const dur = document.getElementById('cr-edit-dur');
+    if(dur) dur.textContent = fmtT(_crEditAud.duration*1000);
+  };
+  _crEditAud.onended = () => {
+    _crEditPlaying = false;
+    cancelAnimationFrame(_crEditTimelineRaf);
+    const btn = document.getElementById('cr-edit-pause-btn');
+    if(btn){ btn.textContent='▶'; btn.style.color='#555'; }
+  };
+}
+
+function crEditStopAudio(){
+  cancelAnimationFrame(_crEditTimelineRaf);
+  if(_crEditAud){ _crEditAud.pause(); _crEditAud = null; }
+  _crEditPlaying = false;
+}
+
+function crEditTogglePlayback(){
+  if(!_crEditAud) crEditInitAudio();
+  if(!_crEditAud) return;
+  const btn = document.getElementById('cr-edit-pause-btn');
+  if(_crEditPlaying){
+    _crEditAud.pause();
+    _crEditPlaying = false;
+    cancelAnimationFrame(_crEditTimelineRaf);
+    if(btn){ btn.textContent='▶'; btn.style.color='#555'; }
+  } else {
+    _crEditAud.play().then(()=>{
+      _crEditPlaying = true;
+      if(btn){ btn.textContent='⏸'; btn.style.color='var(--cyan)'; }
+      crEditTimelineLoop();
+    }).catch(()=>{});
+  }
+}
+window.crEditTogglePlayback = crEditTogglePlayback;
+
+function crEditSeek(e){
+  if(!_crEditAud) crEditInitAudio();
+  if(!_crEditAud || !_crEditAud.duration) return;
+  const track = document.getElementById('cr-edit-track');
+  if(!track) return;
+  const r = track.getBoundingClientRect();
+  const pct = Math.max(0, Math.min(1,(e.clientX-r.left)/r.width));
+  _crEditAud.currentTime = pct * _crEditAud.duration;
+  crEditUpdateTimeline();
+  crDrawEditCanvasWithPlayhead();
+}
+window.crEditSeek = crEditSeek;
+
+function crEditTimelineLoop(){
+  if(!_crEditPlaying || !_crEditAud) return;
+  crEditUpdateTimeline();
+  crDrawEditCanvasWithPlayhead();
+  _crEditTimelineRaf = requestAnimationFrame(crEditTimelineLoop);
+}
+
+function crEditUpdateTimeline(){
+  if(!_crEditAud || !_crEditAud.duration) return;
+  const pct = (_crEditAud.currentTime / _crEditAud.duration)*100;
+  const fill = document.getElementById('cr-edit-fill');
+  const head = document.getElementById('cr-edit-playhead');
+  const cur  = document.getElementById('cr-edit-cur');
+  if(fill) fill.style.width = pct+'%';
+  if(head) head.style.left = pct+'%';
+  if(cur)  cur.textContent = fmtT(_crEditAud.currentTime*1000);
+}
+
+function crDrawEditCanvasWithPlayhead(){
+  crDrawEditCanvas();
+  // Draw playhead line on note canvas
+  if(!_crEditCv || !_crEditAud || !_crEditAud.duration || !crNotes.length) return;
+  const W = _crEditCv.width, H = _crEditCv.height;
+  const maxT = Math.max(...crNotes.map(n=>n.sMs+(n.hMs||0)))+500;
+  const px = (_crEditAud.currentTime*1000/maxT)*(H-20)+10;
+  // Horizontal line across all lanes at current time
+  const ctx = _crEditCtx;
+  ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4,3]);
+  ctx.beginPath(); ctx.moveTo(0,px); ctx.lineTo(W,px); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '8px "Courier New"'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(fmtT(_crEditAud.currentTime*1000), 4, px-8);
+}
+
+// Stop audio when note editor closes or create page changes
+const _origInitCreatePage2 = initCreatePage;
+initCreatePage = function(existing){
+  crEditStopAudio();
+  _crNoteEditorOpen = false;
+  const panel = document.getElementById('cr-note-editor');
+  if(panel) panel.style.display = 'none';
+  const toggle = document.getElementById('cr-note-editor-toggle');
+  if(toggle) toggle.style.display = 'none';
+  _origInitCreatePage2(existing);
+};
+
+// ── ADMIN AUTO FINISH ─────────────────────────────────────
+async function adminAutoFinish(){
+  if(!ADM||!CS?.id){toast('ADMINS ONLY','#ff4444');return;}
+  const total=CS.beatmap?CS.beatmap.length:100;
+  // Fake perfect stats
+  score=total*300+50000;
+  combo=total;maxC=total;
+  gstats={p:total,g:0,ok:0,m:0};
+  _lost=false;autoMode=false;
+  const ac=100,gr='S';
+  const isFC=true;
+  // Save score
+  try{
+    if(CU&&!isGuest){
+      const snap=await dQ('scores',W('songId','==',CS.id),W('userId','==',CU.uid));
+      const prev=snap.empty?0:(snap.docs[0].data().score||0);
+      if(snap.empty||score>prev){
+        const sd={songId:CS.id,songTitle:CS.title||'',userId:CU.uid,username:CUD?.username||'?',score,grade:gr,accuracy:ac,maxCombo:maxC,fullCombo:isFC,difficulty:CS.difficulty||'easy',perfect:gstats.p,good:0,ok:0,miss:0,createdAt:sts()};
+        if(!snap.empty){await dUpd(snap.docs[0].ref,sd);}else{await dAdd('scores',sd);}
+        const us=await dGet(dDoc('users',CU.uid));
+        await dUpd(dDoc('users',CU.uid),{totalScore:(us.data()?.totalScore||0)+Math.max(0,score-prev),gamesPlayed:(us.data()?.gamesPlayed||0)+1});
+        window._newRecord={prev,diff:score-prev};
+      }
+    }
+  }catch(e){console.warn('auto finish save',e);}
+  // Award gems + XP
+  await awardGems(CS.difficulty,false);
+  await awardXP(gr,true,total,total);
+  saveLastPlayed(CS.id,CS.title||'',CS.difficulty||'',score,'S');
+  // Show results
+  const gcol='#00f0ff';
+  showOv(`
+    <div style="font-size:10px;letter-spacing:4px;color:#ffaa00;margin-bottom:8px;">⚡ ADMIN AUTO FINISH</div>
+    <div class="rl">— RESULTS —</div>
+    <div class="ov-song">${esc(CS.title||'')}</div>
+    <div class="rs">${String(score).padStart(6,'0')}</div>
+    <div class="rg" style="color:${gcol};">S</div>
+    <div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>
+    <div class="sr"><span>ACCURACY</span><span style="color:#fff">100%</span></div>
+    <div class="sr"><span>MAX COMBO</span><span style="color:var(--amber)">${maxC}×</span></div>
+    <div class="sr" style="margin-top:8px;"><span>PERFECT</span><span style="color:var(--cyan)">${gstats.p}</span></div>
+    <div class="sr" style="margin-bottom:20px;"><span>MISS</span><span style="color:var(--red)">0</span></div>
+    <div style="font-size:10px;color:#00aaff;letter-spacing:2px;margin-top:6px;">💎 +${GEM_REWARDS[CS.difficulty||'easy']||3} gems earned</div>
+    <div id="xp-reward-banner" style="font-size:10px;color:#aa44ff;letter-spacing:2px;margin-top:3px;"></div>
+    <div class="ov-btns">
+      <button class="xbtn cy" onclick="startPlay()">[ RETRY ]</button>
+      <button class="xbtn am" onclick="showLB('${CS.id}','${esc(CS.title||'')}')">[ SCORES ]</button>
+      <button class="xbtn rd sm" onclick="goBack()">[ BACK ]</button>
+    </div>
+  `);
+  // Animate grade
+  setTimeout(()=>{
+    const rg=document.querySelector('.rg');
+    if(rg){rg.style.transform='scale(0.2)';rg.style.opacity='0';rg.style.transition='transform .5s cubic-bezier(.17,.67,.35,1.4),opacity .3s';
+    setTimeout(()=>{rg.style.transform='scale(1)';rg.style.opacity='1';rg.style.textShadow='0 0 30px #00f0ff,0 0 60px #00f0ff';},80);}
+  },100);
+}
+window.adminAutoFinish=adminAutoFinish;
 </script>
 </body>
 </html>
