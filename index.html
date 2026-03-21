@@ -2515,15 +2515,21 @@ function openChat(friendId,friendName){
   document.getElementById('chat-messages').innerHTML='';
   const ov=document.getElementById('chat-overlay');
   ov.style.display='flex';
-  // Listen for messages
+  // Listen for messages — always show last 100
   if(_chatUnsub)_chatUnsub();
   const chatId=getChatId(CU.uid,friendId);
   _chatUnsub=db.collection('chats').doc(chatId).collection('messages')
-    .orderBy('createdAt','asc').limit(80)
+    .orderBy('createdAt','asc').limitToLast(100)
     .onSnapshot(snap=>{
       const box=document.getElementById('chat-messages');
       if(!box)return;
       box.innerHTML='';
+      if(snap.docs.length>=100){
+        const notice=document.createElement('div');
+        notice.style.cssText='text-align:center;font-size:8px;color:#252540;letter-spacing:2px;padding:8px 0;';
+        notice.textContent='— SHOWING LAST 100 MESSAGES —';
+        box.appendChild(notice);
+      }
       snap.docs.forEach(d=>{
         const m=d.data();
         const mine=m.from===CU.uid;
@@ -2596,6 +2602,15 @@ async function sendChatMsg(){
     const msg={from:CU.uid,fromName:CUD?.username||'?',to:_chatFriendId,createdAt:sts()};
     if(img)msg.img=img; else msg.text=text;
     await db.collection('chats').doc(chatId).collection('messages').add(msg);
+    // Auto-trim: if over 100 messages, delete oldest 20
+    const countSnap=await db.collection('chats').doc(chatId).collection('messages')
+      .orderBy('createdAt','asc').limit(101).get();
+    if(countSnap.docs.length>100){
+      const toDelete=countSnap.docs.slice(0,20);
+      const batch=db.batch();
+      toDelete.forEach(d=>batch.delete(d.ref));
+      batch.commit().catch(()=>{});
+    }
   }catch(e){toast('SEND FAILED: '+e.message,'#ff4444');}
 }
 
