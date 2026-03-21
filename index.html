@@ -582,12 +582,18 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div id="cr-note-editor" style="display:none;background:#07071a;border:1px solid #00f0ff22;border-top:none;">
       <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #0d0d1a;flex-wrap:wrap;">
         <span style="font-size:9px;letter-spacing:3px;color:var(--cyan);">✏ NOTE EDITOR</span>
-        <span style="font-size:8px;color:#333;letter-spacing:1px;">CLICK = SELECT · ← → = SHIFT · DEL = DELETE</span>
+        <span style="font-size:8px;color:#333;letter-spacing:1px;">CLICK = SELECT · D/F/J/K BUTTONS = CHANGE LANE · ← → = SHIFT · DEL = DELETE</span>
         <button id="cr-edit-mode-btn" onclick="crToggleEditMode()" style="margin-left:auto;background:#00f0ff11;border:1px solid #00f0ff44;color:var(--cyan);font-family:'Courier New',monospace;font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:2px;">EDIT: OFF</button>
       </div>
       <canvas id="cr-edit-cv" height="180" style="display:block;width:100%;cursor:crosshair;touch-action:none;"></canvas>
       <div style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-top:1px solid #0d0d1a;flex-wrap:wrap;">
         <span id="cr-edit-sel" style="font-size:9px;color:#555;letter-spacing:1px;flex:1;">no note selected</span>
+        <span style="font-size:8px;color:#333;letter-spacing:1px;margin-right:2px;">LANE:</span>
+        <button onclick="crEditLane(0)" style="background:#001a1f;border:1px solid #00f0ff44;color:#00f0ff;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">D</button>
+        <button onclick="crEditLane(1)" style="background:#1a0010;border:1px solid #ff00aa44;color:#ff00aa;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">F</button>
+        <button onclick="crEditLane(2)" style="background:#001a0a;border:1px solid #00ff8844;color:#00ff88;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">J</button>
+        <button onclick="crEditLane(3)" style="background:#1a0e00;border:1px solid #ffaa0044;color:#ffaa00;font-family:'Courier New',monospace;font-size:9px;padding:3px 9px;cursor:pointer;font-weight:bold;">K</button>
+        <div style="width:1px;background:#333;margin:0 2px;"></div>
         <button onclick="crEditShift(-100)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">◀100ms</button>
         <button onclick="crEditShift(-50)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">◀50ms</button>
         <button onclick="crEditShift(50)" style="background:none;border:1px solid #333;color:#aaa;font-family:'Courier New',monospace;font-size:9px;padding:3px 8px;cursor:pointer;">50ms▶</button>
@@ -6315,12 +6321,29 @@ function crEditDelete(){
 }
 window.crEditDelete = crEditDelete;
 
+function crEditLane(newLane){
+  if(_crSelectedNote === null || !crNotes[_crSelectedNote]) return;
+  if(crNotes[_crSelectedNote].lane === newLane){ toast('ALREADY ON THAT LANE','#ffaa00'); return; }
+  crSaveState();
+  crNotes[_crSelectedNote].lane = newLane;
+  crUpdateEditSel();
+  crDrawEditCanvas();
+  crDrawDensity();
+  const laneNames = ['D','F','J','K'];
+  toast('MOVED TO LANE ' + laneNames[newLane], ['#00f0ff','#ff00aa','#00ff88','#ffaa00'][newLane]);
+}
+window.crEditLane = crEditLane;
+
 // Keyboard: arrow keys shift, delete key removes
 document.addEventListener('keydown', e => {
   if(document.querySelector('.page.active')?.id !== 'create-page') return;
   if(!_crEditMode || _crSelectedNote === null) return;
   if(e.key === 'ArrowLeft'){ e.preventDefault(); crEditShift(e.shiftKey ? -100 : -50); }
   if(e.key === 'ArrowRight'){ e.preventDefault(); crEditShift(e.shiftKey ? 100 : 50); }
+  if(e.key === '1'){ e.preventDefault(); crEditLane(0); }
+  if(e.key === '2'){ e.preventDefault(); crEditLane(1); }
+  if(e.key === '3'){ e.preventDefault(); crEditLane(2); }
+  if(e.key === '4'){ e.preventDefault(); crEditLane(3); }
   if(e.key === 'Delete' || e.key === 'Backspace'){ e.preventDefault(); crEditDelete(); }
 });
 
