@@ -323,6 +323,7 @@ canvas#cv{display:block;width:440px;height:620px;}
 #loading-text{font-size:11px;color:#333;letter-spacing:4px;}
 .spinner{width:24px;height:24px;border:2px solid #1a1a30;border-top-color:var(--cyan);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+@keyframes newrec-pop{0%{transform:scale(0.6);opacity:0;}70%{transform:scale(1.08);}100%{transform:scale(1);opacity:1;}}
 .empty-state{text-align:center;padding:60px 20px;color:#333;font-size:11px;letter-spacing:3px;line-height:2.5;}
 #confirm-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;}
 #confirm-modal.show{display:flex;}
@@ -736,11 +737,7 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div class="keybind-label" style="line-height:1.4;">✨ NOTE SKIN<br><span style="font-size:8px;color:#555;">STRIPED / GLOWING NOTES</span></div>
         <div id="noteskin-btn" onclick="toggleNoteSkin()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
       </div>
-      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
-      <div class="keybind-row">
-        <div class="keybind-label" style="line-height:1.4;">💫 HIT ZONE PULSE<br><span style="font-size:8px;color:#555;">IDLE GLOW ON TARGET RINGS</span></div>
-        <div id="hitpulse-btn" onclick="toggleHitPulse()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
-      </div>
+
       <div style="height:1px;background:var(--border);margin:10px 0;"></div>
       <div class="keybind-row">
         <div class="keybind-label" style="line-height:1.4;">⚡ HOLD ENERGY<br><span style="font-size:8px;color:#555;">FLOWING ENERGY IN HOLD NOTES</span></div>
@@ -1716,7 +1713,14 @@ function buildCard(s){
         </span>
       </div>
       <div class="song-actions-btns">
-        <button class="xbtn cy sm" onclick="playSong('${s.id}')">▶ PLAY</button>
+        <button class="xbtn cy sm" id="play-btn-${s.id}"
+          onclick="playSong('${s.id}')"
+          onmousedown="startPreview('${s.id}','${esc(s.audioUrl||'')}')"
+          onmouseup="stopPreview()"
+          onmouseleave="stopPreview()"
+          ontouchstart="event.preventDefault();startPreview('${s.id}','${esc(s.audioUrl||'')}')"
+          ontouchend="stopPreview();playSong('${s.id}')"
+        >▶ PLAY</button>
         <button class="xbtn sm" onclick="showLB('${s.id}','${esc(s.title||'')}')">LB</button>
         <button class="xbtn sm" onclick="showSongComments('${s.id}','${esc(s.title||'')}')" style="color:#ffaa00;border-color:#ffaa0033;padding:7px 10px;font-size:9px;">💬</button>
         ${canEdit?`<button class="xbtn am sm" onclick="editSong('${s.id}')">EDIT</button>`:''}
@@ -4156,7 +4160,7 @@ function initPlay(){
 
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
-  score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
+  score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;window._newRecord=null;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
   hp=HP_MAX;_lost=false;_consecutiveMiss=0;_lastRegenStreak=0;
   clearTimeout(window._deathTimer);
   updateHpHud();
@@ -4257,11 +4261,15 @@ async function endPlay2(){
         // logged-in save — best score per user per song
         const snap=await dQ('scores',W('songId','==',CS.id),W('userId','==',CU.uid));
         const prev=snap.empty?0:(snap.docs[0].data().score||0);
+        const isNewRecord=!snap.empty&&score>prev;
+        const isFirstPlay=snap.empty;
         if(snap.empty||score>prev){
           const sd={songId:CS.id,songTitle:CS.title||'',userId:CU.uid,username:CUD?.username||'?',score,grade:gr,accuracy:ac,maxCombo:maxC,fullCombo:isFC,difficulty:CS.difficulty||'easy',perfect:gstats.p,good:gstats.g,ok:gstats.ok,miss:gstats.m,createdAt:sts()};
           if(!snap.empty){await dUpd(snap.docs[0].ref,sd);}else{await dAdd('scores',sd);}
           const us=await dGet(dDoc('users',CU.uid));
           await dUpd(dDoc('users',CU.uid),{totalScore:(us.data()?.totalScore||0)+Math.max(0,score-prev),gamesPlayed:(us.data()?.gamesPlayed||0)+1});
+          if(isNewRecord)window._newRecord={prev,diff:score-prev};
+          else if(isFirstPlay)window._newRecord={prev:0,diff:score};
         }
       } else if(isGuest&&guestName){
         // guest save — best score per guest name per song
@@ -4322,13 +4330,23 @@ async function endPlay2(){
     return;
   }
   const fc=CS?.fromCreate;
+  window._newRecord=window._newRecord||null;
+  const newRecordBanner=window._newRecord&&!_lost&&!autoMode?`
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:10px;padding:8px 16px;background:linear-gradient(135deg,#ffaa0022,#ff880022);border:1px solid #ffaa0055;animation:newrec-pop .5s ease-out;">
+      <span style="font-size:18px;">🎉</span>
+      <div style="text-align:center;">
+        <div style="font-size:13px;letter-spacing:4px;color:#ffaa00;font-weight:bold;">NEW RECORD!</div>
+        <div style="font-size:9px;color:#ff8800;letter-spacing:2px;margin-top:2px;">+${window._newRecord.diff.toLocaleString()} pts · was ${window._newRecord.prev.toLocaleString()}</div>
+      </div>
+      <span style="font-size:18px;">🎉</span>
+    </div>`:'';
   const fcBanner=isFC?`<div style="font-size:14px;letter-spacing:6px;color:var(--amber);text-shadow:0 0 20px rgba(255,170,0,.7);margin-bottom:14px;font-weight:bold;">✦ FULL COMBO ✦</div>`:'';
   const autoNote=autoMode?`<div style="font-size:10px;color:#555;letter-spacing:2px;margin-bottom:10px;">AUTO MODE — score not saved</div>`:'';
   const gemReward=!autoMode&&!isGuest&&CU?`<div style="font-size:10px;color:#00aaff;letter-spacing:2px;margin-top:6px;">💎 +${GEM_REWARDS[CS?.difficulty||'easy']||3} gems earned</div>`:'';
   const xpReward=!autoMode&&!isGuest&&CU&&!_lost?`<div id="xp-reward-banner" style="font-size:10px;color:#aa44ff;letter-spacing:2px;margin-top:3px;"></div>`:'';
   showOv(`
     <div class="rl">— RESULTS —</div>
-    ${autoNote}${lostBanner}
+    ${newRecordBanner}${autoNote}${lostBanner}
     <div class="ov-song">${esc(CS?.title||'')}</div>
     <div class="rs" style="color:${_lost?'var(--red)':'inherit'}">${String(score).padStart(6,'0')}</div>
     <div class="rg" style="color:${_lost?'var(--red)':gc}">${_lost?'LOST':gr}</div>
@@ -4531,12 +4549,6 @@ function drawRec2(){
 function drawTargets2(){
   for(let i=0;i<GLANES;i++){
     const cx=i*GLW()+GLW()/2,cy=GHIT_Y()+20,f=fl[i]/14,isH=laneHolding[i];const[r,g,b]=rgbC(COLS[i]);
-    // Hit zone idle pulse — all lanes in sync
-    if(_gfxHitPulse&&!isH&&f<=0){
-      const pulse=(Math.sin(fn*0.05)*0.5+0.5)*0.14+0.03;
-      ctx2.fillStyle=`rgba(${r},${g},${b},${pulse})`;
-      ctx2.beginPath();ctx2.arc(cx,cy,GNR+6,0,Math.PI*2);ctx2.fill();
-    }
     const rr=isH?GNR+6+Math.sin(fn*.18)*3:GNR+6;
     ctx2.strokeStyle=isH?`rgba(${r},${g},${b},.9)`:f>0?`rgba(${r},${g},${b},${.35+f*.65})`:`rgba(${r},${g},${b},.2)`;
     ctx2.lineWidth=isH?2.5:1.5;ctx2.beginPath();ctx2.arc(cx,cy,rr,0,Math.PI*2);ctx2.stroke();
@@ -6555,6 +6567,101 @@ drawBase=function(){_origDrawBase2();drawStarField();drawLaneWaves();drawRainbow
 const _origDrawPlay2e=drawPlay2;
 drawPlay2=function(){_origDrawPlay2e();drawScanLines2();drawBeatFlash();drawComboBurstParts();};
 
+
+// ══════════════════════════════════════════════════════════
+// ── SONG PREVIEW (hold to preview) ───────────────────────
+// ══════════════════════════════════════════════════════════
+let _previewAud = null;
+let _previewTimer = null;
+let _previewId = null;
+let _previewBar = null;
+let _previewRaf = null;
+const PREVIEW_HOLD_MS = 400;   // hold this long before preview starts
+const PREVIEW_SEEK   = 15;     // start from 15s into song
+const PREVIEW_DUR    = 15;     // preview 15 seconds
+
+function startPreview(songId, audioUrl){
+  // Only preview after holding for 400ms (not on quick tap)
+  clearTimeout(_previewTimer);
+  _previewTimer = setTimeout(()=>{
+    if(!audioUrl){ return; }
+    _previewId = songId;
+    _showPreviewToast(songId);
+    // Fade in preview audio
+    if(_previewAud){ _previewAud.pause(); _previewAud=null; }
+    _previewAud = new Audio(resAudio(audioUrl));
+    _previewAud.preload='auto';
+    _previewAud.volume=0;
+    _previewAud.oncanplay=()=>{
+      if(!_previewAud)return;
+      _previewAud.currentTime = PREVIEW_SEEK;
+      _previewAud.play().then(()=>_fadePreviewIn()).catch(()=>{});
+    };
+    _previewAud.onerror=()=>{ stopPreview(); };
+    // Auto-stop after duration
+    setTimeout(()=>{ if(_previewId===songId) stopPreview(); }, (PREVIEW_DUR+1)*1000);
+  }, PREVIEW_HOLD_MS);
+}
+window.startPreview = startPreview;
+
+function stopPreview(){
+  clearTimeout(_previewTimer);
+  _previewTimer = null;
+  _previewId = null;
+  if(_previewAud){ _fadePreviewOut(_previewAud); _previewAud=null; }
+  cancelAnimationFrame(_previewRaf);
+  // Remove toast
+  const toast = document.getElementById('preview-toast');
+  if(toast){ toast.style.opacity='0'; setTimeout(()=>toast.remove(),300); }
+}
+window.stopPreview = stopPreview;
+
+function _fadePreviewIn(){
+  if(!_previewAud)return;
+  _previewAud.volume = Math.min(0.85, (_previewAud.volume||0)+0.08);
+  if(_previewAud.volume < 0.85) requestAnimationFrame(_fadePreviewIn);
+  _updatePreviewProgress();
+}
+
+function _fadePreviewOut(a){
+  if(!a)return;
+  a.volume = Math.max(0, a.volume - 0.12);
+  if(a.volume > 0) setTimeout(()=>_fadePreviewOut(a), 40);
+  else a.pause();
+}
+
+function _showPreviewToast(songId){
+  let toast = document.getElementById('preview-toast');
+  if(!toast){
+    toast = document.createElement('div');
+    toast.id = 'preview-toast';
+    toast.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(5,5,18,0.97);border:1px solid #00f0ff44;padding:10px 20px;z-index:600;display:flex;flex-direction:column;align-items:center;gap:6px;transition:opacity .3s;min-width:200px;';
+    document.body.appendChild(toast);
+  }
+  toast.style.opacity='1';
+  toast.innerHTML=`
+    <div style="font-size:9px;color:var(--cyan);letter-spacing:4px;">🎵 PREVIEW</div>
+    <div style="width:160px;height:4px;background:#1a1a30;border-radius:2px;overflow:hidden;">
+      <div id="preview-bar" style="height:100%;background:var(--cyan);width:0%;transition:width .1s;border-radius:2px;"></div>
+    </div>
+    <div style="font-size:8px;color:#555;letter-spacing:2px;">RELEASE TO PLAY · HOLD TO LISTEN</div>`;
+  _previewBar = document.getElementById('preview-bar');
+}
+
+function _updatePreviewProgress(){
+  if(!_previewAud||!_previewBar||!_previewId)return;
+  const elapsed = _previewAud.currentTime - PREVIEW_SEEK;
+  const pct = Math.min(100, (elapsed/PREVIEW_DUR)*100);
+  _previewBar.style.width = pct+'%';
+  if(pct < 100) _previewRaf = requestAnimationFrame(_updatePreviewProgress);
+}
+
+// Stop preview when navigating away from songs page
+const _origShowPage4 = showPage;
+showPage = function(id, skip){
+  _origShowPage4(id, skip);
+  if(id !== 'songs-page') stopPreview();
+};
 </script>
 </body>
 </html>
