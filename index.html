@@ -714,6 +714,12 @@ canvas#cv{display:block;width:440px;height:620px;}
       </div>
       <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">WHEN OFF — SCORES NOT SAVED</div>
       <div style="height:1px;background:var(--border);margin:14px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🧪 QUICK POTIONS<br><span style="font-size:8px;color:#555;">SHOW POTIONS ON SCREEN DURING PLAY</span></div>
+        <div id="quickpotion-btn" onclick="toggleQuickPotion()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">TAP POTION ICON ANYTIME DURING SONG — NO NEED TO PAUSE</div>
+      <div style="height:1px;background:var(--border);margin:14px 0;"></div>
       <div class="keybind-row" style="margin-bottom:6px;">
         <div class="keybind-label">NOTE SPEED</div>
         <div style="font-size:16px;font-weight:bold;letter-spacing:2px;color:var(--cyan);min-width:40px;text-align:center;" id="note-speed-display">2×</div>
@@ -3107,24 +3113,21 @@ let gstats={p:0,g:0,ok:0,m:0},beatmap=[],bpIdx=0;
 let holdPulses=[],laneHolding=[false,false,false,false],pulseTimer=[0,0,0,0];
 let rWall2=0,rNotes2=[],rHW2=[0,0,0,0],rAct2=[false,false,false,false];
 // ── HP SYSTEM ─────────────────────────────────────────────────────────────────
-const HP_MAX=1000,HP_MISS=-100;
-let hp=HP_MAX,_lost=false,_consecutiveMiss=0;
-
-// HP regen on streak milestones
-const HP_REGEN_STREAKS={10:30,20:60,30:100,50:150};
+let _HP_MAX_BASE=1000; // increased by quests
+const HP_MISS=-100;
+function HP_MAX(){return _HP_MAX_BASE;}
+let hp=_HP_MAX_BASE,_lost=false,_consecutiveMiss=0;
 let _lastRegenStreak=0;
 
 function checkStreakHpRegen(c){
   if(_lost||!c)return;
-  for(const [threshold,regen] of Object.entries(HP_REGEN_STREAKS)){
-    if(c>=parseInt(threshold)&&_lastRegenStreak<parseInt(threshold)){
-      _lastRegenStreak=parseInt(threshold);
-      hp=Math.min(HP_MAX,hp+regen);updateHpHud();
-      // flash green
-      const el=document.getElementById('hp-hud');
-      if(el){el.style.color='#00ff88';setTimeout(()=>updateHpHud(),800);}
-      judgeShowNoBC('+'+regen+' HP','#00ff88');
-    }
+  // Regen every 50 combos — amount scales with combo
+  if(c>0&&c%50===0){
+    const regen=Math.min(200,100+Math.floor(c/100)*20);
+    hp=Math.min(HP_MAX(),hp+regen);updateHpHud();
+    const el=document.getElementById('hp-hud');
+    if(el){el.style.color='#00ff88';setTimeout(()=>updateHpHud(),800);}
+    judgeShowNoBC('+'+regen+' HP 🔥','#00ff88');
   }
 }
 function judgeShowNoBC(t,c){const e=document.getElementById('jt');e.textContent=t;e.style.color=c;e.style.opacity=1;jAlpha=1;}
@@ -3134,7 +3137,7 @@ const SHOP_ITEMS=[
   {id:'potion_sm',name:'SMALL POTION',desc:'+300 HP',icon:'🧪',cost:5, hpGain:300},
   {id:'potion_md',name:'POTION',      desc:'+500 HP',icon:'❤️',cost:10,hpGain:500},
   {id:'potion_lg',name:'BIG POTION',  desc:'+750 HP',icon:'💊',cost:18,hpGain:750},
-  {id:'potion_xl',name:'MAX POTION',  desc:'Full HP',icon:'✨',cost:30,hpGain:HP_MAX},
+  {id:'potion_xl',name:'MAX POTION',  desc:'Full HP',icon:'✨',cost:30,hpGain:HP_MAX()},
 ];
 
 let _inventory={}; // {potion_sm: 2, ...}
@@ -3196,8 +3199,8 @@ function usePotionInPause(id){
   if(!item||!getInvCount(id)){toast('NO POTIONS','#ff4444');return;}
   _inventory[id]=Math.max(0,getInvCount(id)-1);
   saveInventory();
-  const gain=item.hpGain===HP_MAX?HP_MAX-hp:item.hpGain;
-  hp=Math.min(HP_MAX,hp+(item.hpGain===HP_MAX?HP_MAX:item.hpGain));
+  const gain=item.hpGain===HP_MAX()?HP_MAX-hp:item.hpGain;
+  hp=Math.min(HP_MAX(),hp+(item.hpGain===HP_MAX()?HP_MAX:item.hpGain));
   if(_lost&&hp>0)_lost=false; // revive!
   updateHpHud();
   toast(item.icon+' +'+gain+' HP','#00ff88');
@@ -3209,7 +3212,7 @@ window.usePotionInPause=usePotionInPause;
 function updateHpHud(){
   const el=document.getElementById('hp-hud');
   if(!el)return;
-  const pct=Math.max(0,hp/HP_MAX);
+  const pct=Math.max(0,hp/HP_MAX());
   const col=pct>0.5?'#00ff88':pct>0.25?'#ffaa00':'#ff4444';
   el.style.color=col;
   el.textContent='❤ '+Math.max(0,hp);
@@ -3294,7 +3297,7 @@ function buildPauseOverlay(pov){
     </div>`:
     `<div style="font-size:9px;color:#252540;letter-spacing:2px;margin-top:8px;">NO POTIONS — BUY IN 💎 SHOP</div>`;
 
-  const hpPct=Math.max(0,hp/HP_MAX);
+  const hpPct=Math.max(0,hp/HP_MAX());
   const hpCol=hpPct>0.5?'#00ff88':hpPct>0.25?'#ffaa00':'#ff4444';
   pov.innerHTML=`
     <div style="font-size:28px;letter-spacing:8px;color:#fff;opacity:0;transition:opacity .25s;" id="pause-title">PAUSED</div>
@@ -4161,7 +4164,7 @@ function initPlay(){
 function startPlay(){
   stopAll();mode='play';notes=[];parts=[];ripples=[];fl=[0,0,0,0];holdPulses=[];laneHolding=[false,false,false,false];pulseTimer=[0,0,0,0];
   score=0;combo=0;maxC=0;fn=0;jAlpha=0;bpIdx=0;gstats={p:0,g:0,ok:0,m:0};_lastCombo=0;window._newRecord=null;fireParticles=[];fireVol=0;fireCPS=0;_cpsHits=0;_cpsTimer=0;
-  hp=HP_MAX;_lost=false;_consecutiveMiss=0;_lastRegenStreak=0;
+  hp=HP_MAX();_lost=false;_consecutiveMiss=0;_lastRegenStreak=0;
   clearTimeout(window._deathTimer);
   updateHpHud();
   document.getElementById('streak-popup').style.opacity='0';
@@ -6662,6 +6665,355 @@ showPage = function(id, skip){
   _origShowPage4(id, skip);
   if(id !== 'songs-page') stopPreview();
 };
+
+// ══════════════════════════════════════════════════════════
+// ── QUICK POTIONS HUD ────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+let _quickPotion = false;
+
+function toggleQuickPotion(){
+  _quickPotion = !_quickPotion;
+  try{localStorage.setItem('bl_quickpotion', _quickPotion?'1':'0');}catch(e){}
+  const btn = document.getElementById('quickpotion-btn');
+  if(btn){
+    if(_quickPotion){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+  }
+  // Show/hide immediately if in game
+  if(mode==='play') updateQuickPotionHud();
+}
+window.toggleQuickPotion = toggleQuickPotion;
+
+function loadQuickPotion(){
+  try{_quickPotion = localStorage.getItem('bl_quickpotion')==='1';}catch(e){}
+  const btn = document.getElementById('quickpotion-btn');
+  if(btn){
+    if(_quickPotion){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+  }
+}
+loadQuickPotion();
+
+function updateQuickPotionHud(){
+  // Remove existing
+  document.getElementById('quick-potion-hud')?.remove();
+  if(!_quickPotion || mode!=='play' || _paused) return;
+
+  const owned = SHOP_ITEMS.filter(i => getInvCount(i.id) > 0);
+  if(!owned.length) return;
+
+  const hud = document.createElement('div');
+  hud.id = 'quick-potion-hud';
+  hud.style.cssText = 'position:absolute;top:50px;right:8px;display:flex;flex-direction:column;gap:4px;z-index:15;pointer-events:all;';
+
+  owned.forEach(item => {
+    const btn = document.createElement('button');
+    btn.style.cssText = `background:rgba(0,10,30,0.85);border:1px solid #00aaff55;color:#00aaff;font-family:'Courier New',monospace;font-size:10px;padding:4px 6px;cursor:pointer;display:flex;align-items:center;gap:4px;border-radius:2px;`;
+    btn.innerHTML = `<span style="font-size:14px;">${item.icon}</span><span style="font-size:8px;color:#aaa;">×${getInvCount(item.id)}</span>`;
+    btn.title = item.name + ' — ' + item.desc;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      useQuickPotion(item.id);
+    };
+    hud.appendChild(btn);
+  });
+
+  document.getElementById('gc')?.appendChild(hud);
+}
+
+function useQuickPotion(id){
+  const item = SHOP_ITEMS.find(i => i.id===id);
+  if(!item || !getInvCount(id)) return;
+  _inventory[id] = Math.max(0, getInvCount(id)-1);
+  saveInventory();
+  const gain = item.hpGain===HP_MAX() ? HP_MAX-hp : item.hpGain;
+  hp = Math.min(HP_MAX, hp + (item.hpGain===HP_MAX() ? HP_MAX : item.hpGain));
+  if(_lost && hp>0) _lost=false;
+  updateHpHud();
+  toast(item.icon+' +'+gain+' HP','#00aaff');
+  // Flash the hud button briefly
+  updateQuickPotionHud();
+}
+window.useQuickPotion = useQuickPotion;
+
+// Show hud when play starts, hide when paused/stopped
+const _origStartPlay2 = startPlay;
+startPlay = function(){
+  _origStartPlay2();
+  setTimeout(updateQuickPotionHud, 200);
+};
+
+const _origStopAll2 = stopAll;
+stopAll = function(){
+  _origStopAll2();
+  document.getElementById('quick-potion-hud')?.remove();
+};
+
+const _origTogglePause2 = togglePause;
+togglePause = function(){
+  _origTogglePause2();
+  // Hide during pause, show on resume
+  setTimeout(()=>{
+    if(_paused) document.getElementById('quick-potion-hud')?.remove();
+    else updateQuickPotionHud();
+  }, 100);
+};
+
+// ══════════════════════════════════════════════════════════
+// ── QUEST SYSTEM — SOYJAK ────────────────────────────────
+// ══════════════════════════════════════════════════════════
+
+const QUEST_CHAPTERS = [
+  {
+    id:'ch1', title:'CHAPTER 1', subtitle:'WARM UP',
+    hpReward:1000, // new HP_MAX after completing
+    npc:'Soyjak',
+    intro:'HEY! YOU LOOK WEAK. YOUR MAX HP IS ONLY 1000. COMPLETE MY QUESTS AND I WILL POWER YOU UP TO 2000!',
+    quests:[
+      {id:'q1_1', desc:'PLAY ANY SONG 3 TIMES', type:'play_count', target:3, progress:0},
+      {id:'q1_2', desc:'HIT A 20x COMBO', type:'combo', target:20, progress:0},
+      {id:'q1_3', desc:'FINISH A SONG WITHOUT QUITTING', type:'finish', target:1, progress:0},
+    ]
+  },
+  {
+    id:'ch2', title:'CHAPTER 2', subtitle:'GETTING SERIOUS',
+    hpReward:2000,
+    npc:'Soyjak',
+    intro:'NOT BAD! BUT YOU NEED MORE. 2000 HP IS YOURS IF YOU PROVE YOURSELF. PLAY HARDER.',
+    quests:[
+      {id:'q2_1', desc:'GET A GRADE B OR HIGHER', type:'grade', target:'B', progress:0},
+      {id:'q2_2', desc:'HIT A 50x COMBO', type:'combo', target:50, progress:0},
+      {id:'q2_3', desc:'PLAY A MEDIUM DIFFICULTY SONG', type:'play_diff', target:'medium', progress:0},
+    ]
+  },
+  {
+    id:'ch3', title:'CHAPTER 3', subtitle:'REAL CHALLENGE',
+    hpReward:3000,
+    npc:'Soyjak',
+    intro:'YOU ACTUALLY MADE IT THIS FAR?? FINE. PROVE YOU CAN HANDLE HARD SONGS AND ILL PUSH YOUR LIMIT TO 3000.',
+    quests:[
+      {id:'q3_1', desc:'COMPLETE A HARD DIFFICULTY SONG', type:'play_diff', target:'hard', progress:0},
+      {id:'q3_2', desc:'GET GRADE A OR HIGHER', type:'grade', target:'A', progress:0},
+      {id:'q3_3', desc:'HIT A 100x COMBO', type:'combo', target:100, progress:0},
+    ]
+  },
+  {
+    id:'ch4', title:'CHAPTER 4', subtitle:'MASTER',
+    hpReward:5000,
+    npc:'Soyjak',
+    intro:'YOU WANT 5000 HP? ONLY EXPERTS DESERVE THAT. SHOW ME YOU CAN CONQUER EXPERT.',
+    quests:[
+      {id:'q4_1', desc:'COMPLETE AN EXPERT DIFFICULTY SONG', type:'play_diff', target:'expert', progress:0},
+      {id:'q4_2', desc:'GET GRADE S ON ANY SONG', type:'grade', target:'S', progress:0},
+      {id:'q4_3', desc:'HIT A 200x COMBO', type:'combo', target:200, progress:0},
+    ]
+  },
+];
+
+// ── Quest State ───────────────────────────────────────────
+let _questState = null; // {chapterIdx, questProgress:{qid:n}, completedChapters:[]}
+
+function loadQuestState(){
+  try{
+    const d = localStorage.getItem('bl_quests');
+    if(d) _questState = JSON.parse(d);
+  }catch(e){}
+  if(!_questState) _questState = {chapterIdx:0, questProgress:{}, completedChapters:[]};
+  // Apply HP from completed chapters
+  _applyQuestHP();
+}
+
+function saveQuestState(){
+  try{ localStorage.setItem('bl_quests', JSON.stringify(_questState)); }catch(e){}
+}
+
+function _applyQuestHP(){
+  // Find highest completed chapter HP reward
+  const done = _questState.completedChapters||[];
+  let maxHP = 1000;
+  done.forEach(cid=>{
+    const ch = QUEST_CHAPTERS.find(c=>c.id===cid);
+    if(ch) maxHP = Math.max(maxHP, ch.hpReward);
+  });
+  // Also partially apply current chapter (if started)
+  _HP_MAX_BASE = maxHP;
+  hp = Math.min(hp, HP_MAX());
+  updateHpHud();
+}
+
+function getActiveChapter(){
+  if(!_questState) return null;
+  const idx = _questState.chapterIdx||0;
+  if(idx >= QUEST_CHAPTERS.length) return null;
+  return QUEST_CHAPTERS[idx];
+}
+
+function getQuestProgress(qid){
+  return (_questState?.questProgress||{})[qid]||0;
+}
+
+function updateQuestProgress(qid, value){
+  if(!_questState) return;
+  const prev = getQuestProgress(qid);
+  _questState.questProgress[qid] = Math.max(prev, value);
+  saveQuestState();
+  checkQuestCompletion();
+}
+
+function incrementQuestProgress(qid, amount=1){
+  if(!_questState) return;
+  const prev = getQuestProgress(qid);
+  _questState.questProgress[qid] = prev + amount;
+  saveQuestState();
+  checkQuestCompletion();
+}
+
+function checkQuestCompletion(){
+  const ch = getActiveChapter();
+  if(!ch) return;
+  const allDone = ch.quests.every(q => getQuestProgress(q.id) >= q.target);
+  if(allDone){
+    // Chapter complete!
+    if(!(_questState.completedChapters||[]).includes(ch.id)){
+      _questState.completedChapters = [...(_questState.completedChapters||[]), ch.id];
+      _questState.chapterIdx = (_questState.chapterIdx||0) + 1;
+      saveQuestState();
+      _applyQuestHP();
+      // Show completion screen
+      setTimeout(()=>showQuestChapterComplete(ch), 500);
+    }
+  }
+}
+
+function showQuestChapterComplete(ch){
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:800;display:flex;align-items:center;justify-content:center;';
+  const nextHP = ch.hpReward;
+  modal.innerHTML = `<div style="background:#0a0a1a;border:2px solid #ffaa0066;padding:28px 24px;max-width:340px;width:90%;text-align:center;">
+    <img src="/images.png" style="width:80px;height:80px;object-fit:contain;margin:0 auto 12px;display:block;image-rendering:pixelated;" onerror="this.style.display='none'">
+    <div style="font-size:10px;letter-spacing:4px;color:#ffaa00;margin-bottom:8px;">CHAPTER COMPLETE!</div>
+    <div style="font-size:14px;letter-spacing:3px;color:#fff;margin-bottom:6px;font-weight:bold;">${esc(ch.title)}</div>
+    <div style="font-size:9px;color:#555;letter-spacing:2px;margin-bottom:16px;">${esc(ch.subtitle)}</div>
+    <div style="background:#ffaa0011;border:1px solid #ffaa0044;padding:12px;margin-bottom:16px;">
+      <div style="font-size:11px;color:#ffaa00;letter-spacing:3px;margin-bottom:4px;">❤ MAX HP INCREASED!</div>
+      <div style="font-size:22px;font-weight:bold;color:#fff;">${nextHP.toLocaleString()}</div>
+    </div>
+    <div style="font-size:9px;color:#444;letter-spacing:2px;margin-bottom:14px;">"${esc(getActiveChapter()?.intro||'KEEP GOING...')}"<br><span style="color:#333;">— Soyjak</span></div>
+    <button class="xbtn am" onclick="this.closest('[style*=fixed]').remove()" style="width:100%;text-align:center;">[ AWESOME! ]</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+// ── Quest Page / NPC Dialog ───────────────────────────────
+function showQuestPage(){
+  loadQuestState();
+  const ch = getActiveChapter();
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:800;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:20px 16px 80px;';
+
+  const completed = _questState.completedChapters||[];
+  const allDone = !ch;
+
+  let chaptersHTML = QUEST_CHAPTERS.map((chapter,ci)=>{
+    const isDone = completed.includes(chapter.id);
+    const isActive = !isDone && ci===(_questState.chapterIdx||0);
+    const isLocked = !isDone && !isActive;
+    const border = isDone?'#00ff8844':isActive?'#ffaa0044':'#1a1a30';
+    const titleCol = isDone?'#00ff88':isActive?'#ffaa00':'#333';
+
+    let questsHTML = chapter.quests.map(q=>{
+      const prog = getQuestProgress(q.id);
+      const done = prog >= q.target;
+      const pct = Math.min(100, Math.round((prog/q.target)*100));
+      return `<div style="padding:8px 0;border-bottom:1px solid #0d0d1a;opacity:${isLocked?0.3:1};">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:11px;">${done?'✅':'⬜'}</span>
+          <span style="font-size:10px;color:${done?'#555':'#aaa'};letter-spacing:1px;${done?'text-decoration:line-through':''}">${esc(q.desc)}</span>
+        </div>
+        ${!done&&isActive?`<div style="height:3px;background:#1a1a30;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:#ffaa00;border-radius:2px;"></div></div>
+        <div style="font-size:8px;color:#444;letter-spacing:1px;margin-top:2px;">${prog} / ${q.target}</div>`:''
+      }</div>`;
+    }).join('');
+
+    return `<div style="background:#0a0a18;border:1px solid ${border};padding:14px 16px;margin-bottom:10px;width:100%;max-width:400px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        ${isLocked?`<span style="font-size:18px;">🔒</span>`:isDone?`<span style="font-size:18px;">✅</span>`:`<img src="/images.png" style="width:32px;height:32px;object-fit:contain;image-rendering:pixelated;">`}        <div>
+          <div style="font-size:11px;letter-spacing:3px;color:${titleCol};font-weight:bold;">${esc(chapter.title)}</div>
+          <div style="font-size:9px;color:#444;letter-spacing:2px;">${esc(chapter.subtitle)} · ❤ ${chapter.hpReward.toLocaleString()} MAX HP</div>
+        </div>
+        ${isDone?'<span style="margin-left:auto;font-size:9px;color:#00ff88;letter-spacing:2px;border:1px solid #00ff8844;padding:2px 8px;">DONE</span>':''}
+      </div>
+      ${isActive?`<div style="font-size:9px;color:#aaa;letter-spacing:1px;background:#0d0d1a;padding:8px 10px;margin-bottom:10px;border-left:2px solid #ffaa00;font-style:italic;">"${esc(chapter.intro)}"<br><span style="color:#555;font-style:normal;">— Soyjak</span></div>`:''}
+      ${questsHTML}
+    </div>`;
+  }).join('');
+
+  if(allDone) chaptersHTML += `<div style="text-align:center;padding:20px;color:#ffaa00;font-size:11px;letter-spacing:3px;">🎉 ALL CHAPTERS COMPLETE!<br><span style="color:#555;font-size:9px;">MAX HP: 5000</span></div>`;
+
+  modal.innerHTML = `
+    <div style="width:100%;max-width:400px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:13px;letter-spacing:4px;color:#ffaa00;">📜 QUESTS</div>
+        <button class="xbtn sm" onclick="this.closest('[style*=fixed]').remove()">[ CLOSE ]</button>
+      </div>
+      <div style="background:#0a0a18;border:1px solid #ffaa0033;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:12px;">
+        <img src="/images.png" style="width:48px;height:48px;object-fit:contain;image-rendering:pixelated;flex-shrink:0;" onerror="this.style.display='none'">
+        <div>
+          <div style="font-size:10px;color:#ffaa00;letter-spacing:3px;margin-bottom:3px;">SOYJAK</div>
+          <div style="font-size:9px;color:#aaa;letter-spacing:1px;">${esc(ch?.intro||'YOU HAVE COMPLETED ALL MY QUESTS. YOU ARE TRULY POWERFUL.')}</div>
+        </div>
+      </div>
+      ${chaptersHTML}
+    </div>`;
+  modal.onclick=e=>{if(e.target===modal)modal.remove();};
+  document.body.appendChild(modal);
+}
+window.showQuestPage = showQuestPage;
+
+// ── Hook into gameplay to update quests ──────────────────
+const _origEndPlay2q = endPlay2;
+endPlay2 = async function(){
+  await _origEndPlay2q();
+  if(_lost||autoMode||!CS?.id) return;
+  loadQuestState();
+  const ch = getActiveChapter();
+  if(!ch) return;
+  const tot = gstats.p+gstats.g+gstats.ok+gstats.m;
+  const ac = tot ? Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100) : 0;
+  const gr = ac>=95?'S':ac>=85?'A':ac>=70?'B':ac>=50?'C':'D';
+  const gradeOrder = ['D','C','B','A','S'];
+  ch.quests.forEach(q=>{
+    switch(q.type){
+      case 'play_count': incrementQuestProgress(q.id, 1); break;
+      case 'combo': updateQuestProgress(q.id, maxC); break;
+      case 'finish': incrementQuestProgress(q.id, 1); break;
+      case 'grade':
+        if(gradeOrder.indexOf(gr) >= gradeOrder.indexOf(q.target))
+          updateQuestProgress(q.id, 1);
+        break;
+      case 'play_diff':
+        if(CS.difficulty===q.target) incrementQuestProgress(q.id, 1);
+        break;
+    }
+  });
+};
+
+// ── Add Quest button to menu ──────────────────────────────
+// We'll add it after the initial load
+setTimeout(()=>{
+  const btns = document.querySelector('.menu-btns');
+  if(!btns) return;
+  const qBtn = document.createElement('button');
+  qBtn.className = 'xbtn am';
+  qBtn.style.cssText = 'width:100%;text-align:center;border-color:#ffaa0044;color:#ffaa00;';
+  qBtn.innerHTML = '[ 📜 QUESTS ]';
+  qBtn.onclick = showQuestPage;
+  // Insert after SHOP button
+  const shopBtn = btns.querySelector('[onclick*="shop-page"]');
+  if(shopBtn) shopBtn.insertAdjacentElement('afterend', qBtn);
+  else btns.appendChild(qBtn);
+  loadQuestState();
+}, 500);
 </script>
 </body>
 </html>
