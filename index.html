@@ -3482,7 +3482,7 @@ function applyVisualEffects(t){
           ctx2.globalAlpha=1;
         }}break;
       // LANES
-      case 'lane_pulse':{const[r,g,b]=hexRgb(ev.color||'#00f0ff');for(let i=0;i<4;i++){const cx=i*GLW()+GLW()/2;const p=Math.sin(t2/400+i)*0.5+0.5;ctx2.fillStyle=`rgba(${r},${g},${b},${p*0.15})`;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
+      case 'lane_pulse':{const[r,g,b]=hexRgb(ev.color||'#00f0ff');const p=Math.sin(t2/400)*0.5+0.5;for(let i=0;i<4;i++){ctx2.fillStyle=`rgba(${r},${g},${b},${p*0.15})`;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
       case 'lane_glow':{const[r,g,b]=hexRgb(ev.color||'#ffaa00');for(let i=0;i<4;i++){const cx=i*GLW()+GLW()/2;const grd=ctx2.createLinearGradient(i*GLW(),0,(i+1)*GLW(),0);grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(0.5,`rgba(${r},${g},${b},0.12)`);grd.addColorStop(1,'rgba(0,0,0,0)');ctx2.fillStyle=grd;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
       case 'lane_rainbow':{for(let i=0;i<4;i++){const h=(t2/20+i*90)%360;ctx2.fillStyle=`hsla(${h},100%,60%,0.1)`;ctx2.fillRect(i*GLW(),0,GLW(),H);}}break;
       // BORDER
