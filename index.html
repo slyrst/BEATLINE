@@ -134,7 +134,7 @@ input[type=file]#cr-file{display:none;}
 .eff-btn{background:transparent;border:1px solid color-mix(in srgb,var(--ec) 30%,transparent);color:var(--ec,#aaa);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:4px 9px;cursor:pointer;transition:background .1s;}
 .eff-btn:hover{background:color-mix(in srgb,var(--ec) 15%,transparent);}
 .eff-btn.active{background:color-mix(in srgb,var(--ec) 25%,transparent);border-color:var(--ec);}
-#game-page{justify-content:flex-start;align-items:center;overflow:hidden;}
+#game-page{justify-content:center;align-items:center;overflow:hidden;}
 #game-wrap{
   display:flex;flex-direction:column;
   align-items:center;
@@ -4803,20 +4803,19 @@ function scaleGame(){
   const scaleW=vw/gameW,scaleH=vh/gameH;
   const scale=Math.min(scaleW,scaleH,1);
   if(scale<1){
+    // Shrink and compensate margins so layout space matches visual size
+    const dh=gameH*(1-scale);
+    const dw=gameW*(1-scale);
     wrap.style.transform=`scale(${scale})`;
     wrap.style.transformOrigin='top center';
-    // Compensate layout space so page does not shift right
-    const scaledW=gameW*scale;
-    const scaledH=gameH*scale;
-    wrap.style.marginLeft=`${(vw-gameW)/2}px`;
-    wrap.style.marginTop=`${(vh-scaledH)/2}px`;
-    wrap.style.marginBottom=`-${gameH-scaledH}px`;
+    wrap.style.marginTop=`-${dh/2}px`;
+    wrap.style.marginBottom=`-${dh/2}px`;
+    wrap.style.marginLeft=`-${dw/2}px`;
+    wrap.style.marginRight=`-${dw/2}px`;
   } else {
     wrap.style.transform='';
     wrap.style.transformOrigin='';
-    wrap.style.marginLeft='';
-    wrap.style.marginTop='';
-    wrap.style.marginBottom='';
+    wrap.style.margin='';
   }
 }
 window.addEventListener('resize',scaleGame);
