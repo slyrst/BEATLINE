@@ -817,6 +817,31 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div class="keybind-label" style="line-height:1.4;">🌈 RAINBOW LANES<br><span style="font-size:8px;color:#555;">LANES CYCLE THROUGH COLORS</span></div>
         <div id="rainbowlanes-btn" onclick="toggleGfxOpt('rainbowLanes','bl_gfx_rainbowlanes','rainbowlanes-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
       </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">💧 RAIN EFFECT<br><span style="font-size:8px;color:#555;">FALLING RAIN DROPS IN BG</span></div>
+        <div id="rain-btn" onclick="toggleGfxOpt('rainEffect','bl_gfx_rain','rain-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🟦 GRID LINES<br><span style="font-size:8px;color:#555;">FAINT HORIZONTAL GRID</span></div>
+        <div id="gridlines-btn" onclick="toggleGfxOpt('gridLines','bl_gfx_grid','gridlines-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🔮 NEON GLOW NOTES<br><span style="font-size:8px;color:#555;">STRONG OUTER GLOW ON NOTES</span></div>
+        <div id="neonglow-btn" onclick="toggleGfxOpt('neonGlow','bl_gfx_neonglow','neonglow-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🌫️ MOTION BLUR<br><span style="font-size:8px;color:#555;">NOTES LEAVE BLUR TRAIL</span></div>
+        <div id="motionblur-btn" onclick="toggleGfxOpt('motionBlur','bl_gfx_motionblur','motionblur-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🎇 EXPLOSION HITS<br><span style="font-size:8px;color:#555;">BIG BURST ON EVERY HIT</span></div>
+        <div id="explosionhit-btn" onclick="toggleGfxOpt('explosionHit','bl_gfx_explosion','explosionhit-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
     </div>
     <div class="settings-section">
       <div class="settings-section-title">INPUT OFFSET</div>
@@ -867,6 +892,51 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div class="keybind-row">
         <div class="keybind-label" style="line-height:1.4;">⬇ AUTO-SCROLL SONGS<br><span style="font-size:8px;color:#555;">SCROLL SONG LIST HORIZONTALLY</span></div>
         <div id="hscroll-btn" onclick="toggleHScroll()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🔴 LOW HP WARNING<br><span style="font-size:8px;color:#555;">SCREEN FLASHES RED BELOW 20% HP</span></div>
+        <div id="hpwarn-btn" onclick="toggleQoL('hpWarn','bl_hpwarn','hpwarn-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">⏱ SONG TIMER<br><span style="font-size:8px;color:#555;">REMAINING TIME ON SCREEN</span></div>
+        <div id="songtimer-btn" onclick="toggleQoL('songTimer','bl_songtimer','songtimer-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">💎 GEM COUNTER<br><span style="font-size:8px;color:#555;">SHOW GEM COUNT DURING PLAY</span></div>
+        <div id="gemhud-btn" onclick="toggleQoL('gemHud','bl_gemhud','gemhud-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🎯 NOTE APPROACH<br><span style="font-size:8px;color:#555;">FAINT OUTLINE BEFORE NOTE ARRIVES</span></div>
+        <div id="approach-btn" onclick="toggleQoL('noteApproach','bl_approach','approach-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🔇 MISS SOUND<br><span style="font-size:8px;color:#555;">PLAY THUD SOUND ON MISS</span></div>
+        <div id="misssound-btn" onclick="toggleQoL('missSound','bl_misssound','misssound-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🏅 RANK DISPLAY<br><span style="font-size:8px;color:#555;">SHOW CURRENT GRADE LIVE IN GAME</span></div>
+        <div id="rankdisplay-btn" onclick="toggleQoL('rankDisplay','bl_rankdisplay','rankdisplay-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">🔢 NOTE COUNT<br><span style="font-size:8px;color:#555;">REMAINING NOTES COUNTER</span></div>
+        <div id="notecount-btn" onclick="toggleQoL('noteCount','bl_notecount','notecount-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">✨ HIT SOUND<br><span style="font-size:8px;color:#555;">SUBTLE TICK ON EVERY HIT</span></div>
+        <div id="hitsound-btn" onclick="toggleQoL('hitSound','bl_hitsound','hitsound-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.4;">📍 PROGRESS %<br><span style="font-size:8px;color:#555;">SHOW SONG % ON PROGRESS BAR</span></div>
+        <div id="progresspct-btn" onclick="toggleQoL('progressPct','bl_progresspct','progresspct-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
       </div>
     </div>
     <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
@@ -3153,14 +3223,12 @@ let hp=_HP_MAX_BASE,_lost=false,_consecutiveMiss=0;
 let _lastRegenStreak=0;
 
 function checkStreakHpRegen(c){
-  if(_lost||!c)return;
-  // Regen every 50 combos — amount scales with combo
-  if(c>0&&c%50===0){
-    const regen=Math.min(200,100+Math.floor(c/100)*20);
-    hp=Math.min(HP_MAX(),hp+regen);updateHpHud();
-    const el=document.getElementById('hp-hud');
-    if(el){el.style.color='#00ff88';setTimeout(()=>updateHpHud(),800);}
-    judgeShowNoBC('+'+regen+' HP 🔥','#00ff88');
+  if(_lost||!c||!hpEnabled)return;
+  // Every PERFECT when combo >= 20 gives small regen
+  if(c>=20){
+    const regen=c>=100?8:c>=50?5:3; // scales with streak size
+    hp=Math.min(HP_MAX(),hp+regen);
+    updateHpHud();
   }
 }
 function judgeShowNoBC(t,c){const e=document.getElementById('jt');e.textContent=t;e.style.color=c;e.style.opacity=1;jAlpha=1;}
@@ -4275,7 +4343,7 @@ function hitPlay(lane,down){
       else{best.hit=true;burstP(lane,best.cy);}
       combo++;if(combo>maxC)maxC=combo;score+=Math.floor(pts*(1+combo*.04));judgeShow(lbl,col);
       _cpsHits++;_consecutiveMiss=0;
-      checkStreakHpRegen(combo);
+      if(lbl==='PERFECT')checkStreakHpRegen(combo);
       // Record for ghost
       if(_ghostRecord)_ghostRecord.push({t:sNow(),lane,type:'hit'});
     }
@@ -7241,6 +7309,298 @@ async function adminAutoFinish(){
   },100);
 }
 window.adminAutoFinish=adminAutoFinish;
+
+// ══════════════════════════════════════════════════════════
+// ── QoL EXTRA SETTINGS ───────────────────────────────────
+// ══════════════════════════════════════════════════════════
+const _qolExtra = {};
+function toggleQoL(key,lsKey,btnId){
+  _qolExtra[key]=!_qolExtra[key];
+  try{localStorage.setItem(lsKey,_qolExtra[key]?'1':'0');}catch(e){}
+  _togBtn(btnId,_qolExtra[key]);
+}
+window.toggleQoL=toggleQoL;
+
+(function loadQoLExtra(){
+  const map={
+    hpWarn:'bl_hpwarn', songTimer:'bl_songtimer', gemHud:'bl_gemhud',
+    noteApproach:'bl_approach', missSound:'bl_misssound', rankDisplay:'bl_rankdisplay',
+    noteCount:'bl_notecount', hitSound:'bl_hitsound', progressPct:'bl_progresspct'
+  };
+  for(const[k,v] of Object.entries(map)){
+    try{_qolExtra[k]=localStorage.getItem(v)==='1';}catch(e){_qolExtra[k]=false;}
+  }
+  const orig=window.loadQoLSettings;
+  window.loadQoLSettings=function(){
+    if(orig)orig();
+    Object.entries(map).forEach(([k,v])=>{
+      const btnId=k.replace(/([A-Z])/g,'-$1').toLowerCase()+'-btn';
+      _togBtn(btnId,_qolExtra[k]);
+    });
+    // explicit btn ids
+    _togBtn('hpwarn-btn',_qolExtra.hpWarn);_togBtn('songtimer-btn',_qolExtra.songTimer);
+    _togBtn('gemhud-btn',_qolExtra.gemHud);_togBtn('approach-btn',_qolExtra.noteApproach);
+    _togBtn('misssound-btn',_qolExtra.missSound);_togBtn('rankdisplay-btn',_qolExtra.rankDisplay);
+    _togBtn('notecount-btn',_qolExtra.noteCount);_togBtn('hitsound-btn',_qolExtra.hitSound);
+    _togBtn('progresspct-btn',_qolExtra.progressPct);
+  };
+  window.loadQoLSettings();
+})();
+
+// ── Hit sound ──────────────────────────────────────────────
+let _hitSoundCtx=null;
+function playHitTick(){
+  if(!_qolExtra.hitSound)return;
+  try{
+    if(!_hitSoundCtx)_hitSoundCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=_hitSoundCtx.createOscillator();
+    const g=_hitSoundCtx.createGain();
+    o.connect(g);g.connect(_hitSoundCtx.destination);
+    o.frequency.value=880;o.type='sine';
+    g.gain.setValueAtTime(0.08,_hitSoundCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,_hitSoundCtx.currentTime+0.06);
+    o.start();o.stop(_hitSoundCtx.currentTime+0.06);
+  }catch(e){}
+}
+// ── Miss sound ─────────────────────────────────────────────
+function playMissThud(){
+  if(!_qolExtra.missSound)return;
+  try{
+    if(!_hitSoundCtx)_hitSoundCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const o=_hitSoundCtx.createOscillator();
+    const g=_hitSoundCtx.createGain();
+    o.connect(g);g.connect(_hitSoundCtx.destination);
+    o.frequency.value=120;o.type='sawtooth';
+    g.gain.setValueAtTime(0.15,_hitSoundCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,_hitSoundCtx.currentTime+0.12);
+    o.start();o.stop(_hitSoundCtx.currentTime+0.12);
+  }catch(e){}
+}
+
+// Hook sounds into judgeShow
+const _origJudgeShowQoL=judgeShow;
+judgeShow=function(t,col){
+  _origJudgeShowQoL(t,col);
+  if(t==='MISS')playMissThud();
+  else playHitTick();
+};
+
+// ── Low HP warning ─────────────────────────────────────────
+function drawLowHpWarning(){
+  if(!_qolExtra.hpWarn||!hpEnabled)return;
+  const pct=hp/HP_MAX();
+  if(pct>0.2)return;
+  const flash=Math.sin(Date.now()/150)*0.5+0.5;
+  ctx2.fillStyle=`rgba(255,0,0,${flash*0.15*(1-pct/0.2)})`;
+  ctx2.fillRect(0,0,GW(),GH());
+  // Red border vignette
+  const W=GW(),H=GH();
+  const grad=ctx2.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
+  grad.addColorStop(0,'rgba(255,0,0,0)');
+  grad.addColorStop(1,`rgba(255,0,0,${flash*0.3*(1-pct/0.2)})`);
+  ctx2.fillStyle=grad;ctx2.fillRect(0,0,W,H);
+}
+
+// ── Song timer ─────────────────────────────────────────────
+function drawSongTimer(){
+  if(!_qolExtra.songTimer||!aud||!aud.duration)return;
+  const dur=CS?.endTime||aud.duration;
+  const remaining=Math.max(0,dur-aud.currentTime);
+  const W=GW();
+  ctx2.fillStyle='rgba(255,255,255,0.25)';
+  ctx2.font='9px "Courier New"';ctx2.textAlign='right';ctx2.textBaseline='top';
+  ctx2.fillText(fmtT(remaining*1000),W-8,8);
+}
+
+// ── Gem HUD ────────────────────────────────────────────────
+function drawGemHud(){
+  if(!_qolExtra.gemHud||!CUD)return;
+  ctx2.fillStyle='rgba(0,170,255,0.6)';
+  ctx2.font='9px "Courier New"';ctx2.textAlign='left';ctx2.textBaseline='top';
+  ctx2.fillText('💎 '+(CUD.gems||0),8,8);
+}
+
+// ── Note approach circles ──────────────────────────────────
+function drawNoteApproach(){
+  if(!_qolExtra.noteApproach)return;
+  const now=sNow();
+  const lookahead=800; // ms ahead to show approach
+  for(const n of notes){
+    if(n.hit||n.missed||n.holding)continue;
+    const ahead=n.sMs-now;
+    if(ahead<0||ahead>lookahead)continue;
+    const[r,g,b]=rgbC(COLS[n.lane]);
+    const cx=n.lane*GLW()+GLW()/2;
+    const progress=1-(ahead/lookahead); // 0=far, 1=arriving
+    const radius=GNR+20*(1-progress); // shrinks as note arrives
+    const alpha=progress*0.4;
+    ctx2.strokeStyle=`rgba(${r},${g},${b},${alpha})`;
+    ctx2.lineWidth=1.5;
+    ctx2.setLineDash([3,4]);
+    ctx2.beginPath();ctx2.arc(cx,GHIT_Y()+20,radius,0,Math.PI*2);ctx2.stroke();
+    ctx2.setLineDash([]);
+  }
+}
+
+// ── Rank display ───────────────────────────────────────────
+function drawRankDisplay(){
+  if(!_qolExtra.rankDisplay)return;
+  const tot=gstats.p+gstats.g+gstats.ok+gstats.m;
+  if(!tot)return;
+  const ac=Math.round(((gstats.p+gstats.g+gstats.ok)/tot)*100);
+  const gr=ac>=95?'S':ac>=85?'A':ac>=70?'B':ac>=50?'C':'D';
+  const col={S:'#00f0ff',A:'#00ff88',B:'#ffaa00',C:'#ff8800',D:'#ff4444'}[gr];
+  ctx2.fillStyle=col;ctx2.globalAlpha=0.5;
+  ctx2.font='bold 22px "Courier New"';ctx2.textAlign='left';ctx2.textBaseline='top';
+  ctx2.fillText(gr,8,40);ctx2.globalAlpha=1;
+}
+
+// ── Note count ─────────────────────────────────────────────
+function drawNoteCount(){
+  if(!_qolExtra.noteCount||!CS?.beatmap)return;
+  const total=CS.beatmap.length;
+  const done=gstats.p+gstats.g+gstats.ok+gstats.m;
+  const left=Math.max(0,total-done);
+  ctx2.fillStyle='rgba(255,255,255,0.2)';
+  ctx2.font='8px "Courier New"';ctx2.textAlign='right';ctx2.textBaseline='bottom';
+  ctx2.fillText(left+' LEFT',GW()-8,GH()-12);
+}
+
+// ── Progress % ─────────────────────────────────────────────
+function drawProgressPct(){
+  if(!_qolExtra.progressPct||!aud||!aud.duration)return;
+  const dur=CS?.endTime||aud.duration;
+  const pct=Math.round((aud.currentTime/dur)*100);
+  ctx2.fillStyle='rgba(0,240,255,0.4)';
+  ctx2.font='8px "Courier New"';ctx2.textAlign='center';ctx2.textBaseline='bottom';
+  ctx2.fillText(pct+'%',GW()/2,GH()-2);
+}
+
+// ── Patch drawPlay2 for all QoL overlays ──────────────────
+const _origDrawPlay2qol=drawPlay2;
+drawPlay2=function(){
+  _origDrawPlay2qol();
+  drawLowHpWarning();
+  drawSongTimer();
+  drawGemHud();
+  drawNoteApproach();
+  drawRankDisplay();
+  drawNoteCount();
+  drawProgressPct();
+};
+
+// ── GRAPHICS EXTRAS 2 ─────────────────────────────────────
+(function loadGfxExtras2(){
+  const map={rainEffect:'bl_gfx_rain',gridLines:'bl_gfx_grid',neonGlow:'bl_gfx_neonglow',motionBlur:'bl_gfx_motionblur',explosionHit:'bl_gfx_explosion'};
+  for(const[k,v] of Object.entries(map)){
+    try{_gfxExtras[k]=localStorage.getItem(v)==='1';}catch(e){_gfxExtras[k]=false;}
+  }
+  const orig=window._gfxUpdateBtns;
+  window._gfxUpdateBtns=function(){
+    if(orig)orig();
+    _gfxBtn('rain-btn',_gfxExtras.rainEffect);
+    _gfxBtn('gridlines-btn',_gfxExtras.gridLines);
+    _gfxBtn('neonglow-btn',_gfxExtras.neonGlow);
+    _gfxBtn('motionblur-btn',_gfxExtras.motionBlur);
+    _gfxBtn('explosionhit-btn',_gfxExtras.explosionHit);
+  };
+  window._gfxUpdateBtns();
+})();
+
+// Rain effect
+let _rainDrops=[];
+function initRain(){_rainDrops=[];const W=GW(),H=GH();for(let i=0;i<40;i++)_rainDrops.push({x:Math.random()*W,y:Math.random()*H,len:10+Math.random()*20,speed:4+Math.random()*4,alpha:0.05+Math.random()*0.1});}
+function drawRain(){
+  if(!_gfxExtras.rainEffect)return;
+  if(!_rainDrops.length)initRain();
+  const W=GW(),H=GH();
+  ctx2.strokeStyle='rgba(100,180,255,0.15)';ctx2.lineWidth=1;
+  for(const d of _rainDrops){
+    ctx2.globalAlpha=d.alpha;
+    ctx2.beginPath();ctx2.moveTo(d.x,d.y);ctx2.lineTo(d.x-2,d.y+d.len);ctx2.stroke();
+    d.y+=d.speed;d.x-=0.5;
+    if(d.y>H){d.y=-d.len;d.x=Math.random()*W;}
+  }
+  ctx2.globalAlpha=1;
+}
+
+// Grid lines
+function drawGridLines(){
+  if(!_gfxExtras.gridLines)return;
+  const W=GW(),H=GH(),spacing=40;
+  ctx2.strokeStyle='rgba(255,255,255,0.04)';ctx2.lineWidth=1;
+  for(let y=0;y<H;y+=spacing){ctx2.beginPath();ctx2.moveTo(0,y);ctx2.lineTo(W,y);ctx2.stroke();}
+}
+
+// Neon glow on notes — patch drawNote
+const _origDrawNote4=drawNote;
+drawNote=function(cx,ny,nr,r,g,b,lane){
+  if(_gfxExtras.neonGlow){
+    ctx2.save();
+    ctx2.shadowColor=`rgba(${r},${g},${b},1)`;
+    ctx2.shadowBlur=18;
+    _origDrawNote4(cx,ny,nr,r,g,b,lane);
+    ctx2.restore();
+  }else{_origDrawNote4(cx,ny,nr,r,g,b,lane);}
+};
+
+// Motion blur — slightly transparent frame overlay
+function drawMotionBlur(){
+  if(!_gfxExtras.motionBlur)return;
+  ctx2.fillStyle='rgba(4,4,15,0.18)';
+  ctx2.fillRect(0,0,GW(),GH());
+}
+
+// Explosion on hit
+let _explosions=[];
+function spawnExplosion(lane,y){
+  if(!_gfxExtras.explosionHit)return;
+  const[r,g,b]=rgbC(COLS[lane]);
+  const cx=lane*GLW()+GLW()/2;
+  for(let i=0;i<16;i++){
+    const a=Math.random()*Math.PI*2,s=1.5+Math.random()*3.5;
+    _explosions.push({x:cx,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,a:1,r:2+Math.random()*3,r2:r,g2:g,b2:b});
+  }
+}
+function drawExplosions(){
+  for(const p of _explosions){
+    ctx2.fillStyle=`rgba(${p.r2},${p.g2},${p.b2},${p.a})`;
+    ctx2.beginPath();ctx2.arc(p.x,p.y,p.r,0,Math.PI*2);ctx2.fill();
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.08;p.a-=0.04;p.r*=0.97;
+  }
+  _explosions=_explosions.filter(p=>p.a>0);
+}
+
+// Hook explosion into hitPlay
+const _origHitPlay2=window.hitPlay||hitPlay;
+window.hitPlay=function(lane,down){
+  _origHitPlay2(lane,down);
+  if(down&&_gfxExtras.explosionHit)spawnExplosion(lane,GHIT_Y()+20);
+};
+
+// Patch drawBase and drawPlay2 for new gfx
+const _origDrawBase3=drawBase;
+drawBase=function(){
+  if(_gfxExtras.motionBlur)drawMotionBlur();
+  _origDrawBase3();
+  drawRain();
+  drawGridLines();
+};
+const _origDrawPlay2gfx=drawPlay2;
+drawPlay2=function(){
+  _origDrawPlay2gfx();
+  drawExplosions();
+};
+
+// Also update _gfxUpdateBtns on settings page open
+const _origShowPage5=showPage;
+showPage=function(id,skip){
+  _origShowPage5(id,skip);
+  if(id==='settings-page'){
+    if(window._gfxUpdateBtns)_gfxUpdateBtns();
+    if(window.loadQoLSettings)loadQoLSettings();
+  }
+};
 </script>
 </body>
 </html>
