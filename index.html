@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>BEATLINE</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -147,6 +147,9 @@ input[type=file]#cr-file{display:none;}
   background:var(--bg2);
   border:1px solid var(--border);
   overflow:hidden;flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-touch-callout:none;
+  user-select:none;
 }
 canvas#cv{display:block;width:440px;height:620px;}
 #ui{position:absolute;top:12px;left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:0 18px;pointer-events:none;z-index:10;}
@@ -167,6 +170,7 @@ canvas#cv{display:block;width:440px;height:620px;}
 .khi{
   flex:1;
   height:60px;
+  min-height:54px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -331,6 +335,57 @@ canvas#cv{display:block;width:440px;height:620px;}
 .confirm-msg{font-size:12px;color:var(--text2);letter-spacing:2px;text-align:center;line-height:1.9;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
 /* LANDSCAPE MODE */
+/* LANDSCAPE MOBILE GAME MODE */
+#game-wrap.mobile-landscape {
+  flex-direction:row!important;
+  width:auto!important;
+  align-items:stretch;
+}
+#game-wrap.mobile-landscape #gc {
+  width:auto!important;
+  flex:1;
+}
+#game-wrap.mobile-landscape canvas#cv {
+  width:100%!important;
+  height:100%!important;
+}
+#game-wrap.mobile-landscape #kh {
+  display:none!important;
+}
+#game-wrap.mobile-landscape #kh-side {
+  display:flex!important;
+}
+/* Side buttons */
+.khi-side {
+  flex:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  font-weight:bold;
+  letter-spacing:2px;
+  border-left:2px solid #1a1a30;
+  cursor:pointer;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;
+  transition:background .08s;
+  width:80px;
+}
+.khi-side:active,.khi-side.pressed{background:rgba(255,255,255,.12);}
+.khi-side.k0{border-left-color:#00f0ff44;color:var(--cyan);}
+.khi-side.k1{border-left-color:#ff00aa44;color:var(--pink);}
+.khi-side.k2{border-left-color:#00ff8844;color:var(--green);}
+.khi-side.k3{border-left-color:#ffaa0044;color:var(--amber);}
+@media(max-width:500px){
+  /* Game tap buttons bigger on mobile */
+  .khi{height:72px!important;}
+  /* Bottom bar bigger tap targets */
+  .bottom-bar-btn{padding:10px 14px!important;}
+  /* Song cards full width */
+  .songs-list{padding:6px 8px 80px!important;}
+}
 @media(max-width:500px){
   .profile-header-card{padding:14px 12px 12px;gap:10px;}
   .profile-avatar{width:44px;height:44px;min-width:44px;font-size:18px;}
@@ -1048,11 +1103,19 @@ canvas#cv{display:block;width:440px;height:620px;}
       <button id="pausebtn" onclick="togglePause()" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:9px;letter-spacing:3px;padding:4px 12px;cursor:pointer;z-index:16;">⏸</button>
       <div id="ov"></div>
     </div>
+    <!-- PORTRAIT: buttons below (default) -->
     <div id="kh">
       <div class="khi k0" id="khb-0">D</div>
       <div class="khi k1" id="khb-1">F</div>
       <div class="khi k2" id="khb-2">J</div>
       <div class="khi k3" id="khb-3">K</div>
+    </div>
+    <!-- LANDSCAPE SIDE BUTTONS (shown in mobile landscape) -->
+    <div id="kh-side" style="display:none;flex-direction:column;width:80px;flex-shrink:0;">
+      <div class="khi-side k0" id="khb-s0" ontouchstart="event.preventDefault();_laneDown(0)" ontouchend="event.preventDefault();_laneUp(0)" onmousedown="_laneDown(0)" onmouseup="_laneUp(0)">D</div>
+      <div class="khi-side k1" id="khb-s1" ontouchstart="event.preventDefault();_laneDown(1)" ontouchend="event.preventDefault();_laneUp(1)" onmousedown="_laneDown(1)" onmouseup="_laneUp(1)">F</div>
+      <div class="khi-side k2" id="khb-s2" ontouchstart="event.preventDefault();_laneDown(2)" ontouchend="event.preventDefault();_laneUp(2)" onmousedown="_laneDown(2)" onmouseup="_laneUp(2)">J</div>
+      <div class="khi-side k3" id="khb-s3" ontouchstart="event.preventDefault();_laneDown(3)" ontouchend="event.preventDefault();_laneUp(3)" onmousedown="_laneDown(3)" onmouseup="_laneUp(3)">K</div>
     </div>
   </div>
 </div>
@@ -4798,12 +4861,16 @@ function autoTick(now){
 function scaleGame(){
   const wrap=document.getElementById('game-wrap');
   if(!wrap)return;
-  const vw=window.innerWidth,vh=window.innerHeight;
-  const gameW=440,gameH=620+60+2;
-  const scaleW=vw/gameW,scaleH=vh/gameH;
+  // Use visual viewport for accurate mobile dimensions
+  const vw=(window.visualViewport?window.visualViewport.width:window.innerWidth);
+  const vh=(window.visualViewport?window.visualViewport.height:window.innerHeight);
+  const gameW=440,gameH=682; // canvas 620 + buttons 60 + border 2
+  // On mobile give a little breathing room
+  const pad=window.innerWidth<=500?8:0;
+  const scaleW=(vw-pad*2)/gameW;
+  const scaleH=(vh-pad*2)/gameH;
   const scale=Math.min(scaleW,scaleH,1);
   if(scale<1){
-    // Shrink and compensate margins so layout space matches visual size
     const dh=gameH*(1-scale);
     const dw=gameW*(1-scale);
     wrap.style.transform=`scale(${scale})`;
@@ -4819,6 +4886,7 @@ function scaleGame(){
   }
 }
 window.addEventListener('resize',scaleGame);
+if(window.visualViewport)window.visualViewport.addEventListener('resize',scaleGame);
 setTimeout(scaleGame,0);
 
 // ── TAP BUTTONS ──────────────────────────────────────────────────────────────
@@ -7767,6 +7835,101 @@ window.usePotionInPause = useAnyPotion;
 const _reviveStyle = document.createElement('style');
 _reviveStyle.textContent = '@keyframes revive-flash{0%{opacity:0.8;}100%{opacity:0;}}';
 document.head.appendChild(_reviveStyle);
+
+// ══════════════════════════════════════════════════════════
+// ── MOBILE LANDSCAPE MODE ────────────────────────────────
+// ══════════════════════════════════════════════════════════
+let _mobileLandscape = false;
+
+function detectMobileLayout(){
+  const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  if(!isMobile){ ensurePortraitMode(); return; }
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const isLandscape = vw > vh;
+  if(isLandscape && vw <= 1024){
+    enableLandscapeMode(vw, vh);
+  } else {
+    ensurePortraitMode();
+  }
+}
+
+function enableLandscapeMode(vw, vh){
+  if(_mobileLandscape) return;
+  _mobileLandscape = true;
+  const wrap = document.getElementById('game-wrap');
+  const gc   = document.getElementById('gc');
+  const cv   = document.getElementById('cv');
+  if(!wrap||!gc||!cv) return;
+
+  const sideW = 80;
+  const gameH = vh;          // use full screen height
+  const gameW = vw - sideW;  // canvas fills remaining width
+
+  wrap.classList.add('mobile-landscape');
+  wrap.style.transform = '';
+  wrap.style.margin = '';
+  wrap.style.width  = vw + 'px';
+  wrap.style.height = vh + 'px';
+
+  gc.style.width  = gameW + 'px';
+  gc.style.height = gameH + 'px';
+  cv.style.width  = gameW + 'px';
+  cv.style.height = gameH + 'px';
+  cv.width  = gameW;
+  cv.height = gameH;
+
+  // Side buttons height
+  const side = document.getElementById('kh-side');
+  if(side){ side.style.height = gameH + 'px'; }
+
+  // Rebuild canvas refs
+  if(typeof initCanvasCtx === 'function') initCanvasCtx();
+}
+
+function ensurePortraitMode(){
+  if(!_mobileLandscape) { scaleGame(); return; }
+  _mobileLandscape = false;
+  const wrap = document.getElementById('game-wrap');
+  const gc   = document.getElementById('gc');
+  const cv   = document.getElementById('cv');
+  if(!wrap||!gc||!cv) return;
+
+  wrap.classList.remove('mobile-landscape');
+  wrap.style.width  = '';
+  wrap.style.height = '';
+  gc.style.width  = '440px';
+  gc.style.height = '620px';
+  cv.style.width  = '440px';
+  cv.style.height = '620px';
+  cv.width  = 440;
+  cv.height = 620;
+
+  const side = document.getElementById('kh-side');
+  if(side) side.style.height = '';
+
+  scaleGame();
+}
+
+// Side button press feedback
+document.querySelectorAll('.khi-side').forEach(btn=>{
+  btn.addEventListener('touchstart',()=>btn.classList.add('pressed'),{passive:true});
+  btn.addEventListener('touchend',  ()=>btn.classList.remove('pressed'),{passive:true});
+  btn.addEventListener('mousedown', ()=>btn.classList.add('pressed'));
+  btn.addEventListener('mouseup',   ()=>btn.classList.remove('pressed'));
+});
+
+// Listen for orientation changes
+window.addEventListener('resize', detectMobileLayout);
+window.addEventListener('orientationchange', ()=>setTimeout(detectMobileLayout, 200));
+if(window.visualViewport) window.visualViewport.addEventListener('resize', detectMobileLayout);
+
+// Run on load
+setTimeout(detectMobileLayout, 100);
+
+// Recalculate canvas size in drawPlay2 helpers
+const _origGW2 = GW, _origGH2 = GH;
+GW = function(){ return _mobileLandscape ? (document.getElementById('cv')?.width||440) : _origGW2(); };
+GH = function(){ return _mobileLandscape ? (document.getElementById('cv')?.height||620) : _origGH2(); };
 </script>
 </body>
 </html>
