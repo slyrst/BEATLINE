@@ -10,7 +10,7 @@
 html,body{height:100%;width:100%;overflow:hidden;margin:0;padding:0;}
 body{background:var(--bg);font-family:'Courier New',monospace;color:var(--text);display:flex;align-items:center;justify-content:center;}
 #app{width:100%;max-width:100vw;height:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;position:relative;}
-.page{display:none;width:100%;max-width:100%;height:100%;overflow-y:auto;overflow-x:hidden;flex-direction:column;align-items:center;position:absolute;top:0;left:0;box-sizing:border-box;}
+.page{display:none;width:100%;max-width:100%;height:100%;overflow-y:auto;overflow-x:hidden;flex-direction:column;align-items:center;position:absolute;top:0;left:0;box-sizing:border-box;scrollbar-gutter:stable;}
 .page.active{display:flex;}
 .xbtn{background:none;border:1px solid #ffffff22;color:#fff;font-family:'Courier New',monospace;font-size:11px;letter-spacing:3px;padding:10px 24px;cursor:pointer;transition:all .15s;outline:none;white-space:nowrap;}
 .xbtn:hover{background:#fff;color:#000;border-color:#fff;}
@@ -134,7 +134,7 @@ input[type=file]#cr-file{display:none;}
 .eff-btn{background:transparent;border:1px solid color-mix(in srgb,var(--ec) 30%,transparent);color:var(--ec,#aaa);font-family:'Courier New',monospace;font-size:9px;letter-spacing:1px;padding:4px 9px;cursor:pointer;transition:background .1s;}
 .eff-btn:hover{background:color-mix(in srgb,var(--ec) 15%,transparent);}
 .eff-btn.active{background:color-mix(in srgb,var(--ec) 25%,transparent);border-color:var(--ec);}
-#game-page{justify-content:center;align-items:center;overflow:hidden;}
+#game-page{justify-content:flex-start;align-items:center;overflow:hidden;}
 #game-wrap{
   display:flex;flex-direction:column;
   align-items:center;
@@ -4799,11 +4799,25 @@ function scaleGame(){
   const wrap=document.getElementById('game-wrap');
   if(!wrap)return;
   const vw=window.innerWidth,vh=window.innerHeight;
-  const gameH=620+60+2; // canvas + buttons + borders
-  const scaleW=vw/440,scaleH=vh/gameH;
-  const scale=Math.min(scaleW,scaleH,1); // never scale up on desktop
-  wrap.style.transform=scale<1?`scale(${scale})`:'';
-  wrap.style.marginTop=scale<1?`${(vh-(gameH*scale))/2}px`:'';
+  const gameW=440,gameH=620+60+2;
+  const scaleW=vw/gameW,scaleH=vh/gameH;
+  const scale=Math.min(scaleW,scaleH,1);
+  if(scale<1){
+    wrap.style.transform=`scale(${scale})`;
+    wrap.style.transformOrigin='top center';
+    // Compensate layout space so page does not shift right
+    const scaledW=gameW*scale;
+    const scaledH=gameH*scale;
+    wrap.style.marginLeft=`${(vw-gameW)/2}px`;
+    wrap.style.marginTop=`${(vh-scaledH)/2}px`;
+    wrap.style.marginBottom=`-${gameH-scaledH}px`;
+  } else {
+    wrap.style.transform='';
+    wrap.style.transformOrigin='';
+    wrap.style.marginLeft='';
+    wrap.style.marginTop='';
+    wrap.style.marginBottom='';
+  }
 }
 window.addEventListener('resize',scaleGame);
 setTimeout(scaleGame,0);
