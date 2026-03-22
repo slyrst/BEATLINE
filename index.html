@@ -3224,9 +3224,10 @@ let _lastRegenStreak=0;
 
 function checkStreakHpRegen(c){
   if(_lost||!c||!hpEnabled)return;
-  // Every PERFECT when combo >= 20 gives small regen
-  if(c>=20){
-    const regen=c>=100?8:c>=50?5:3; // scales with streak size
+  // Every PERFECT when combo >= 10 gives regen scaled to damage
+  // HP_MISS = -100, so regen at 10-19 combo = 15, 20-49 = 25, 50-99 = 40, 100+ = 60
+  if(c>=10){
+    const regen=c>=100?60:c>=50?40:c>=20?25:15;
     hp=Math.min(HP_MAX(),hp+regen);
     updateHpHud();
   }
@@ -3235,10 +3236,12 @@ function judgeShowNoBC(t,c){const e=document.getElementById('jt');e.textContent=
 
 // ── SHOP ──────────────────────────────────────────────────────────────────────
 const SHOP_ITEMS=[
-  {id:'potion_sm',name:'SMALL POTION',desc:'+300 HP',icon:'🧪',cost:5, hpGain:300},
-  {id:'potion_md',name:'POTION',      desc:'+500 HP',icon:'❤️',cost:10,hpGain:500},
-  {id:'potion_lg',name:'BIG POTION',  desc:'+750 HP',icon:'💊',cost:18,hpGain:750},
-  {id:'potion_xl',name:'MAX POTION',  desc:'Full HP',icon:'✨',cost:30,hpGain:HP_MAX()},
+  {id:'potion_sm', name:'SMALL POTION', desc:'+300 HP',          icon:'🧪', cost:5,  hpGain:300,     type:'hp'},
+  {id:'potion_md', name:'POTION',       desc:'+500 HP',          icon:'❤️', cost:10, hpGain:500,     type:'hp'},
+  {id:'potion_lg', name:'BIG POTION',   desc:'+750 HP',          icon:'💊', cost:18, hpGain:750,     type:'hp'},
+  {id:'potion_xl', name:'MAX POTION',   desc:'Full HP',          icon:'✨', cost:30, hpGain:HP_MAX(), type:'hp'},
+  {id:'revive',    name:'REVIVE',       desc:'Revive on death',  icon:'💀', cost:40, hpGain:500,     type:'revive'},
+  {id:'boost_2x',  name:'2× SCORE',     desc:'Double score 60s', icon:'⚡', cost:25, duration:60000, type:'boost'},
 ];
 
 let _inventory={}; // {potion_sm: 2, ...}
@@ -7255,8 +7258,10 @@ initCreatePage = function(existing){
 async function adminAutoFinish(){
   if(!ADM||!CS?.id){toast('ADMINS ONLY','#ff4444');return;}
   const total=CS.beatmap?CS.beatmap.length:100;
-  // Fake perfect stats
-  score=total*300+50000;
+  // Calculate real max score: sum of 300*(1+i*0.04) for each note
+  let calcScore=0;
+  for(let i=0;i<total;i++)calcScore+=Math.floor(300*(1+i*0.04));
+  score=calcScore;
   combo=total;maxC=total;
   gstats={p:total,g:0,ok:0,m:0};
   _lost=false;autoMode=false;
@@ -7601,6 +7606,146 @@ showPage=function(id,skip){
     if(window.loadQoLSettings)loadQoLSettings();
   }
 };
+
+// ══════════════════════════════════════════════════════════
+// ── REVIVE POTION + 2× BOOST ─────────────────────────────
+// ══════════════════════════════════════════════════════════
+
+// ── Revive ────────────────────────────────────────────────
+let _hasAutoRevive = false; // set true if player owns revive
+
+function checkAutoRevive(){
+  // Called when _lost becomes true
+  if(!_hasAutoRevive) return false;
+  if(getInvCount('revive') <= 0) return false;
+  _inventory['revive'] = Math.max(0, getInvCount('revive')-1);
+  saveInventory();
+  _hasAutoRevive = false; // only once per song
+  hp = 500;
+  _lost = false;
+  updateHpHud();
+  updateQuickPotionHud();
+  // Big revive flash
+  const div = document.createElement('div');
+  div.style.cssText = 'position:absolute;inset:0;background:rgba(255,0,100,0.5);z-index:20;pointer-events:none;animation:revive-flash .6s ease-out forwards;';
+  document.getElementById('gc')?.appendChild(div);
+  setTimeout(()=>div.remove(), 700);
+  judgeShowNoBC('💀 REVIVED! +500 HP','#ff0066');
+  toast('💀 REVIVE USED','#ff0066');
+  return true;
+}
+
+// Patch the death check in pUpdate2 to trigger revive
+const _origPUpdate2r = pUpdate2;
+pUpdate2 = function(){
+  _origPUpdate2r();
+  if(_lost && !_spectatingUid && !autoMode){
+    if(checkAutoRevive()){} // revive handled
+  }
+};
+
+// Set _hasAutoRevive when play starts if player owns one
+const _origStartPlay3 = startPlay;
+startPlay = function(){
+  _hasAutoRevive = getInvCount('revive') > 0;
+  _origStartPlay3();
+};
+
+// ── 2× Score Boost ────────────────────────────────────────
+let _scoreBoost = 1;
+let _boostTimer = null;
+let _boostEndTime = 0;
+
+function activateScoreBoost(durationMs){
+  _scoreBoost = 2;
+  clearTimeout(_boostTimer);
+  _boostEndTime = Date.now() + durationMs;
+  toast('⚡ 2× SCORE ACTIVE FOR 60s!','#ffaa00');
+  _boostTimer = setTimeout(()=>{
+    _scoreBoost = 1;
+    toast('⚡ 2× BOOST ENDED','#555');
+    updateQuickPotionHud();
+  }, durationMs);
+  updateQuickPotionHud();
+}
+
+// Reset boost on song end/stop
+const _origStopAll3 = stopAll;
+stopAll = function(){
+  _origStopAll3();
+  _scoreBoost = 1;
+  clearTimeout(_boostTimer);
+  _boostTimer = null;
+};
+
+// Draw boost timer on screen
+const _origDrawPlay2boost = drawPlay2;
+drawPlay2 = function(){
+  _origDrawPlay2boost();
+  if(_scoreBoost > 1 && _boostEndTime > Date.now()){
+    const left = Math.ceil((_boostEndTime - Date.now()) / 1000);
+    ctx2.fillStyle = '#ffaa00';
+    ctx2.font = 'bold 10px "Courier New"';
+    ctx2.textAlign = 'center';
+    ctx2.textBaseline = 'top';
+    ctx2.shadowColor = '#ffaa00';
+    ctx2.shadowBlur = 8;
+    ctx2.fillText('⚡ 2× ' + left + 's', GW()/2, 14);
+    ctx2.shadowBlur = 0;
+  }
+};
+
+// Apply boost multiplier in hitPlay
+const _origHitPlay3 = window.hitPlay || hitPlay;
+window.hitPlay = function(lane, down){
+  _origHitPlay3(lane, down);
+  // Boost is applied retroactively — patch score after hit if boost active
+};
+// Actually patch score right in judgeShow instead
+const _origJudgeShowBoost = judgeShow;
+judgeShow = function(t, col){
+  _origJudgeShowBoost(t, col);
+  if(_scoreBoost > 1 && t !== 'MISS' && mode === 'play'){
+    // We already scored normally, add the extra 1× on top
+    const bonus = t==='PERFECT'?Math.floor(300*(1+combo*.04)):t==='GOOD'?Math.floor(150*(1+combo*.04)):Math.floor(60*(1+combo*.04));
+    score += bonus; // adds 1× more making it 2×
+  }
+};
+
+// ── Fix useQuickPotion and usePotionInPause for new types ─
+function useAnyPotion(id){
+  const item = SHOP_ITEMS.find(i=>i.id===id);
+  if(!item || getInvCount(id) <= 0) return;
+  _inventory[id] = Math.max(0, getInvCount(id)-1);
+  saveInventory();
+
+  if(item.type === 'revive'){
+    // Equip for next death instead of using immediately
+    _hasAutoRevive = true;
+    toast('💀 REVIVE EQUIPPED — auto-activates on death','#ff0066');
+    updateQuickPotionHud();
+    return;
+  }
+  if(item.type === 'boost'){
+    activateScoreBoost(item.duration || 60000);
+    updateQuickPotionHud();
+    return;
+  }
+  // HP potion
+  const gain = item.hpGain >= HP_MAX() ? HP_MAX()-hp : item.hpGain;
+  hp = Math.min(HP_MAX(), hp + gain);
+  if(_lost && hp > 0) _lost = false;
+  updateHpHud();
+  toast(item.icon + ' +' + gain + ' HP', '#00aaff');
+  updateQuickPotionHud();
+}
+window.useQuickPotion = useAnyPotion;
+window.usePotionInPause = useAnyPotion;
+
+// ── Add revive CSS animation ──────────────────────────────
+const _reviveStyle = document.createElement('style');
+_reviveStyle.textContent = '@keyframes revive-flash{0%{opacity:0.8;}100%{opacity:0;}}';
+document.head.appendChild(_reviveStyle);
 </script>
 </body>
 </html>
