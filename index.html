@@ -334,50 +334,72 @@ canvas#cv{display:block;width:440px;height:620px;}
 .confirm-box{background:var(--bg3);border:1px solid var(--border);padding:28px 32px;max-width:340px;width:90%;display:flex;flex-direction:column;gap:14px;align-items:center;}
 .confirm-msg{font-size:12px;color:var(--text2);letter-spacing:2px;text-align:center;line-height:1.9;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
-/* LANDSCAPE MODE */
-/* LANDSCAPE MOBILE GAME MODE */
+/* MOBILE LANDSCAPE FULLSCREEN */
+body.mobile-ls { overflow:hidden; }
+#game-page.mobile-ls-page {
+  position:fixed!important;
+  inset:0!important;
+  z-index:500!important;
+  background:var(--bg)!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:stretch!important;
+  justify-content:stretch!important;
+  padding:0!important;
+}
 #game-wrap.mobile-landscape {
   flex-direction:row!important;
-  width:auto!important;
-  align-items:stretch;
+  width:100%!important;
+  height:100%!important;
+  align-items:stretch!important;
+  margin:0!important;
+  transform:none!important;
 }
 #game-wrap.mobile-landscape #gc {
+  flex:1!important;
   width:auto!important;
-  flex:1;
+  height:100%!important;
 }
 #game-wrap.mobile-landscape canvas#cv {
   width:100%!important;
   height:100%!important;
+  display:block!important;
 }
-#game-wrap.mobile-landscape #kh {
-  display:none!important;
+#game-wrap.mobile-landscape #kh { display:none!important; }
+#game-wrap.mobile-landscape #kh-side { display:flex!important; }
+/* Side thumb buttons — split left+right panel */
+#kh-side {
+  display:none;
+  flex-direction:column;
+  width:72px;
+  flex-shrink:0;
+  height:100%;
 }
-#game-wrap.mobile-landscape #kh-side {
-  display:flex!important;
-}
-/* Side buttons */
 .khi-side {
   flex:1;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:16px;
+  font-size:18px;
   font-weight:bold;
   letter-spacing:2px;
-  border-left:2px solid #1a1a30;
   cursor:pointer;
   user-select:none;
   -webkit-user-select:none;
   -webkit-tap-highlight-color:transparent;
   touch-action:none;
-  transition:background .08s;
-  width:80px;
+  transition:background .05s;
+  border:none;
+  background:rgba(255,255,255,0.02);
 }
-.khi-side:active,.khi-side.pressed{background:rgba(255,255,255,.12);}
-.khi-side.k0{border-left-color:#00f0ff44;color:var(--cyan);}
-.khi-side.k1{border-left-color:#ff00aa44;color:var(--pink);}
-.khi-side.k2{border-left-color:#00ff8844;color:var(--green);}
-.khi-side.k3{border-left-color:#ffaa0044;color:var(--amber);}
+.khi-side:active,.khi-side.pressed{background:rgba(255,255,255,.15);}
+.khi-side.k0{color:var(--cyan);  border-right:2px solid #00f0ff33;}
+.khi-side.k1{color:var(--pink);  border-right:2px solid #ff00aa33;}
+.khi-side.k2{color:var(--green); border-left:2px solid #00ff8833;}
+.khi-side.k3{color:var(--amber); border-left:2px solid #ffaa0033;}
+/* Mobile ls: score/combo overlay on canvas */
+#game-wrap.mobile-landscape #ui { padding:0 12px; }
+#game-wrap.mobile-landscape #sc { font-size:18px; }
 @media(max-width:500px){
   /* Game tap buttons bigger on mobile */
   .khi{height:72px!important;}
@@ -811,6 +833,11 @@ canvas#cv{display:block;width:440px;height:620px;}
     </div>
     <div class="settings-section">
       <div class="settings-section-title">GRAPHICS</div>
+      <div class="keybind-row" style="margin-bottom:10px;">
+        <div class="keybind-label" style="line-height:1.4;">⚡ PERFORMANCE MODE<br><span style="font-size:8px;color:#ff8800;">DISABLE ALL EFFECTS — SMOOTH ON LOW-END DEVICES</span></div>
+        <div id="perfmode-btn" onclick="togglePerfMode()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:0 0 12px;"></div>
       <div style="font-size:9px;color:#252540;letter-spacing:2px;margin-bottom:12px;">ALL OFF BY DEFAULT — ENABLE WHAT YOU WANT</div>
       <div class="keybind-row">
         <div class="keybind-label" style="line-height:1.4;">✨ NOTE SKIN<br><span style="font-size:8px;color:#555;">STRIPED / GLOWING NOTES</span></div>
@@ -994,6 +1021,19 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div id="progresspct-btn" onclick="toggleQoL('progressPct','bl_progresspct','progresspct-btn')" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
       </div>
     </div>
+    <div class="settings-section">
+      <div class="settings-section-title">📱 MOBILE</div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.5;">🔄 AUTO LANDSCAPE<br><span style="font-size:8px;color:#555;">ROTATE PHONE → FULLSCREEN WIDE MODE</span></div>
+        <div id="autolandscape-btn" onclick="toggleAutoLandscape()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
+      </div>
+      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">D+F = LEFT THUMB · J+K = RIGHT THUMB IN LANDSCAPE</div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.5;">📳 HAPTIC FEEDBACK<br><span style="font-size:8px;color:#555;">VIBRATE ON NOTE HIT</span></div>
+        <div id="haptic-btn" onclick="toggleHaptic()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+    </div>
     <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
       <div class="settings-section-title" style="color:var(--pink);">ADMIN — MANAGE ROLES</div>
       <div style="display:flex;flex-direction:column;gap:10px;">
@@ -1103,6 +1143,11 @@ canvas#cv{display:block;width:440px;height:620px;}
       <button id="pausebtn" onclick="togglePause()" style="display:none;position:absolute;top:12px;left:50%;transform:translateX(-50%);background:none;border:1px solid #ffffff22;color:#555;font-family:'Courier New',monospace;font-size:9px;letter-spacing:3px;padding:4px 12px;cursor:pointer;z-index:16;">⏸</button>
       <div id="ov"></div>
     </div>
+    <!-- LANDSCAPE: RIGHT thumb panel (J+K) -->
+    <div id="kh-right" style="display:none;flex-direction:column;width:72px;flex-shrink:0;height:100%;">
+      <div class="khi-side k2" id="khb-s2" ontouchstart="event.preventDefault();_laneDown(2)" ontouchend="event.preventDefault();_laneUp(2)" onmousedown="_laneDown(2)" onmouseup="_laneUp(2)">J</div>
+      <div class="khi-side k3" id="khb-s3" ontouchstart="event.preventDefault();_laneDown(3)" ontouchend="event.preventDefault();_laneUp(3)" onmousedown="_laneDown(3)" onmouseup="_laneUp(3)">K</div>
+    </div>
     <!-- PORTRAIT: buttons below (default) -->
     <div id="kh">
       <div class="khi k0" id="khb-0">D</div>
@@ -1110,12 +1155,10 @@ canvas#cv{display:block;width:440px;height:620px;}
       <div class="khi k2" id="khb-2">J</div>
       <div class="khi k3" id="khb-3">K</div>
     </div>
-    <!-- LANDSCAPE SIDE BUTTONS (shown in mobile landscape) -->
-    <div id="kh-side" style="display:none;flex-direction:column;width:80px;flex-shrink:0;">
+    <!-- LANDSCAPE: LEFT thumb panel (D+F) -->
+    <div id="kh-left" style="display:none;flex-direction:column;width:72px;flex-shrink:0;height:100%;">
       <div class="khi-side k0" id="khb-s0" ontouchstart="event.preventDefault();_laneDown(0)" ontouchend="event.preventDefault();_laneUp(0)" onmousedown="_laneDown(0)" onmouseup="_laneUp(0)">D</div>
       <div class="khi-side k1" id="khb-s1" ontouchstart="event.preventDefault();_laneDown(1)" ontouchend="event.preventDefault();_laneUp(1)" onmousedown="_laneDown(1)" onmouseup="_laneUp(1)">F</div>
-      <div class="khi-side k2" id="khb-s2" ontouchstart="event.preventDefault();_laneDown(2)" ontouchend="event.preventDefault();_laneUp(2)" onmousedown="_laneDown(2)" onmouseup="_laneUp(2)">J</div>
-      <div class="khi-side k3" id="khb-s3" ontouchstart="event.preventDefault();_laneDown(3)" ontouchend="event.preventDefault();_laneUp(3)" onmousedown="_laneDown(3)" onmouseup="_laneUp(3)">K</div>
     </div>
   </div>
 </div>
@@ -1273,10 +1316,18 @@ const _ACTIVITY_LABELS={
   'settings-page':'In Settings',
   'game-page':'Playing',
 };
+let _lastBroadcastActivity='',_broadcastTimer=null;
 function broadcastActivity(pageId){
   if(!CU)return;
   const label=_ACTIVITY_LABELS[pageId]||pageId;
-  dUpd(dDoc('users',CU.uid),{activity:label,activityAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  // Deduplicate — don't write if same page
+  if(label===_lastBroadcastActivity)return;
+  // Debounce — wait 600ms in case showPage is called multiple times fast
+  clearTimeout(_broadcastTimer);
+  _broadcastTimer=setTimeout(()=>{
+    _lastBroadcastActivity=label;
+    dUpd(dDoc('users',CU.uid),{activity:label,activityAt:firebase.firestore.FieldValue.serverTimestamp()}).catch(()=>{});
+  },600);
 }
 
 // ── HP TOGGLE ─────────────────────────────────────────────────────────────────
@@ -1902,7 +1953,7 @@ function startPresence(){
   if(!CU)return;
   const updatePresence=()=>dUpd(dDoc('users',CU.uid),{lastSeen:firebase.firestore.FieldValue.serverTimestamp(),online:true}).catch(()=>{});
   updatePresence();
-  _presenceInterval=setInterval(updatePresence,30000);
+  _presenceInterval=setInterval(updatePresence,120000); // every 2 min instead of 30s
   document.addEventListener('visibilitychange',()=>{
     if(document.hidden){
       dUpd(dDoc('users',CU.uid),{online:false,playingNow:null}).catch(()=>{});
@@ -1919,14 +1970,19 @@ function broadcastPlaying(songId,songTitle){
 
 // Broadcast live game state (score/combo/judge) to spectators
 let _lastStatsBroadcast=0;
+let _lastBGS=0;
 function broadcastGameState(judgeLabel,judgeColor){
-  if(!CU||_spectatingUid)return; // only HOST broadcasts, not spectator
-  dUpd(dDoc('users',CU.uid),{liveScore:{score,combo,hp,grade:judgeLabel||'',gradeColor:judgeColor||'',paused:_paused,t:Date.now()}}).catch(()=>{});
+  if(!CU||_spectatingUid)return;
+  const now=Date.now();
+  if(now-_lastBGS<1500)return; // max 1 write per 1.5s
+  _lastBGS=now;
+  dUpd(dDoc('users',CU.uid),{liveScore:{score,combo,hp,grade:judgeLabel||'',gradeColor:judgeColor||'',paused:_paused,t:now}}).catch(()=>{});
 }
 // Also broadcast pause separately so spectator pauses immediately
 function broadcastPause(paused){
   if(!CU||_spectatingUid)return;
-  dUpd(dDoc('users',CU.uid),{liveScore:{score,combo,hp,grade:'',gradeColor:'',paused,t:Date.now()}}).catch(()=>{});
+  const _pnow=Date.now();if(_pnow-_lastBGS<1500)return;_lastBGS=_pnow;
+  dUpd(dDoc('users',CU.uid),{liveScore:{score,combo,hp,grade:'',gradeColor:'',paused,t:_pnow}}).catch(()=>{});
 }
 
 // Spectator listens to host's live score
@@ -3956,8 +4012,9 @@ function buildEffectLibrary(){
   for(const [cat,items] of Object.entries(cats)){
     html+=`<div style="font-size:7px;color:#333;letter-spacing:2px;margin:6px 0 2px;">${cat}</div>`;
     for(const item of items){
+      const helpTip=item.help?`<div style="font-size:7px;color:#333;letter-spacing:1px;padding:1px 6px 3px;line-height:1.6;">-- ${item.help}</div>`:'';
       html+=`<button class="eff-btn" data-type="${item.id}" onclick="startEffectRange('${item.id}')"
-        style="--ec:${item.col};width:100%;text-align:left;font-size:9px;padding:3px 6px;">${item.label}</button>`;
+        style="--ec:${item.col};width:100%;text-align:left;font-size:9px;padding:3px 6px;">${item.label}</button>${helpTip}`;
     }
   }
   el.innerHTML=html;
@@ -5909,13 +5966,20 @@ endPlay2=async function(){
 let _allSongs=[];
 
 const _origLoadSongs=loadSongs;
+let _songsLastFetch=0;
 loadSongs=async function(){
   const list=document.getElementById('songs-list');
+  // Use cached data if fetched within last 60 seconds
+  if(_allSongs.length>0&&Date.now()-_songsLastFetch<60000){
+    renderSongList(_allSongs);
+    return;
+  }
   list.innerHTML='<div class="empty-state">LOADING...</div>';
   try{
     const snap=await dQ('songs',O('createdAt','desc'));
     if(snap.empty){list.innerHTML='<div class="empty-state">NO SONGS YET<br>CREATE ONE WITH [ CREATE LEVEL ]</div>';return;}
     _allSongs=snap.docs.map(d=>({id:d.id,...d.data()}));
+    _songsLastFetch=Date.now();
     renderSongList(_allSongs);
   }catch(e){list.innerHTML=`<div class="empty-state">ERROR: ${e.message}</div>`;}
 };
@@ -7837,99 +7901,265 @@ _reviveStyle.textContent = '@keyframes revive-flash{0%{opacity:0.8;}100%{opacity
 document.head.appendChild(_reviveStyle);
 
 // ══════════════════════════════════════════════════════════
-// ── MOBILE LANDSCAPE MODE ────────────────────────────────
 // ══════════════════════════════════════════════════════════
-let _mobileLandscape = false;
+// ── MOBILE LANDSCAPE FULLSCREEN ──────────────────────────
+// ══════════════════════════════════════════════════════════
+let _mobileLandscape=false, _autoLandscape=true;
+
+function toggleAutoLandscape(){
+  _autoLandscape=!_autoLandscape;
+  try{localStorage.setItem('bl_autolandscape',_autoLandscape?'1':'0');}catch(e){}
+  const btn=document.getElementById('autolandscape-btn');
+  if(btn){
+    if(_autoLandscape){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
+    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+  }
+  if(!_autoLandscape&&_mobileLandscape)exitLandscape();
+}
+window.toggleAutoLandscape=toggleAutoLandscape;
+
+(function(){try{const v=localStorage.getItem('bl_autolandscape');if(v==='0')_autoLandscape=false;}catch(e){}
+  setTimeout(()=>{const btn=document.getElementById('autolandscape-btn');if(btn&&!_autoLandscape){btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}},500);
+})();
 
 function detectMobileLayout(){
-  const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-  if(!isMobile){ ensurePortraitMode(); return; }
-  const vw = window.innerWidth, vh = window.innerHeight;
-  const isLandscape = vw > vh;
-  if(isLandscape && vw <= 1024){
-    enableLandscapeMode(vw, vh);
-  } else {
-    ensurePortraitMode();
+  const mob=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+  if(!mob){if(_mobileLandscape)exitLandscape();return;}
+  if(!_autoLandscape){if(_mobileLandscape)exitLandscape();return;}
+  const activePage=document.querySelector('.page.active')?.id;
+  if(activePage!=='game-page'){if(_mobileLandscape)exitLandscape();return;}
+  const vw=window.innerWidth,vh=window.innerHeight;
+  if(vw>vh)enterLandscape();
+  else exitLandscape();
+}
+
+function enterLandscape(){
+  if(_mobileLandscape)return;
+  _mobileLandscape=true;
+  const vw=window.visualViewport?.width||window.innerWidth;
+  const vh=window.visualViewport?.height||window.innerHeight;
+  const sideW=72, canvasW=vw-sideW*2, canvasH=vh;
+  // Fullscreen
+  try{document.documentElement.requestFullscreen?.();}catch(e){}
+  try{if(screen.orientation?.lock)screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
+  // Layout
+  document.body.classList.add('mobile-ls');
+  document.getElementById('game-page')?.classList.add('mobile-ls-page');
+  document.getElementById('game-wrap')?.classList.add('mobile-landscape');
+  // Show side panels
+  ['kh-left','kh-right'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.style.display='flex';el.style.height=canvasH+'px';}
+  });
+  // Canvas size
+  const gc=document.getElementById('gc'),cv=document.getElementById('cv');
+  if(gc){gc.style.width=canvasW+'px';gc.style.height=canvasH+'px';}
+  if(cv){cv.style.width=canvasW+'px';cv.style.height=canvasH+'px';cv.width=canvasW;cv.height=canvasH;}
+  // Hide bottom bar
+  document.getElementById('menu-bottom-bar').style.display='none';
+  // Exit button
+  if(!document.getElementById('ls-exit-btn')){
+    const btn=document.createElement('button');
+    btn.id='ls-exit-btn';btn.textContent='✕ EXIT';
+    btn.style.cssText='position:absolute;top:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border:1px solid #ffffff22;color:#555;font-size:10px;font-family:monospace;letter-spacing:2px;padding:2px 12px;cursor:pointer;z-index:30;border-radius:2px;touch-action:none;';
+    btn.ontouchstart=btn.onclick=(e)=>{e.stopPropagation();exitLandscape();};
+    document.getElementById('gc')?.appendChild(btn);
   }
 }
+window.enterLandscape=enterLandscape;
 
-function enableLandscapeMode(vw, vh){
-  if(_mobileLandscape) return;
-  _mobileLandscape = true;
-  const wrap = document.getElementById('game-wrap');
-  const gc   = document.getElementById('gc');
-  const cv   = document.getElementById('cv');
-  if(!wrap||!gc||!cv) return;
-
-  const sideW = 80;
-  const gameH = vh;          // use full screen height
-  const gameW = vw - sideW;  // canvas fills remaining width
-
-  wrap.classList.add('mobile-landscape');
-  wrap.style.transform = '';
-  wrap.style.margin = '';
-  wrap.style.width  = vw + 'px';
-  wrap.style.height = vh + 'px';
-
-  gc.style.width  = gameW + 'px';
-  gc.style.height = gameH + 'px';
-  cv.style.width  = gameW + 'px';
-  cv.style.height = gameH + 'px';
-  cv.width  = gameW;
-  cv.height = gameH;
-
-  // Side buttons height
-  const side = document.getElementById('kh-side');
-  if(side){ side.style.height = gameH + 'px'; }
-
-  // Rebuild canvas refs
-  if(typeof initCanvasCtx === 'function') initCanvasCtx();
-}
-
-function ensurePortraitMode(){
-  if(!_mobileLandscape) { scaleGame(); return; }
-  _mobileLandscape = false;
-  const wrap = document.getElementById('game-wrap');
-  const gc   = document.getElementById('gc');
-  const cv   = document.getElementById('cv');
-  if(!wrap||!gc||!cv) return;
-
-  wrap.classList.remove('mobile-landscape');
-  wrap.style.width  = '';
-  wrap.style.height = '';
-  gc.style.width  = '440px';
-  gc.style.height = '620px';
-  cv.style.width  = '440px';
-  cv.style.height = '620px';
-  cv.width  = 440;
-  cv.height = 620;
-
-  const side = document.getElementById('kh-side');
-  if(side) side.style.height = '';
-
+function exitLandscape(){
+  if(!_mobileLandscape)return;
+  _mobileLandscape=false;
+  try{document.exitFullscreen?.();}catch(e){}
+  try{screen.orientation?.unlock();}catch(e){}
+  document.body.classList.remove('mobile-ls');
+  document.getElementById('game-page')?.classList.remove('mobile-ls-page');
+  document.getElementById('game-wrap')?.classList.remove('mobile-landscape');
+  ['kh-left','kh-right'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
+  const gc=document.getElementById('gc'),cv=document.getElementById('cv');
+  if(gc){gc.style.width='440px';gc.style.height='620px';}
+  if(cv){cv.style.width='440px';cv.style.height='620px';cv.width=440;cv.height=620;}
+  document.getElementById('ls-exit-btn')?.remove();
   scaleGame();
 }
+window.exitLandscape=exitLandscape;
 
-// Side button press feedback
-document.querySelectorAll('.khi-side').forEach(btn=>{
-  btn.addEventListener('touchstart',()=>btn.classList.add('pressed'),{passive:true});
-  btn.addEventListener('touchend',  ()=>btn.classList.remove('pressed'),{passive:true});
-  btn.addEventListener('mousedown', ()=>btn.classList.add('pressed'));
-  btn.addEventListener('mouseup',   ()=>btn.classList.remove('pressed'));
-});
+// Side button feedback
+setTimeout(()=>{
+  document.querySelectorAll('.khi-side').forEach(btn=>{
+    btn.addEventListener('touchstart',()=>btn.classList.add('pressed'),{passive:true});
+    btn.addEventListener('touchend',()=>btn.classList.remove('pressed'),{passive:true});
+    btn.addEventListener('mousedown',()=>btn.classList.add('pressed'));
+    btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
+  });
+},500);
 
-// Listen for orientation changes
-window.addEventListener('resize', detectMobileLayout);
-window.addEventListener('orientationchange', ()=>setTimeout(detectMobileLayout, 200));
-if(window.visualViewport) window.visualViewport.addEventListener('resize', detectMobileLayout);
+window.addEventListener('resize',()=>setTimeout(detectMobileLayout,150));
+window.addEventListener('orientationchange',()=>setTimeout(detectMobileLayout,300));
+if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>setTimeout(detectMobileLayout,150));
 
-// Run on load
-setTimeout(detectMobileLayout, 100);
+// Show page hook
+const _origShowPage6=showPage;
+showPage=function(id,skip){_origShowPage6(id,skip);if(id==='game-page')setTimeout(detectMobileLayout,250);else if(_mobileLandscape)exitLandscape();};
 
-// Recalculate canvas size in drawPlay2 helpers
-const _origGW2 = GW, _origGH2 = GH;
-GW = function(){ return _mobileLandscape ? (document.getElementById('cv')?.width||440) : _origGW2(); };
-GH = function(){ return _mobileLandscape ? (document.getElementById('cv')?.height||620) : _origGH2(); };
+// GW/GH override
+const _origGW2=GW,_origGH2=GH;
+GW=function(){if(_mobileLandscape){const cv2=document.getElementById('cv');return cv2?.width||440;}return _origGW2();};
+GH=function(){if(_mobileLandscape){const cv2=document.getElementById('cv');return cv2?.height||620;}return _origGH2();};
+
+// ══════════════════════════════════════════════════════════
+// ── PERFORMANCE MODE ─────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+let _perfMode = false;
+function togglePerfMode(){
+  _perfMode = !_perfMode;
+  try{localStorage.setItem('bl_perfmode',_perfMode?'1':'0');}catch(e){}
+  const btn=document.getElementById('perfmode-btn');
+  if(btn){
+    if(_perfMode){btn.textContent='ON';btn.style.borderColor='#ffaa0044';btn.style.color='#ffaa00';btn.style.background='#ffaa0011';}
+    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
+  }
+  toast(_perfMode?'⚡ PERFORMANCE MODE ON — all effects disabled':'⚡ PERFORMANCE MODE OFF',_perfMode?'#ffaa00':'#555');
+}
+window.togglePerfMode=togglePerfMode;
+(function loadPerfMode(){
+  try{_perfMode=localStorage.getItem('bl_perfmode')==='1';}catch(e){}
+  const btn=document.getElementById('perfmode-btn');
+  if(btn&&_perfMode){btn.textContent='ON';btn.style.borderColor='#ffaa0044';btn.style.color='#ffaa00';btn.style.background='#ffaa0011';}
+})();
+
+// Patch all effect/graphics calls to respect perf mode
+const _origApplyVisualEffects2=applyVisualEffects;
+applyVisualEffects=function(t){if(_perfMode)return;_origApplyVisualEffects2(t);};
+
+const _origDrawStarField=drawStarField,_origDrawLaneWaves=drawLaneWaves,_origDrawScanLines2=drawScanLines2;
+const _origDrawBeatFlash=drawBeatFlash,_origDrawRainbowLanes=drawRainbowLanes,_origDrawRain=drawRain;
+const _origDrawGridLines=drawGridLines,_origDrawExplosions=drawExplosions,_origDrawComboBurstParts=drawComboBurstParts;
+const _origDrawPerfectFlashes=drawPerfectFlashes;
+
+drawStarField=function(){if(_perfMode)return;_origDrawStarField();};
+drawLaneWaves=function(){if(_perfMode)return;_origDrawLaneWaves();};
+drawScanLines2=function(){if(_perfMode)return;_origDrawScanLines2();};
+drawBeatFlash=function(){if(_perfMode)return;_origDrawBeatFlash();};
+drawRainbowLanes=function(){if(_perfMode)return;_origDrawRainbowLanes();};
+drawRain=function(){if(_perfMode)return;_origDrawRain();};
+drawGridLines=function(){if(_perfMode)return;_origDrawGridLines();};
+drawExplosions=function(){if(_perfMode)return;_origDrawExplosions();};
+drawComboBurstParts=function(){if(_perfMode)return;_origDrawComboBurstParts();};
+drawPerfectFlashes=function(){if(_perfMode)return;_origDrawPerfectFlashes();};
+drawMissAnims=function(){if(_perfMode)return;for(let p of _missAnims){const[r,g,b]=rgbC(COLS[p.lane]);ctx2.save();ctx2.globalAlpha=p.a;ctx2.translate(p.x,p.y);ctx2.rotate(p.rot);ctx2.strokeStyle=`rgba(${r},${g},${b},${p.a})`;ctx2.lineWidth=2;ctx2.beginPath();ctx2.moveTo(-p.r,-p.r);ctx2.lineTo(p.r,p.r);ctx2.stroke();ctx2.beginPath();ctx2.moveTo(p.r,-p.r);ctx2.lineTo(-p.r,p.r);ctx2.stroke();ctx2.restore();p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;p.a-=0.045;p.rot+=p.vrot;p.r*=0.97;}_missAnims=_missAnims.filter(p=>p.a>0);};
+
+// ══════════════════════════════════════════════════════════
+// ── EFFECT HELP DOCS (-- style) ──────────────────────────
+// ══════════════════════════════════════════════════════════
+// Add help text to EFF_LIB_UNIQUE entries
+const EFFECT_HELP = {
+  // COLOR
+  dark:       'darkens screen -- amount 0.1-0.9, try 0.5 for subtle',
+  flash:      'pulses white/color -- speed: slow=chill, strobe=intense',
+  red:        'red tint overlay -- use during intense sections',
+  blue:       'blue tint -- calm/sad sections',
+  green:      'green tint -- eerie/nature sections',
+  purple:     'purple tint -- mysterious sections',
+  pink:       'pink tint -- romantic/fun sections',
+  rainbow:    'cycles through hues -- great for drops',
+  hue_rotate: 'continuously rotates all colors -- speed controls rotation rate',
+  invert:     'inverts all colors -- jarring, use briefly',
+  // FILTER
+  blur:       'gaussian blur -- amount 1-12, use during transitions',
+  pixelate:   '8-bit pixelation -- high values = chunky pixels',
+  glitch:     'chromatic aberration glitch -- intensity controls shift amount',
+  // MOTION
+  shake:      'camera shake -- intensity 1-20, great for bass hits',
+  zoom:       'zoom pulse -- amount 1.01-1.3, speed controls rate',
+  wave:       'horizontal wave distortion -- good for psychedelic sections',
+  rotate:     'slowly rotates canvas -- use sparingly',
+  // PARTICLE
+  particles:  'colored particles fly up -- color and speed customizable',
+  firework:   'burst of sparks from center -- great for chorus drops',
+  snow:       'falling snow/dots -- peaceful sections',
+  confetti:   'multicolor confetti fall -- celebration moments',
+  // FLASH
+  beat_flash: 'quick white flash on beat -- use with bass-heavy songs',
+  strobe:     'rapid flashing -- WARNING: photosensitivity risk',
+  color_flash:'flash a specific color -- customize color and opacity',
+  // VIGNETTE
+  vignette:   'dark edges around screen -- adds cinematic feel',
+  // TEXT
+  text:       'display custom text on screen -- set text, color, size, position',
+  neon_text:  'glowing neon text -- great for song titles',
+  warning:    'warning banner text -- builds tension',
+  countdown:  'countdown from N to 0 -- use before drops',
+  // IMAGE
+  image:      'display an image overlay -- pick a file, set opacity/size',
+  // LANES
+  lane_pulse: 'all 4 lanes pulse with a color -- syncs with music feel',
+  lane_highlight: 'highlight specific lane -- draw attention to patterns',
+  // WIPE
+  wipe_left:  'black wipe enters from left -- transition effect',
+  wipe_right: 'black wipe exits to right -- transition effect',
+  // DISTORT
+  fisheye:    'fisheye lens distortion -- trippy sections',
+  // BG
+  bg_color:   'solid background color -- set the vibe',
+  bg_pulse:   'background pulses with color -- subtle energy',
+  bg_gradient:'gradient background -- two colors, pick angle',
+  // ZONE
+  speed:      'change fall speed -- 0.25=slow-mo, 2=fast, use for effect',
+};
+
+// Inject help into EFF_LIB_UNIQUE after it's defined
+setTimeout(()=>{
+  if(typeof EFF_LIB_UNIQUE==='undefined')return;
+  EFF_LIB_UNIQUE.forEach(e=>{
+    if(!e.help&&EFFECT_HELP[e.id])e.help=EFFECT_HELP[e.id];
+  });
+},100);
+
+// Custom effect code help shown in editor
+function getCustomEffectHelp(){
+  return [
+    '-- AVAILABLE VARIABLES:',
+    '-- ctx2  = canvas 2D context (draw anything)',
+    '-- W, H  = canvas width and height in pixels',
+    '-- t2    = current time in ms (Date.now())',
+    '-- aud   = audio element (aud.currentTime = seconds)',
+    '',
+    '-- USEFUL PATTERNS:',
+    '-- Math.sin(t2/500)        → oscillate -1 to 1 every ~3s',
+    '-- Math.sin(t2/500)*0.5+0.5 → oscillate 0 to 1 (for opacity)',
+    '-- aud.currentTime         → position in song (seconds)',
+    '',
+    '-- DRAW EXAMPLES:',
+    '-- ctx2.fillStyle = "rgba(255,0,128,0.3)"; ctx2.fillRect(0,0,W,H);',
+    '-- ctx2.strokeStyle = "#00f0ff"; ctx2.lineWidth = 2;',
+    '-- ctx2.beginPath(); ctx2.arc(W/2,H/2,50,0,Math.PI*2); ctx2.stroke();',
+    '',
+    '-- SHAPES:',
+    '-- Circle: ctx2.beginPath(); ctx2.arc(x,y,radius,0,Math.PI*2);',
+    '-- Rect:   ctx2.fillRect(x, y, width, height);',
+    '-- Line:   ctx2.moveTo(x1,y1); ctx2.lineTo(x2,y2); ctx2.stroke();',
+  ].join('\n');
+}
+window.getCustomEffectHelp=getCustomEffectHelp;
+
+// Patch openCustomEffectEditor to show help in textarea placeholder
+const _origOpenCEE=openCustomEffectEditor;
+openCustomEffectEditor=function(){
+  _origOpenCEE();
+  setTimeout(()=>{
+    const ta=document.getElementById('ce-code');
+    if(ta&&!ta.value.trim()){
+      // Add help as comments above the example
+      const help=getCustomEffectHelp();
+      const example=`// Example — pulsing pink overlay:\nconst pulse = Math.sin(t2/400)*0.5+0.5;\nctx2.fillStyle = \`rgba(255,0,128,\${pulse*0.3})\`;\nctx2.fillRect(0,0,W,H);`;
+      ta.value=help+'\n\n'+example;
+    }
+  },80);
+};
 </script>
 </body>
 </html>
