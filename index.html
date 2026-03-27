@@ -336,72 +336,30 @@ canvas#cv{display:block;width:440px;height:620px;}
 .confirm-msg{font-size:12px;color:var(--text2);letter-spacing:2px;text-align:center;line-height:1.9;white-space:pre-line;}
 .confirm-btns{display:flex;gap:10px;}
 /* MOBILE LANDSCAPE FULLSCREEN */
-body.mobile-ls { overflow:hidden; }
-#game-page.mobile-ls-page {
-  position:fixed!important;
-  inset:0!important;
-  z-index:500!important;
-  background:var(--bg)!important;
-  display:flex!important;
-  flex-direction:row!important;
-  align-items:stretch!important;
-  justify-content:stretch!important;
-  padding:0!important;
+/* MOBILE — responsive game layout */
+#kh-left, #kh-right { display:none; }
+.khi-side { display:none; }
+
+/* On mobile: canvas fills screen width, big split buttons */
+@media(max-width:600px) and (pointer:coarse){
+  #game-page{ background:var(--bg); }
+  #game-wrap{ width:100vw!important; transform:none!important; margin:0!important; }
+  #gc{ width:100vw!important; height:calc(100vh - 90px)!important; border:none!important; }
+  canvas#cv{ width:100vw!important; height:calc(100vh - 90px)!important; }
+  #kh{
+    width:100vw!important;
+    height:90px!important;
+    display:flex!important;
+  }
+  .khi{ height:90px!important; font-size:20px!important; }
+  /* Left pair: D+F grouped, Right pair: J+K grouped */
+  .khi.k0,.khi.k1{ border-top-width:3px!important; }
+  .khi.k2,.khi.k3{ border-top-width:3px!important; }
+  .khi.k1{ border-right:2px solid #ffffff0a!important; }
+  /* UI overlay smaller */
+  #sc{ font-size:18px!important; }
+  #cb{ font-size:9px!important; }
 }
-#game-wrap.mobile-landscape {
-  flex-direction:row!important;
-  width:100vw!important;
-  height:100vh!important;
-  align-items:stretch!important;
-  justify-content:stretch!important;
-  margin:0!important;
-  transform:none!important;
-  position:fixed!important;
-  top:0!important;left:0!important;
-}
-#game-wrap.mobile-landscape #gc {
-  flex:1!important;
-  width:auto!important;
-  height:100%!important;
-}
-#game-wrap.mobile-landscape canvas#cv {
-  width:100%!important;
-  height:100%!important;
-  display:block!important;
-}
-#game-wrap.mobile-landscape #kh { display:none!important; }
-#game-wrap.mobile-landscape #kh-side { display:flex!important; }
-/* Side thumb buttons — split left+right panel */
-#kh-left, #kh-right {
-  display:none;
-  flex-shrink:0;
-  width:72px;
-}
-.khi-side {
-  flex:1;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:18px;
-  font-weight:bold;
-  letter-spacing:2px;
-  cursor:pointer;
-  user-select:none;
-  -webkit-user-select:none;
-  -webkit-tap-highlight-color:transparent;
-  touch-action:none;
-  transition:background .05s;
-  border:none;
-  background:rgba(255,255,255,0.02);
-}
-.khi-side:active,.khi-side.pressed{background:rgba(255,255,255,.15);}
-.khi-side.k0{color:var(--cyan);  border-right:2px solid #00f0ff33;}
-.khi-side.k1{color:var(--pink);  border-right:2px solid #ff00aa33;}
-.khi-side.k2{color:var(--green); border-left:2px solid #00ff8833;}
-.khi-side.k3{color:var(--amber); border-left:2px solid #ffaa0033;}
-/* Mobile ls: score/combo overlay on canvas */
-#game-wrap.mobile-landscape #ui { padding:0 12px; }
-#game-wrap.mobile-landscape #sc { font-size:18px; }
 @media(max-width:500px){
   /* Game tap buttons bigger on mobile */
   .khi{height:72px!important;}
@@ -1025,15 +983,15 @@ body.mobile-ls { overflow:hidden; }
     </div>
     <div class="settings-section">
       <div class="settings-section-title">📱 MOBILE</div>
-      <div class="keybind-row">
-        <div class="keybind-label" style="line-height:1.5;">🔄 AUTO LANDSCAPE<br><span style="font-size:8px;color:#555;">ROTATE PHONE → FULLSCREEN WIDE MODE</span></div>
-        <div id="autolandscape-btn" onclick="toggleAutoLandscape()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
-      </div>
-      <div style="font-size:9px;color:#333;letter-spacing:2px;margin-top:4px;">D+F = LEFT THUMB · J+K = RIGHT THUMB IN LANDSCAPE</div>
-      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div style="font-size:9px;color:#444;letter-spacing:2px;margin-bottom:10px;">ON MOBILE: CANVAS FILLS FULL SCREEN WIDTH · BIG TAP BUTTONS BELOW</div>
       <div class="keybind-row">
         <div class="keybind-label" style="line-height:1.5;">📳 HAPTIC FEEDBACK<br><span style="font-size:8px;color:#555;">VIBRATE ON NOTE HIT</span></div>
         <div id="haptic-btn" onclick="toggleHaptic()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #ff444433;color:var(--red);cursor:pointer;background:#ff44441a;">OFF</div>
+      </div>
+      <div style="height:1px;background:var(--border);margin:10px 0;"></div>
+      <div class="keybind-row">
+        <div class="keybind-label" style="line-height:1.5;">👀 BUTTON LABELS<br><span style="font-size:8px;color:#555;">SHOW D F J K ON BUTTONS</span></div>
+        <div id="btnlabels-btn" onclick="toggleBtnLabels()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">ON</div>
       </div>
     </div>
     <div class="settings-section" id="admin-role-section" style="display:none;border-color:#ff00aa33;">
@@ -7902,114 +7860,15 @@ _reviveStyle.textContent = '@keyframes revive-flash{0%{opacity:0.8;}100%{opacity
 document.head.appendChild(_reviveStyle);
 
 // ══════════════════════════════════════════════════════════
-// ══════════════════════════════════════════════════════════
-// ── MOBILE LANDSCAPE FULLSCREEN ──────────────────────────
-// ══════════════════════════════════════════════════════════
-let _mobileLandscape=false, _autoLandscape=true;
-
-function toggleAutoLandscape(){
-  _autoLandscape=!_autoLandscape;
-  try{localStorage.setItem('bl_autolandscape',_autoLandscape?'1':'0');}catch(e){}
-  const btn=document.getElementById('autolandscape-btn');
-  if(btn){
-    if(_autoLandscape){btn.textContent='ON';btn.style.borderColor='#00ff8844';btn.style.color='var(--green)';btn.style.background='#00ff8811';}
-    else{btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}
-  }
-  if(!_autoLandscape&&_mobileLandscape)exitLandscape();
-}
-window.toggleAutoLandscape=toggleAutoLandscape;
-
-(function(){try{const v=localStorage.getItem('bl_autolandscape');if(v==='0')_autoLandscape=false;}catch(e){}
-  setTimeout(()=>{const btn=document.getElementById('autolandscape-btn');if(btn&&!_autoLandscape){btn.textContent='OFF';btn.style.borderColor='#ff444433';btn.style.color='var(--red)';btn.style.background='#ff44441a';}},500);
-})();
-
-function detectMobileLayout(){
-  const mob=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
-  if(!mob){if(_mobileLandscape)exitLandscape();return;}
-  if(!_autoLandscape){if(_mobileLandscape)exitLandscape();return;}
-  const activePage=document.querySelector('.page.active')?.id;
-  if(activePage!=='game-page'){if(_mobileLandscape)exitLandscape();return;}
-  const vw=window.innerWidth,vh=window.innerHeight;
-  if(vw>vh)enterLandscape();
-  else exitLandscape();
-}
-
-function enterLandscape(){
-  if(_mobileLandscape)return;
-  _mobileLandscape=true;
-  const vw=window.visualViewport?.width||window.innerWidth;
-  const vh=window.visualViewport?.height||window.innerHeight;
-  const sideW=72, canvasW=vw-sideW*2, canvasH=vh;
-  // Fullscreen
-  try{document.documentElement.requestFullscreen?.();}catch(e){}
-  try{if(screen.orientation?.lock)screen.orientation.lock('landscape').catch(()=>{});}catch(e){}
-  // Layout
-  document.body.classList.add('mobile-ls');
-  document.getElementById('game-page')?.classList.add('mobile-ls-page');
-  document.getElementById('game-wrap')?.classList.add('mobile-landscape');
-  // Show side panels
-  ['kh-left','kh-right'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(el){el.style.display='flex';el.style.height=canvasH+'px';}
-  });
-  // Canvas size
-  const gc=document.getElementById('gc'),cv=document.getElementById('cv');
-  if(gc){gc.style.width=canvasW+'px';gc.style.height=canvasH+'px';}
-  if(cv){cv.style.width=canvasW+'px';cv.style.height=canvasH+'px';cv.width=canvasW;cv.height=canvasH;}
-  // Hide bottom bar
-  document.getElementById('menu-bottom-bar').style.display='none';
-  // Exit button
-  if(!document.getElementById('ls-exit-btn')){
-    const btn=document.createElement('button');
-    btn.id='ls-exit-btn';btn.textContent='✕ EXIT';
-    btn.style.cssText='position:absolute;top:4px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border:1px solid #ffffff22;color:#555;font-size:10px;font-family:monospace;letter-spacing:2px;padding:2px 12px;cursor:pointer;z-index:30;border-radius:2px;touch-action:none;';
-    btn.ontouchstart=btn.onclick=(e)=>{e.stopPropagation();exitLandscape();};
-    document.getElementById('gc')?.appendChild(btn);
-  }
-}
-window.enterLandscape=enterLandscape;
-
-function exitLandscape(){
-  if(!_mobileLandscape)return;
-  _mobileLandscape=false;
-  try{document.exitFullscreen?.();}catch(e){}
-  try{screen.orientation?.unlock();}catch(e){}
-  document.body.classList.remove('mobile-ls');
-  document.getElementById('game-page')?.classList.remove('mobile-ls-page');
-  document.getElementById('game-wrap')?.classList.remove('mobile-landscape');
-  ['kh-left','kh-right'].forEach(id=>{
-    const el=document.getElementById(id);if(el)el.style.display='none';
-  });
-  const gc=document.getElementById('gc'),cv=document.getElementById('cv');
-  if(gc){gc.style.width='440px';gc.style.height='620px';}
-  if(cv){cv.style.width='440px';cv.style.height='620px';cv.width=440;cv.height=620;}
-  document.getElementById('ls-exit-btn')?.remove();
-  scaleGame();
-}
-window.exitLandscape=exitLandscape;
-
-// Side button feedback
-setTimeout(()=>{
-  document.querySelectorAll('.khi-side').forEach(btn=>{
-    btn.addEventListener('touchstart',()=>btn.classList.add('pressed'),{passive:true});
-    btn.addEventListener('touchend',()=>btn.classList.remove('pressed'),{passive:true});
-    btn.addEventListener('mousedown',()=>btn.classList.add('pressed'));
-    btn.addEventListener('mouseup',()=>btn.classList.remove('pressed'));
-  });
-},500);
-
-window.addEventListener('resize',()=>setTimeout(detectMobileLayout,150));
-window.addEventListener('orientationchange',()=>setTimeout(detectMobileLayout,300));
-if(window.visualViewport)window.visualViewport.addEventListener('resize',()=>setTimeout(detectMobileLayout,150));
-
-// Show page hook
-const _origShowPage6=showPage;
-showPage=function(id,skip){_origShowPage6(id,skip);if(id==='game-page')setTimeout(detectMobileLayout,250);else if(_mobileLandscape)exitLandscape();};
-
-// GW/GH override
+// ── MOBILE: CSS handles layout, no JS needed ──────────────
+let _mobileLandscape=false;
+window.toggleAutoLandscape=function(){};
+window.enterLandscape=function(){};
+window.exitLandscape=function(){};
+// GW/GH read actual rendered canvas size on mobile
 const _origGW2=GW,_origGH2=GH;
-GW=function(){if(_mobileLandscape){const cv2=document.getElementById('cv');return cv2?.width||440;}return _origGW2();};
-GH=function(){if(_mobileLandscape){const cv2=document.getElementById('cv');return cv2?.height||620;}return _origGH2();};
+GW=function(){const cv2=document.getElementById('cv');if(cv2&&cv2.offsetWidth>0&&cv2.offsetWidth!==440)return cv2.offsetWidth;return _origGW2();};
+GH=function(){const cv2=document.getElementById('cv');if(cv2&&cv2.offsetHeight>0&&cv2.offsetHeight!==620)return cv2.offsetHeight;return _origGH2();};
 
 // ══════════════════════════════════════════════════════════
 // ── PERFORMANCE MODE ─────────────────────────────────────
@@ -8161,6 +8020,37 @@ openCustomEffectEditor=function(){
     }
   },80);
 };
+
+// ── BUTTON LABELS TOGGLE ─────────────────────────────────
+function toggleBtnLabels(){
+  const btns=document.querySelectorAll('.khi');
+  const lbl=document.getElementById('btnlabels-btn');
+  const labels=['D','F','J','K'];
+  const hasLabel=btns[0]?.textContent.trim()!=='';
+  btns.forEach((b,i)=>b.textContent=hasLabel?'':labels[i]);
+  if(lbl){if(hasLabel){lbl.textContent='OFF';lbl.style.borderColor='#ff444433';lbl.style.color='var(--red)';lbl.style.background='#ff44441a';}
+  else{lbl.textContent='ON';lbl.style.borderColor='#00ff8844';lbl.style.color='var(--green)';lbl.style.background='#00ff8811';}}
+}
+window.toggleBtnLabels=toggleBtnLabels;
+
+// ── MOBILE: Resize canvas JS to match CSS-set size on orientation change ──
+function syncMobileCanvasSize(){
+  const cv=document.getElementById('cv');
+  if(!cv)return;
+  const isMobile=('ontouchstart' in window)||(navigator.maxTouchPoints>0);
+  if(!isMobile)return;
+  // Let the CSS set the size, then sync canvas buffer
+  requestAnimationFrame(()=>{
+    const w=cv.offsetWidth, h=cv.offsetHeight;
+    if(w>0&&h>0&&(cv.width!==w||cv.height!==h)){
+      cv.width=w; cv.height=h;
+    }
+    scaleGame();
+  });
+}
+window.addEventListener('resize',syncMobileCanvasSize);
+window.addEventListener('orientationchange',()=>setTimeout(syncMobileCanvasSize,300));
+setTimeout(syncMobileCanvasSize,200);
 </script>
 </body>
 </html>
