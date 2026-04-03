@@ -405,6 +405,7 @@ canvas#cv{display:block;width:440px;height:620px;}
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 <div id="loading">
@@ -578,23 +579,41 @@ canvas#cv{display:block;width:440px;height:620px;}
         <div style="font-size:10px;letter-spacing:3px;color:#444;">FIRE EFFECT (volume-based)</div>
         <div id="cr-fire-toggle" onclick="toggleFireOpt()" style="font-size:11px;letter-spacing:3px;padding:6px 16px;border:1px solid #00ff8844;color:var(--green);cursor:pointer;background:#00ff8811;">YES — ON</div>
       </div>
-      <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;">FIRE RANGES + SPEED + OTHER EFFECTS → SET IN EFFECT EDIT MODE (after publish)</div>
+      <div style="font-size:9px;color:#4a4a70;letter-spacing:2px;">FIRE RANGES + SPEED + OTHER EFFECTS → SET IN EFFECT EDIT MODE (after publish)</div>
     </div>
     <div class="section-title">AUDIO</div>
     <div style="background:var(--bg2);border:1px solid var(--border);padding:14px 16px;display:flex;flex-direction:column;gap:10px;">
-      <div>
-        <label class="xlabel">FILENAME</label>
-        <input class="xinput" id="cr-fn" placeholder="universecollapse.mp3" autocomplete="off" spellcheck="false" oninput="onFnInput()">
-        <div class="audio-st hint" id="cr-audio-st" style="margin-top:8px;">TYPE THE FILENAME — FILE MUST BE IN THE SAME FOLDER AS THIS PAGE</div>
+      <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:2px;overflow:hidden;margin-bottom:4px;">
+        <div id="audio-tab-upload" onclick="switchAudioTab('upload')" style="flex:1;text-align:center;padding:7px;font-size:9px;letter-spacing:2px;cursor:pointer;background:var(--cyan);color:#000;font-family:'Courier New',monospace;font-weight:bold;">📁 UPLOAD</div>
+        <div id="audio-tab-url" onclick="switchAudioTab('url')" style="flex:1;text-align:center;padding:7px;font-size:9px;letter-spacing:2px;cursor:pointer;background:transparent;color:#555;font-family:'Courier New',monospace;">🔗 URL / FILE</div>
+      </div>
+      <div id="audio-panel-upload">
+        <label style="cursor:pointer;display:block;">
+          <div id="cr-upload-zone" style="border:2px dashed #252540;padding:18px;text-align:center;border-radius:2px;">
+            <div style="font-size:20px;margin-bottom:6px;">🎵</div>
+            <div id="cr-upload-label" style="font-size:10px;color:#555;letter-spacing:2px;">TAP TO CHOOSE MP3 / M4A / OGG</div>
+            <div id="cr-upload-progress" style="display:none;margin-top:10px;">
+              <div style="height:4px;background:#1a1a30;border-radius:2px;overflow:hidden;"><div id="cr-upload-bar" style="height:100%;background:var(--cyan);width:0%;transition:width .3s;"></div></div>
+              <div id="cr-upload-pct" style="font-size:9px;color:var(--cyan);letter-spacing:2px;margin-top:4px;text-align:center;">0%</div>
+            </div>
+          </div>
+          <input type="file" id="cr-audio-file" accept="audio/*" style="display:none;" onchange="onAudioFileChosen(this)">
+        </label>
+        <div class="audio-st" id="cr-audio-st" style="margin-top:8px;font-size:9px;letter-spacing:2px;color:#4a4a70;">UPLOAD YOUR AUDIO FILE TO FIREBASE STORAGE</div>
+      </div>
+      <div id="audio-panel-url" style="display:none;">
+        <label class="xlabel">URL OR LOCAL FILENAME</label>
+        <input class="xinput" id="cr-fn" placeholder="https://... or mysong.mp3" autocomplete="off" spellcheck="false" oninput="onFnInput()">
+        <div style="font-size:8px;color:#4a4a70;letter-spacing:1px;margin-top:5px;">DIRECT LINK · GOOGLE DRIVE · DROPBOX · OR LOCAL FILENAME</div>
       </div>
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="flex:1;">
           <label class="xlabel">SONG END TIME (optional)</label>
           <input class="xinput" id="cr-end-time" placeholder="e.g. 3:42 or 222" autocomplete="off" style="font-size:12px;">
         </div>
-        <button class="xbtn sm" onclick="setEndTimeNow()" style="margin-top:16px;" title="Set to current position if audio is playing">[ SET NOW ]</button>
+        <button class="xbtn sm" onclick="setEndTimeNow()" style="margin-top:16px;">[ SET NOW ]</button>
       </div>
-      <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;">LEAVE EMPTY TO PLAY FULL SONG · FORMAT: MM:SS OR SECONDS</div>
+      <div style="font-size:9px;color:#4a4a70;letter-spacing:2px;">LEAVE EMPTY TO PLAY FULL SONG · FORMAT: MM:SS OR SECONDS</div>
     </div>
     <div class="section-title">BEATMAP</div>
     <div class="rec-status">
@@ -669,7 +688,7 @@ canvas#cv{display:block;width:440px;height:620px;}
     <div class="kr" style="margin-top:4px;">
       <div class="kb c0">D</div><div class="kb c1">F</div><div class="kb c2">J</div><div class="kb c3">K</div>
     </div>
-    <div style="font-size:9px;color:#1e1e38;letter-spacing:2px;text-align:center;">TAP KEYS · HOLD FOR LONG NOTES · CTRL+Z UNDO · CTRL+Y REDO</div>
+    <div style="font-size:9px;color:#4a4a70;letter-spacing:2px;text-align:center;">TAP KEYS · HOLD FOR LONG NOTES · CTRL+Z UNDO · CTRL+Y REDO</div>
     <!-- INLINE EFFECT EDITOR (hidden until activated) -->
     <div id="cr-effect-panel" style="display:none;background:var(--bg2);border:1px solid #252540;border-radius:2px;padding:10px 12px;flex-direction:column;gap:8px;">
       <div style="font-size:9px;letter-spacing:3px;color:var(--pink);margin-bottom:4px;">✦ EFFECT EDITOR</div>
@@ -8051,6 +8070,143 @@ function syncMobileCanvasSize(){
 window.addEventListener('resize',syncMobileCanvasSize);
 window.addEventListener('orientationchange',()=>setTimeout(syncMobileCanvasSize,300));
 setTimeout(syncMobileCanvasSize,200);
+
+// ══════════════════════════════════════════════════════════
+// ── KEYBIND LABELS ON TAP BUTTONS ────────────────────────
+// ══════════════════════════════════════════════════════════
+function updateTapButtonLabels(){
+  const ids=['khb-0','khb-1','khb-2','khb-3'];
+  const labels=['D','F','J','K'];
+  ids.forEach((id,i)=>{
+    const btn=document.getElementById(id);
+    if(btn) btn.textContent=(KEYS[i]||labels[i]).toUpperCase();
+  });
+}
+// Call after keybinds load and after any keybind change
+const _origLoadKeys2=loadKeys;
+loadKeys=function(){_origLoadKeys2();updateTapButtonLabels();};
+// Also update on game page open
+const _origShowPage7=showPage;
+showPage=function(id,skip){_origShowPage7(id,skip);if(id==='game-page')updateTapButtonLabels();};
+
+// ══════════════════════════════════════════════════════════
+// ── FIREBASE STORAGE — MP3 UPLOAD ────────────────────────
+// ══════════════════════════════════════════════════════════
+let _storage=null;
+try{ _storage=firebase.storage(); }catch(e){ console.warn('Storage not initialized', e); }
+
+let _uploadedAudioUrl=''; // set after successful upload
+
+function switchAudioTab(tab){
+  const uploadTab=document.getElementById('audio-tab-upload');
+  const urlTab=document.getElementById('audio-tab-url');
+  const uploadPanel=document.getElementById('audio-panel-upload');
+  const urlPanel=document.getElementById('audio-panel-url');
+  if(tab==='upload'){
+    uploadTab.style.background='var(--cyan)';uploadTab.style.color='#000';
+    urlTab.style.background='transparent';urlTab.style.color='#555';
+    uploadPanel.style.display='block';urlPanel.style.display='none';
+  } else {
+    urlTab.style.background='var(--cyan)';urlTab.style.color='#000';
+    uploadTab.style.background='transparent';uploadTab.style.color='#555';
+    urlPanel.style.display='block';uploadPanel.style.display='none';
+  }
+}
+window.switchAudioTab=switchAudioTab;
+
+async function onAudioFileChosen(input){
+  const file=input.files?.[0];
+  if(!file)return;
+  if(!_storage){toast('STORAGE NOT AVAILABLE','#ff4444');return;}
+  if(!CU&&!isGuest){toast('LOGIN TO UPLOAD','#ff4444');return;}
+
+  const maxMB=20;
+  if(file.size>maxMB*1024*1024){
+    toast('FILE TOO LARGE — MAX '+maxMB+'MB','#ff4444');
+    return;
+  }
+
+  const label=document.getElementById('cr-upload-label');
+  const progress=document.getElementById('cr-upload-progress');
+  const bar=document.getElementById('cr-upload-bar');
+  const pct=document.getElementById('cr-upload-pct');
+  const st=document.getElementById('cr-audio-st');
+  const zone=document.getElementById('cr-upload-zone');
+
+  label.textContent='UPLOADING: '+file.name;
+  progress.style.display='block';
+  zone.style.borderColor='var(--cyan)';
+  if(st){st.textContent='UPLOADING...';st.style.color='var(--cyan)';}
+
+  // Unique filename: uid_timestamp_filename
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+  const path='audio/'+(CU?.uid||'guest')+'_'+Date.now()+'_'+safeName;
+  const ref=_storage.ref(path);
+  const uploadTask=ref.put(file);
+
+  uploadTask.on('state_changed',
+    snap=>{
+      const p=Math.round((snap.bytesTransferred/snap.totalBytes)*100);
+      bar.style.width=p+'%';
+      pct.textContent=p+'%';
+    },
+    err=>{
+      label.textContent='UPLOAD FAILED: '+err.message;
+      zone.style.borderColor='var(--red)';
+      if(st){st.textContent='ERROR: '+err.message;st.style.color='var(--red)';}
+      toast('UPLOAD FAILED','#ff4444');
+    },
+    async ()=>{
+      const url=await uploadTask.snapshot.ref.getDownloadURL();
+      _uploadedAudioUrl=url;
+      // Also set the fn input for compatibility
+      const fn=document.getElementById('cr-fn');
+      if(fn)fn.value=url;
+      label.textContent='✅ '+file.name;
+      zone.style.borderColor='var(--green)';
+      if(st){st.textContent='✅ UPLOADED — READY TO RECORD';st.style.color='var(--green)';}
+      pct.textContent='DONE';
+      toast('✅ AUDIO UPLOADED','#00ff88');
+    }
+  );
+}
+window.onAudioFileChosen=onAudioFileChosen;
+
+// Patch crGetAudioSrc to return uploaded URL if available
+const _origCrGetAudioSrc=crGetAudioSrc;
+crGetAudioSrc=function(){
+  if(_uploadedAudioUrl)return _uploadedAudioUrl;
+  return _origCrGetAudioSrc();
+};
+
+// Patch crPublish to use uploaded URL
+const _origCrPublish=crPublish;
+crPublish=async function(){
+  // If an upload happened, make sure cr-fn has the URL
+  if(_uploadedAudioUrl){
+    const fn=document.getElementById('cr-fn');
+    if(fn)fn.value=_uploadedAudioUrl;
+  }
+  return _origCrPublish();
+};
+
+// Reset upload state on new song
+const _origInitCreatePage3=initCreatePage;
+initCreatePage=function(existing){
+  _uploadedAudioUrl='';
+  _origInitCreatePage3(existing);
+  // Reset upload UI
+  const label=document.getElementById('cr-upload-label');
+  const progress=document.getElementById('cr-upload-progress');
+  const zone=document.getElementById('cr-upload-zone');
+  if(label)label.textContent='TAP TO CHOOSE MP3 / M4A / OGG';
+  if(progress)progress.style.display='none';
+  if(zone)zone.style.borderColor='#252540';
+  // If editing existing song with a URL, show URL tab
+  if(existing?.audioUrl&&!existing.audioUrl.includes('firebasestorage')){
+    setTimeout(()=>switchAudioTab('url'),50);
+  }
+};
 </script>
 </body>
 </html>
